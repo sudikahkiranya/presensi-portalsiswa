@@ -1,41 +1,21 @@
-// TODO: Sesuaikan URL Web App Apps Script dan key session aplikasi ini
 const API_URL = "https://script.google.com/macros/s/AKfycbxR0bwVJCXQY5DQKawqOBQO6vNwU8UMFLJ3AuBytSRgQR3TW9rJZ0r58JGkL2u_HxYMhw/exec";
-const SESSION_KEY = "sisensi_siswa_user";
-const REDIRECT_PAGE = "dashboard";
 
-/* ==========================================================================
-   1. THEME, LOGO CONFIG & PASSWORD VISIBILITY INIT
-   ========================================================================== */
 (function initLoginTheme() {
   const savedTheme = localStorage.getItem("sisensi_active_theme") || "burgundy";
   document.documentElement.setAttribute("data-theme", savedTheme);
   document.body.setAttribute("data-theme", savedTheme);
 })();
 
-async function loadLoginBranding() {
-  if (!API_URL || API_URL.includes("YOUR_DEPLOYMENT_ID")) return;
-  try {
-    const response = await fetch(`${API_URL}?action=getSystemConfig`);
-    const result = await response.json();
+function showLoading(text = "Memproses...") {
+  const el = document.getElementById("loadingOverlay");
+  const label = document.getElementById("loadingText");
+  if (label) label.textContent = text;
+  if (el) el.classList.add("active");
+}
 
-    if (result.success && result.data) {
-      const logoUrl = result.data.logo_sekolah_direct_url || result.data.logo_sekolah_url;
-      if (logoUrl) {
-        const logoEl = document.getElementById("loginLogo");
-        const favEl = document.getElementById("appFavicon");
-        if (logoEl) logoEl.src = logoUrl;
-        if (favEl) favEl.href = logoUrl;
-      }
-
-      if (!localStorage.getItem("sisensi_active_theme") && result.data.tema_warna) {
-        const theme = String(result.data.tema_warna).toLowerCase();
-        document.documentElement.setAttribute("data-theme", theme);
-        document.body.setAttribute("data-theme", theme);
-      }
-    }
-  } catch (err) {
-    console.warn("Gagal memuat branding sekolah:", err);
-  }
+function hideLoading() {
+  const el = document.getElementById("loadingOverlay");
+  if (el) el.classList.remove("active");
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -66,87 +46,13 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Auto-redirect jika siswa sudah pernah login (migrasi dari window.onload GAS)
-  const savedUserRaw = localStorage.getItem(SESSION_KEY);
-  const legacySavedID = localStorage.getItem("idSiswa");
-
-  if (savedUserRaw) {
-    try {
-      const user = JSON.parse(savedUserRaw);
-      if (user && user.id_siswa && user.nama) {
-        showLoading("Masuk Portal...");
-        window.location.replace(REDIRECT_PAGE);
-        return;
-      }
-    } catch (err) {
-      localStorage.removeItem(SESSION_KEY);
-    }
-  } else if (legacySavedID) {
-    // Migrasi otomatis jika browser masih menyimpan key lama dari versi GAS
-    localStorage.setItem(SESSION_KEY, JSON.stringify({
-      id_siswa: legacySavedID,
-      nama: localStorage.getItem("namaSiswa") || "-",
-      kelas: localStorage.getItem("kelasSiswa") || "-",
-      id_rombel: localStorage.getItem("idRombel") || "-",
-      role: localStorage.getItem("kelasSiswa") || "Siswa"
-    }));
-    showLoading("Masuk Portal...");
-    window.location.replace(REDIRECT_PAGE);
-    return;
+  // Cek sesi tunggal idSiswa (sama persis dengan dashboard.html)
+  const savedID = localStorage.getItem("idSiswa");
+  if (savedID) {
+    window.location.replace("dashboard");
   }
-
-  loadLoginBranding();
 });
 
-/* ==========================================================================
-   2. LOADING OVERLAY & TOAST HELPERS
-   ========================================================================== */
-function showLoading(message = "Memproses...") {
-  const overlay = document.getElementById("loadingOverlay");
-  const loadingText = document.getElementById("loadingText");
-  if (loadingText) loadingText.textContent = message;
-  if (overlay) overlay.classList.add("active");
-}
-
-function hideLoading() {
-  const overlay = document.getElementById("loadingOverlay");
-  if (overlay) overlay.classList.remove("active");
-}
-
-let toastTimeout = null;
-function showToast(message, type = "info", duration = 3000) {
-  const toast = document.getElementById("appToast");
-  const titleEl = document.getElementById("toastTitle");
-  const msgEl = document.getElementById("toastMessage");
-  const iconBg = document.getElementById("toastIconBg");
-  if (!toast) return;
-
-  toast.setAttribute("data-type", type);
-  if (type === "success") {
-    if (titleEl) titleEl.textContent = "Sukses";
-    if (iconBg) iconBg.textContent = "✓";
-  } else if (type === "error") {
-    if (titleEl) titleEl.textContent = "Gagal";
-    if (iconBg) iconBg.textContent = "✕";
-  } else {
-    if (titleEl) titleEl.textContent = "Informasi";
-    if (iconBg) iconBg.textContent = "ℹ";
-  }
-
-  if (msgEl) msgEl.textContent = message;
-  toast.classList.add("is-visible");
-
-  clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(() => hideAppToast(), duration);
-}
-
-function hideAppToast() {
-  document.getElementById("appToast")?.classList.remove("is-visible");
-}
-
-/* ==========================================================================
-   3. LOGIN HANDLER (MIGRASI DARI verifikasiLoginSiswa GAS)
-   ========================================================================== */
 async function login() {
   const id = document.getElementById("idSiswa").value.trim();
   const kode = document.getElementById("kodeAkses").value.trim();
@@ -156,7 +62,7 @@ async function login() {
   errorMsg.textContent = "";
 
   if (!id || !kode) {
-    errorMsg.textContent = "ID dan Password isi terlebih dahulu.";
+    errorMsg.textContent = "NIS dan Password isi terlebih dahulu.";
     errorMsg.style.display = "block";
     return;
   }
@@ -177,33 +83,22 @@ async function login() {
     const result = await response.json();
 
     if (result && result.success && result.siswa) {
-      // Simpan format baru (object JSON untuk Anti-Flash Guard & Header Dashboard)
-      const sessionData = {
-        id_siswa: result.siswa.id_siswa,
-        nama: result.siswa.nama,
-        kelas: result.siswa.kelas,
-        id_rombel: result.siswa.id_rombel,
-        role: result.siswa.kelas || "Siswa"
-      };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
-
-      // Tetap simpan key individual agar kompatibel dengan modul form siswa lama
       localStorage.setItem("idSiswa", result.siswa.id_siswa);
       localStorage.setItem("namaSiswa", result.siswa.nama);
       localStorage.setItem("kelasSiswa", result.siswa.kelas);
       localStorage.setItem("idRombel", result.siswa.id_rombel);
 
       showLoading("Memuat Portal...");
-      window.location.href = REDIRECT_PAGE;
+      window.location.href = "dashboard";
     } else {
       hideLoading();
-      errorMsg.textContent = (result && result.message) ? result.message : "ID atau Password salah!";
+      errorMsg.textContent = (result && result.message) ? result.message : "NIS atau Password salah!";
       errorMsg.style.display = "block";
     }
   } catch (err) {
     console.error("Login error:", err);
     hideLoading();
-    errorMsg.textContent = "Gagal terhubung ke server: " + err.message;
+    errorMsg.textContent = "Gagal terhubung ke server.";
     errorMsg.style.display = "block";
   }
 }
