@@ -1174,9 +1174,36 @@ body.login-body > .container-login {
 .password-toggle:hover { background: var(--bg-page) !important; color: var(--primary) !important; }
 
 .container-login .login-btn {
-  width: 100%; max-width: 170px; margin: 10px auto 0; height: 42px;
-  border-radius: 12px; background: var(--primary) !important;
-  font: 600 14px 'Poppins', sans-serif; box-shadow: 0 6px 16px var(--theme-glow);
+  width: 100%;
+  max-width: 170px;
+  margin: 10px auto 0;
+  padding: 0 20px;
+  height: 42px;
+  min-height: 42px;
+  border: 0;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  font: 600 14px 'Poppins', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 6px 16px var(--theme-glow);
+  transition: transform .18s, background .18s, box-shadow .18s;
+}
+
+.container-login .login-btn:hover {
+  transform: translateY(-1px);
+  background: var(--primary-hover) !important;
+  box-shadow: 0 10px 20px var(--theme-glow);
+}
+
+.login-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .container-login .error-msg {
