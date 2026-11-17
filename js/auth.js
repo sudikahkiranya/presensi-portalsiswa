@@ -1,10 +1,10 @@
 // TODO: Sesuaikan URL Web App Apps Script dan key session aplikasi ini
 const API_URL = "https://script.google.com/macros/s/AKfycbxR0bwVJCXQY5DQKawqOBQO6vNwU8UMFLJ3AuBytSRgQR3TW9rJZ0r58JGkL2u_HxYMhw/exec";
-const SESSION_KEY = "app_portal_user";
+const SESSION_KEY = "sisensi_siswa_user";
 const REDIRECT_PAGE = "dashboard";
 
 /* ==========================================================================
-   1. THEME & PASSWORD VISIBILITY INIT
+   1. THEME, LOGO CONFIG & PASSWORD VISIBILITY INIT
    ========================================================================== */
 (function initLoginTheme() {
   const savedTheme = localStorage.getItem("sisensi_active_theme") || "burgundy";
@@ -12,9 +12,35 @@ const REDIRECT_PAGE = "dashboard";
   document.body.setAttribute("data-theme", savedTheme);
 })();
 
+async function loadLoginBranding() {
+  if (!API_URL || API_URL.includes("YOUR_DEPLOYMENT_ID")) return;
+  try {
+    const response = await fetch(`${API_URL}?action=getSystemConfig`);
+    const result = await response.json();
+
+    if (result.success && result.data) {
+      const logoUrl = result.data.logo_sekolah_direct_url || result.data.logo_sekolah_url;
+      if (logoUrl) {
+        const logoEl = document.getElementById("loginLogo");
+        const favEl = document.getElementById("appFavicon");
+        if (logoEl) logoEl.src = logoUrl;
+        if (favEl) favEl.href = logoUrl;
+      }
+
+      if (!localStorage.getItem("sisensi_active_theme") && result.data.tema_warna) {
+        const theme = String(result.data.tema_warna).toLowerCase();
+        document.documentElement.setAttribute("data-theme", theme);
+        document.body.setAttribute("data-theme", theme);
+      }
+    }
+  } catch (err) {
+    console.warn("Gagal memuat branding sekolah:", err);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   // Toggle Eye Password
-  const password = document.getElementById("passwordInput");
+  const password = document.getElementById("kodeAkses");
   const toggle = document.getElementById("togglePassword");
   const icon = document.getElementById("passwordEyeIcon");
 
@@ -40,54 +66,62 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Pengecekan Sesi Login Otomatis (Reset jika berganti hari)
+  // Auto-redirect jika siswa sudah pernah login (migrasi dari window.onload GAS)
   const savedUserRaw = localStorage.getItem(SESSION_KEY);
-  if (!savedUserRaw) return;
+  const legacySavedID = localStorage.getItem("idSiswa");
 
-  const today = new Date().toLocaleDateString("id-ID");
-
-  try {
-    const user = JSON.parse(savedUserRaw);
-    if (user && user.loginDate !== today) {
+  if (savedUserRaw) {
+    try {
+      const user = JSON.parse(savedUserRaw);
+      if (user && user.id_siswa && user.nama) {
+        showLoading("Masuk Portal...");
+        window.location.replace(REDIRECT_PAGE);
+        return;
+      }
+    } catch (err) {
       localStorage.removeItem(SESSION_KEY);
-      return;
     }
-
-    if (user && user.userID && user.nama && user.loginDate === today) {
-      window.location.replace(REDIRECT_PAGE);
-    }
-  } catch (err) {
-    localStorage.removeItem(SESSION_KEY);
+  } else if (legacySavedID) {
+    // Migrasi otomatis jika browser masih menyimpan key lama dari versi GAS
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      id_siswa: legacySavedID,
+      nama: localStorage.getItem("namaSiswa") || "-",
+      kelas: localStorage.getItem("kelasSiswa") || "-",
+      id_rombel: localStorage.getItem("idRombel") || "-",
+      role: localStorage.getItem("kelasSiswa") || "Siswa"
+    }));
+    showLoading("Masuk Portal...");
+    window.location.replace(REDIRECT_PAGE);
+    return;
   }
+
+  loadLoginBranding();
 });
 
 /* ==========================================================================
    2. LOADING OVERLAY & TOAST HELPERS
    ========================================================================== */
-function showLoading(text = "Memproses...") {
-  const el = document.getElementById("loadingOverlay");
-  const label = document.getElementById("loadingText");
-  if (label) label.textContent = text;
-  if (el) el.classList.add("active");
+function showLoading(message = "Memproses...") {
+  const overlay = document.getElementById("loadingOverlay");
+  const loadingText = document.getElementById("loadingText");
+  if (loadingText) loadingText.textContent = message;
+  if (overlay) overlay.classList.add("active");
 }
 
 function hideLoading() {
-  const el = document.getElementById("loadingOverlay");
-  if (el) el.classList.remove("active");
+  const overlay = document.getElementById("loadingOverlay");
+  if (overlay) overlay.classList.remove("active");
 }
 
 let toastTimeout = null;
-
 function showToast(message, type = "info", duration = 3000) {
   const toast = document.getElementById("appToast");
   const titleEl = document.getElementById("toastTitle");
   const msgEl = document.getElementById("toastMessage");
   const iconBg = document.getElementById("toastIconBg");
-
   if (!toast) return;
 
   toast.setAttribute("data-type", type);
-
   if (type === "success") {
     if (titleEl) titleEl.textContent = "Sukses";
     if (iconBg) iconBg.textContent = "✓";
@@ -107,63 +141,69 @@ function showToast(message, type = "info", duration = 3000) {
 }
 
 function hideAppToast() {
-  const toast = document.getElementById("appToast");
-  if (toast) toast.classList.remove("is-visible");
+  document.getElementById("appToast")?.classList.remove("is-visible");
 }
 
 /* ==========================================================================
-   3. LOGIN HANDLER
+   3. LOGIN HANDLER (MIGRASI DARI verifikasiLoginSiswa GAS)
    ========================================================================== */
 async function login() {
-  const username = document.getElementById("usernameInput").value.trim();
-  const password = document.getElementById("passwordInput").value.trim();
+  const id = document.getElementById("idSiswa").value.trim();
+  const kode = document.getElementById("kodeAkses").value.trim();
   const errorMsg = document.getElementById("errorMsg");
 
   errorMsg.style.display = "none";
   errorMsg.textContent = "";
 
-  if (!username || !password) {
-    errorMsg.textContent = "Username dan Password isi terlebih dahulu.";
+  if (!id || !kode) {
+    errorMsg.textContent = "ID dan Password isi terlebih dahulu.";
     errorMsg.style.display = "block";
     return;
   }
 
-  showLoading("Login...");
+  showLoading("Memverifikasi...");
 
   try {
-    // TODO: Sesuaikan nama action & parameter payload dengan backend Apps Script
     const response = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
-        action: "login",
-        idInput: username,
-        kodeInput: password
+        action: "verifikasiLoginSiswa",
+        idSiswa: id,
+        kodeAkses: kode
       })
     });
 
     const result = await response.json();
 
-    if (result.success) {
-      const today = new Date().toLocaleDateString("id-ID");
+    if (result && result.success && result.siswa) {
+      // Simpan format baru (object JSON untuk Anti-Flash Guard & Header Dashboard)
+      const sessionData = {
+        id_siswa: result.siswa.id_siswa,
+        nama: result.siswa.nama,
+        kelas: result.siswa.kelas,
+        id_rombel: result.siswa.id_rombel,
+        role: result.siswa.kelas || "Siswa"
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
 
-      localStorage.setItem(SESSION_KEY, JSON.stringify({
-        userID: username,
-        nama: result.nama,
-        role: result.role || "User",
-        loginDate: today
-      }));
+      // Tetap simpan key individual agar kompatibel dengan modul form siswa lama
+      localStorage.setItem("idSiswa", result.siswa.id_siswa);
+      localStorage.setItem("namaSiswa", result.siswa.nama);
+      localStorage.setItem("kelasSiswa", result.siswa.kelas);
+      localStorage.setItem("idRombel", result.siswa.id_rombel);
 
+      showLoading("Memuat Portal...");
       window.location.href = REDIRECT_PAGE;
     } else {
       hideLoading();
-      errorMsg.textContent = result.message || "Username/Password salah atau tidak diizinkan.";
+      errorMsg.textContent = (result && result.message) ? result.message : "ID atau Password salah!";
       errorMsg.style.display = "block";
     }
   } catch (err) {
     console.error("Login error:", err);
     hideLoading();
-    errorMsg.textContent = "Gagal terhubung ke server.";
+    errorMsg.textContent = "Gagal terhubung ke server: " + err.message;
     errorMsg.style.display = "block";
   }
 }

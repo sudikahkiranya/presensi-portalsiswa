@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- TODO: Ganti judul portal sesuai aplikasi -->
-  <title>Login - Nama Portal Aplikasi</title>
+  <title>Login Presensi Siswa | SMK MedikaCom</title>
 
-  <!-- ANTI-FLASH THEME SCRIPT (Sinkron otomatis dengan tema Portal Piket) -->
+  <!-- ANTI-FLASH THEME SCRIPT -->
   <script>
     (function() {
       const savedTheme = localStorage.getItem("sisensi_active_theme") || "burgundy";
@@ -14,16 +13,15 @@
     })();
   </script>
 
-  <!-- Fonts & Stylesheet -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/png" href="./assets/logo_sekolah.png">
+  <link id="appFavicon" rel="icon" type="image/png" href="./assets/logo_sekolah.png">
   <link rel="stylesheet" href="./css/style.css">
 </head>
 <body class="login-body">
 
-  <!-- TOAST NOTIFIKASI (Identik dengan Portal Piket) -->
+  <!-- TOAST NOTIFIKASI -->
   <div id="appToast" role="alert" aria-live="assertive">
     <div class="toast-icon-bg" id="toastIconBg">✓</div>
     <div class="toast-content">
@@ -46,34 +44,33 @@
 
     <section class="login-content" aria-labelledby="loginTitle">
       <header class="login-title-row" aria-labelledby="loginTitle">
-        <img src="./assets/logo_sekolah.png" class="logo" alt="Logo sekolah">
+        <img id="loginLogo" src="./assets/logo_sekolah.png" class="logo" alt="Logo SMK MedikaCom">
         <div class="login-heading">
-          <!-- TODO: Ganti judul header login -->
-          <h2 id="loginTitle">Nama Portal Aplikasi</h2>
+          <h2 id="loginTitle">Portal Presensi Siswa</h2>
         </div>
       </header>
 
       <form class="login-form" id="loginForm" onsubmit="event.preventDefault(); login();">
         <div class="login-field">
-          <label for="usernameInput">Username</label>
+          <label for="idSiswa">NIS / ID Siswa</label>
           <div class="login-input-wrap">
             <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <circle cx="12" cy="8" r="4"></circle>
               <path d="M4 21v-2a8 8 0 0 1 16 0v2"></path>
             </svg>
-            <input type="text" id="usernameInput" class="login-input" placeholder="Masukkan username" autocomplete="username" required>
+            <input type="text" id="idSiswa" class="login-input" placeholder="NIS / ID Siswa" autocomplete="off" required>
           </div>
         </div>
 
         <div class="login-field">
-          <label for="passwordInput">Password</label>
+          <label for="kodeAkses">Password</label>
           <div class="login-input-wrap">
             <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <rect x="4" y="10" width="16" height="11" rx="2"></rect>
               <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
               <path d="M12 14v3"></path>
             </svg>
-            <input type="password" id="passwordInput" class="login-input" placeholder="Masukkan password" autocomplete="current-password" required>
+            <input type="password" id="kodeAkses" class="login-input" placeholder="Password" autocomplete="current-password" required>
             <button class="password-toggle" type="button" id="togglePassword" aria-label="Tampilkan password" title="Tampilkan password" aria-pressed="false">
               <svg id="passwordEyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path>
@@ -89,7 +86,7 @@
             <path d="M15 12H3"></path>
             <path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"></path>
           </svg>
-          Masuk
+          Login
         </button>
       </form>
 
@@ -105,7 +102,7 @@
         <span></span>
         <span></span>
       </div>
-      <div id="loadingText">Memuat...</div>
+      <div id="loadingText">Memproses...</div>
     </div>
   </div>
 
