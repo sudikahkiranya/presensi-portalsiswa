@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- TODO: Ganti judul portal sesuai aplikasi -->
+  <title>Nama Portal Aplikasi</title>
+
+  <!-- 1. SEMBUNYIKAN HTML SECARA INSTAN AGAR TIDAK KEDIP SAAT CEK SESI -->
+  <style id="antiFlashStyle">
+    html { display: none !important; }
+  </style>
+
+  <!-- 2. SKRIP ZERO-FLASH THEME & CEK SESI SEBELUM RENDER DOM -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem("sisensi_active_theme") || "burgundy";
+      document.documentElement.setAttribute("data-theme", savedTheme);
+
+      // TODO: Samakan SESSION_KEY dengan yang ada di auth.js
+      const SESSION_KEY = "app_portal_user";
+      const user = localStorage.getItem(SESSION_KEY);
+      if (!user) {
+        window.location.replace("/");
+      } else {
+        document.addEventListener("DOMContentLoaded", function() {
+          const antiFlash = document.getElementById("antiFlashStyle");
+          if (antiFlash) antiFlash.remove();
+        });
+      }
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link id="appFavicon" rel="icon" type="image/png" href="./assets/logo_sekolah.png">
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="dashboard-body">
+
+<!-- HEADER BANNER APLIKASI MODERN & CLEAN -->
+<header id="topHeaderBanner" class="piket-header">
+  <!-- LEFT: LOGO BULAT + BRAND TEXT -->
+  <div class="header-brand-group">
+    <div class="brand-logo-circle">
+      <img id="appLogo" src="./assets/logo_sekolah.png" class="header-logo-img is-loaded" alt="Logo Sekolah">
+    </div>
+    <div class="brand-text-stack">
+      <!-- TODO: Ganti nama portal -->
+      <h1 class="brand-main-title">Nama Portal Aplikasi</h1>
+      <span id="headerNamaSekolah" class="brand-sub-title">Memuat nama sekolah...</span>
+    </div>
+  </div>
+
+  <!-- RIGHT: CONTROLS (THEME PICKER & USER PROFILE POPOVER) -->
+  <div class="header-user-controls">
+    <!-- 1. THEME SWITCHER -->
+    <div class="theme-picker-wrapper">
+      <button type="button" id="themePickerBtn" class="header-icon-btn" onclick="toggleThemePopover(event)" title="Pilih Tema Warna" aria-label="Pilih Tema Warna">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
+          <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
+          <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
+          <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
+          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.7-.71 1.7-1.63 0-.44-.18-.85-.46-1.16-.29-.32-.46-.74-.46-1.21 0-.92.78-1.7 1.7-1.7h2.52c3.04 0 5.5-2.46 5.5-5.5 0-5.25-4.5-9.3-10.5-9.3z"></path>
+        </svg>
+      </button>
+
+      <div id="themePopover" class="theme-popover">
+        <div class="theme-popover-header">Pilih Tema Warna</div>
+        <div class="theme-color-grid">
+          <button type="button" class="color-swatch burgundyswatch" data-theme="burgundy" onclick="selectTheme('burgundy')" title="Burgundy"></button>
+          <button type="button" class="color-swatch greenswatch" data-theme="green" onclick="selectTheme('green')" title="Emerald Green"></button>
+          <button type="button" class="color-swatch blueswatch" data-theme="blue" onclick="selectTheme('blue')" title="Royal Blue"></button>
+          <button type="button" class="color-swatch orangeswatch" data-theme="orange" onclick="selectTheme('orange')" title="Sunset Orange"></button>
+          <button type="button" class="color-swatch purpleswatch" data-theme="purple" onclick="selectTheme('purple')" title="Deep Purple"></button>
+          <button type="button" class="color-swatch goldswatch" data-theme="gold" onclick="selectTheme('gold')" title="Amber Gold"></button>
+          <button type="button" class="color-swatch blackswatch" data-theme="black" onclick="selectTheme('black')" title="Stealth Black"></button>
+          <button type="button" class="color-swatch whiteswatch" data-theme="white" onclick="selectTheme('white')" title="Pearl White"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. USER PROFILE DROPDOWN -->
+    <div class="user-profile-wrapper">
+      <button type="button" id="profilePickerBtn" class="header-icon-btn" onclick="toggleProfilePopover(event)" title="Profil Pengguna" aria-label="Profil Pengguna">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </button>
+
+      <div id="profilePopover" class="profile-popover">
+        <div class="profile-popover-header">
+          <div class="profile-info-text">
+            <div class="profile-name" id="userName">-</div>
+            <div class="profile-role" id="userRole">-</div>
+          </div>
+          <button type="button" class="profile-action-btn btn-logout" onclick="logout()" title="Keluar dari Aplikasi" aria-label="Logout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="profile-popover-divider"></div>
+
+        <button type="button" class="profile-clear-cache-item" onclick="clearSystemCache()" title="Bersihkan Cache Config Server">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="warning-icon">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span>Clear Cache Config</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- TOAST CONTAINER -->
+<div id="appToast" role="alert" aria-live="assertive">
+  <div class="toast-icon-bg" id="toastIconBg">✓</div>
+  <div class="toast-content">
+    <div class="toast-title" id="toastTitle">Notifikasi</div>
+    <div class="toast-message" id="toastMessage">Pesan notifikasi...</div>
+  </div>
+  <button type="button" class="toast-close-btn" onclick="hideAppToast()">✕</button>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div id="confirmModal" class="modal-overlay">
+  <div class="modal-box">
+    <p id="confirmText">Apakah Anda yakin?</p>
+    <div class="modal-actions">
+      <button type="button" onclick="closeConfirm()" class="btn-cancel">Batal</button>
+      <button type="button" onclick="handleConfirmYes()" class="btn-confirm">Lanjut</button>
+    </div>
+  </div>
+</div>
+
+<!-- ERROR / ALERT MODAL -->
+<div id="errorModal" class="modal-overlay">
+  <div class="modal-box rekap-modal-box">
+    <div class="rekap-modal-header">
+      <div class="rekap-icon-badge is-error">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <div class="rekap-header-text">
+        <h3 id="errorTitle" class="rekap-modal-title">Terjadi Kendala</h3>
+        <p class="rekap-modal-subtitle">Periksa kembali informasi di bawah ini.</p>
+      </div>
+    </div>
+    <div class="rekap-error-alert">
+      <p id="errorMessage"></p>
+    </div>
+    <div class="rekap-modal-footer">
+      <button type="button" class="btn-danger" onclick="closeError()">Mengerti</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY MODERN MINIMALIS (DOTS ENGINE) -->
+<div id="loadingOverlay">
+  <div>
+    <div class="dots">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div id="loadingText">Memuat data...</div>
+  </div>
+</div>
+
+<!-- KONTEN UTAMA DASHBOARD -->
+<main>
+  <div class="card">
+    <!-- BAR FILTER & STATISTIK RINGKAS -->
+    <div class="filter-wrapper">
+      <div class="filter-group">
+        <div class="filter-item">
+          <label for="filterKategori">Kategori:</label>
+          <div id="filterKategori" data-value=""></div>
+        </div>
+        <div class="filter-item">
+          <label for="filterSearch">Pencarian:</label>
+          <div class="search-input-wrapper">
+            <input type="text" id="filterSearch" class="filter-input-text" placeholder="Cari data..." oninput="handleSearchInput(this, 'clearFilterSearchBtn', applyFilter)">
+            <button type="button" id="clearFilterSearchBtn" class="search-clear-btn" onclick="clearSearchInput('filterSearch', 'clearFilterSearchBtn', applyFilter)" title="Hapus pencarian" hidden>✕</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="statistik-wrapper">
+        <div class="stat-box-wrapper">
+          <div class="jumlah-data-box">
+            <label>Total<br>Data</label>
+            <span id="jumlahData">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEADER ACTION & STATUS KONEKSI -->
+    <div class="table-header">
+      <div class="left-action">
+        <button type="button" onclick="refreshData()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          Refresh Data
+        </button>
+        <!-- TODO: Tambahkan tombol aksi spesifik fitur di sini -->
+      </div>
+
+      <div class="right-action">
+        <div id="syncStatusPanel" class="sync-status-panel" data-state="saved" role="status" aria-live="polite">
+          <div class="sync-status-main">
+            <span id="syncStatusIcon" class="sync-status-icon-wrapper"></span>
+            <span id="syncStatusLabel">Online</span>
+          </div>
+          <div class="sync-status-detail">
+            <span id="syncStatusCaption">Siap digunakan</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABEL DATA RESPONSIF -->
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama / Item</th>
+            <th>Keterangan</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyData">
+          <tr><td colspan="5" class="text-center-cell">Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINATION -->
+    <div class="table-footer">
+      <div id="pagination"></div>
+    </div>
+  </div>
+</main>
+
+<script src="./js/dashboard.js"></script>
+</body>
+</html>
