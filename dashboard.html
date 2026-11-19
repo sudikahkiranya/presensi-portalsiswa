@@ -36,477 +36,447 @@
 
 <body class="student-portal-body">
 
-  <div class="saas-layout-shell">
-
-    <!-- ======================================================================
-         1. SIDEBAR NAVIGASI (DESKTOP SAAS MODERN)
-         ====================================================================== -->
-    <aside class="saas-sidebar">
-      <div class="sidebar-brand">
-        <div class="header-logo-circle">
-          <img id="logoDesktop" src="./assets/logo_sekolah.png" alt="Logo SMK MedikaCom">
-        </div>
-        <div class="header-brand-text">
-          <h1>Portal Presensi</h1>
-          <span>SMK MedikaCom Bandung</span>
-        </div>
+  <!-- ========================================================================
+       1. TOP HEADER BANNER + INLINE PILL NAVIGATION
+       ======================================================================== -->
+  <header class="header-box main-header" id="topHeaderBanner">
+    <!-- Kiri: Logo & Identitas Portal -->
+    <div class="header-brand-area">
+      <div class="header-logo-circle">
+        <img id="logoDesktop" src="./assets/logo_sekolah.png" alt="Logo SMK MedikaCom">
       </div>
-
-      <div class="sidebar-menu-label">MENU UTAMA</div>
-
-      <nav class="tab-container" aria-label="Navigasi Utama">
-        <button type="button" class="tab-btn active" data-tab="hariIni" onclick="showTab(event, 'hariIni')">
-          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-          </svg>
-          <span>Beranda</span>
-        </button>
-
-        <button type="button" class="tab-btn" data-tab="riwayat" onclick="showTab(event, 'riwayat')">
-          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-          </svg>
-          <span>Rekap</span>
-        </button>
-
-        <button type="button" class="tab-btn" data-tab="statistik" onclick="showTab(event, 'statistik')">
-          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"></line>
-            <line x1="12" y1="20" x2="12" y2="4"></line>
-            <line x1="6" y1="20" x2="6" y2="14"></line>
-          </svg>
-          <span>Statistik</span>
-        </button>
-
-        <button type="button" class="tab-btn" data-tab="profil" onclick="showTab(event, 'profil')">
-          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-          <span>Profil</span>
-        </button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="sidebar-school-badge">Sistem Presensi Digital</div>
+      <div class="header-brand-text">
+        <h1>Portal Presensi Siswa</h1>
+        <span>SMK MedikaCom Bandung</span>
       </div>
-    </aside>
-
-    <!-- ======================================================================
-         2. AREA UTAMA KANAN (TOPBAR + WORKSPACE)
-         ====================================================================== -->
-    <div class="saas-main-wrapper">
-
-      <!-- TOP BAR -->
-      <header class="header-box main-header saas-topbar" id="topHeaderBanner">
-        <!-- Brand khusus tampilan Mobile -->
-        <div class="header-brand-area mobile-only-brand">
-          <div class="header-logo-circle">
-            <img src="./assets/logo_sekolah.png" alt="Logo SMK MedikaCom">
-          </div>
-          <div class="header-brand-text">
-            <h1>Portal Presensi Siswa</h1>
-            <span>SMK MedikaCom Bandung</span>
-          </div>
-        </div>
-
-        <!-- Info Konteks Halaman di Desktop -->
-        <div class="topbar-page-context hide-mobile">
-          <span class="topbar-badge">Portal Siswa</span>
-          <span class="topbar-date-info">SMK MedikaCom Bandung</span>
-        </div>
-
-        <div class="header-actions-area">
-          <!-- Theme Picker Switcher -->
-          <div class="theme-picker-wrapper">
-            <button type="button" id="themePickerBtn" class="btn-header-pill" onclick="toggleThemePopover(event)" title="Ganti Tema Warna">
-              <span class="theme-dot-indicator" id="activeThemeDot"></span>
-              <span class="hide-mobile">Tema</span>
-            </button>
-
-            <div class="theme-popover" id="themePopover" onclick="event.stopPropagation()">
-              <div class="theme-popover-title">Pilih Tema Warna</div>
-              <div class="theme-swatches-grid">
-                <button type="button" class="theme-swatch-btn" data-theme-val="burgundy" onclick="setAppTheme('burgundy')">
-                  <span class="swatch-circle" style="background:#824653;"></span>
-                  <span>Burgundy</span>
-                </button>
-                <button type="button" class="theme-swatch-btn" data-theme-val="ocean" onclick="setAppTheme('ocean')">
-                  <span class="swatch-circle" style="background:#1e40af;"></span>
-                  <span>Ocean</span>
-                </button>
-                <button type="button" class="theme-swatch-btn" data-theme-val="emerald" onclick="setAppTheme('emerald')">
-                  <span class="swatch-circle" style="background:#065f46;"></span>
-                  <span>Emerald</span>
-                </button>
-                <button type="button" class="theme-swatch-btn" data-theme-val="royal" onclick="setAppTheme('royal')">
-                  <span class="swatch-circle" style="background:#5b21b6;"></span>
-                  <span>Royal</span>
-                </button>
-                <button type="button" class="theme-swatch-btn" data-theme-val="sunset" onclick="setAppTheme('sunset')">
-                  <span class="swatch-circle" style="background:#c2410c;"></span>
-                  <span>Sunset</span>
-                </button>
-                <button type="button" class="theme-swatch-btn" data-theme-val="teal" onclick="setAppTheme('teal')">
-                  <span class="swatch-circle" style="background:#0f766e;"></span>
-                  <span>Teal</span>
-                </button>
-                <button type="button" class="theme-swatch-btn" data-theme-val="indigo" onclick="setAppTheme('indigo')">
-                  <span class="swatch-circle" style="background:#3730a3;"></span>
-                  <span>Indigo</span>
-                </button>
-                <button type="button" class="theme-swatch-btn" data-theme-val="slate" onclick="setAppTheme('slate')">
-                  <span class="swatch-circle" style="background:#334155;"></span>
-                  <span>Slate</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Student Identity Badge (Desktop) -->
-          <div class="header-user-pill hide-mobile" onclick="showTab(null, 'profil')" title="Lihat Profil Siswa">
-            <div class="user-pill-avatar" id="headerAvatarInitial">S</div>
-            <div class="user-pill-info">
-              <span class="u-name" id="namaSiswa">Nama Siswa</span>
-              <span class="u-class" id="kelasSiswa">Kelas</span>
-            </div>
-          </div>
-
-          <!-- Logout Button -->
-          <button type="button" onclick="logout()" class="btn-logout-circle" title="Keluar dari Aplikasi">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      <!-- MAIN WORKSPACE CONTAINER -->
-      <main class="app-workspace">
-
-        <!-- ==================================================================
-             TAB 1: BERANDA (BENTO 2-COLUMN SYMMETRIC GRID)
-             ================================================================== -->
-        <section id="hariIni" class="tab-content active">
-          <div class="bento-home-grid">
-
-            <!-- KOLOM KIRI: GREETING + TIMELINE HARI INI + LAYANAN CEPAT -->
-            <div class="bento-col-left">
-
-              <!-- Bento Card 1: Compact Greeting Banner -->
-              <div class="section bento-greeting-card">
-                <div class="greeting-content">
-                  <h2 id="greetingText">Selamat Datang 👋</h2>
-                  <p id="greetingSubtext">Pantau kehadiran harian dan aktivitas akademikmu hari ini.</p>
-                </div>
-                <div class="greeting-badge-nis">
-                  <span class="nis-label">ID / NIS</span>
-                  <span class="nis-val" id="badgeNisSiswa">-</span>
-                </div>
-              </div>
-
-              <!-- Bento Card 2: Presensi Hari Ini -->
-              <div class="section today-timeline-section">
-                <div class="today-header-row">
-                  <h3>Presensi Hari Ini</h3>
-                  <small id="tanggalHariIni">-</small>
-                </div>
-
-                <div class="timeline-tracker-wrapper">
-                  <div class="tracker-labels">
-                    <span class="label-left">Presensi Masuk</span>
-                    <span class="label-right">Presensi Pulang</span>
-                  </div>
-
-                  <div class="tracker-line-container">
-                    <div class="tracker-icon-circle icon-masuk">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-                        <polyline points="10 17 15 12 10 7"></polyline>
-                        <line x1="15" y1="12" x2="3" y2="12"></line>
-                      </svg>
-                    </div>
-
-                    <div class="tracker-connector"></div>
-
-                    <div class="tracker-icon-circle icon-pulang">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                      </svg>
-                    </div>
-                  </div>
-
-                  <div class="tracker-values">
-                    <div class="val-block block-left">
-                      <span class="jam-text" id="jamMasuk">-</span>
-                      <span class="status-text" id="statusMasuk">-</span>
-                    </div>
-                    <div class="val-block block-right">
-                      <span class="jam-text" id="jamPulang">-</span>
-                      <span class="status-text" id="statusPulang">-</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Bento Card 3: Layanan & Akses Cepat -->
-              <div class="section bento-services-card">
-                <div class="card-section-header">
-                  <h3>Layanan & Akses Cepat</h3>
-                </div>
-                <div class="services-grid-4col">
-                  <button type="button" class="service-item-clean" onclick="openModalQuick('modalIzin')">
-                    <div class="service-icon-circle">
-                      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                    </div>
-                    <span class="service-clean-label">Perizinan</span>
-                  </button>
-
-                  <button type="button" class="service-item-clean" onclick="openModalQuick('modalLogIzin')">
-                    <div class="service-icon-circle">
-                      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                    </div>
-                    <span class="service-clean-label">Log Izin</span>
-                  </button>
-
-                  <button type="button" class="service-item-clean" onclick="openModalQuick('modalJadwal')">
-                    <div class="service-icon-circle">
-                      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                    </div>
-                    <span class="service-clean-label">Jadwal KBM</span>
-                  </button>
-
-                  <button type="button" class="service-item-clean" onclick="openModalQuick('modalPengumuman')">
-                    <div class="service-icon-circle">
-                      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                    </div>
-                    <span class="service-clean-label">Pengumuman</span>
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- KOLOM KANAN (DESKTOP): KARTU QR + PENGUMUMAN TERKINI -->
-            <aside class="bento-col-right">
-
-              <!-- Bento Card 4: Kartu Presensi QR Desktop -->
-              <div class="section bento-qr-card">
-                <div class="bento-qr-header">
-                  <h3>Kartu Presensi QR</h3>
-                  <span class="qr-status-pill">Aktif</span>
-                </div>
-
-                <div class="bento-qr-preview-box">
-                  <div id="qrDesktopSkeleton" class="qr-skeleton-box">Menyiapkan Kartu QR...</div>
-                  <img id="qrPreviewDesktop" alt="Kartu QR Presensi Siswa" style="display:none;" />
-                </div>
-
-                <button type="button" class="btn-download-qr-desktop" onclick="downloadQRCard()">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                  </svg>
-                  <span>Unduh Kartu QR</span>
-                </button>
-              </div>
-
-              <!-- Bento Card 5: Pengumuman Terkini -->
-              <div class="section bento-info-card">
-                <div class="bento-info-header">
-                  <h3>📌 Pengumuman Terkini</h3>
-                  <button type="button" class="btn-link-subtle" onclick="openModalQuick('modalPengumuman')">Detail</button>
-                </div>
-                <div class="bento-info-item" onclick="openModalQuick('modalPengumuman')">
-                  <div class="info-item-title">Gladi Bersih Upacara</div>
-                  <div class="info-item-meta">Lapangan Utama • 14:00 WIB</div>
-                </div>
-              </div>
-
-            </aside>
-
-          </div>
-        </section>
-
-        <!-- ==================================================================
-             TAB 2: REKAP PRESENSI (SUMMARY KPI + TABEL RIWAYAT)
-             ================================================================== -->
-        <section id="riwayat" class="tab-content">
-          <div class="bento-rekap-layout">
-
-            <!-- Kolom Ringkasan Angka -->
-            <div class="section bento-rekap-summary">
-              <div class="section-heading-block">
-                <h3>Rekap Kehadiran</h3>
-                <p>Akumulasi presensi pada semester aktif.</p>
-              </div>
-
-              <div id="rekapPresensiGrid" class="stats-grid">
-                <div class="stat-card"><label>Tepat Waktu</label><span id="s_tepat">-</span></div>
-                <div class="stat-card"><label>Terlambat</label><span id="s_terlambat">-</span></div>
-                <div class="stat-card"><label>Tidak Presensi</label><span id="s_tidak">-</span></div>
-                <div class="stat-card"><label>Daring / Prakerin</label><span id="s_daring">-</span></div>
-                <div class="stat-card total-main full-width"><label>Total Hadir</label><span id="s_total">-</span></div>
-                <div class="stat-card"><label>Sakit</label><span id="s_sakit">-</span></div>
-                <div class="stat-card"><label>Izin</label><span id="s_izin">-</span></div>
-                <div class="stat-card"><label>Alpa</label><span id="s_alpa">-</span></div>
-                <div class="stat-card total-sub full-width"><label>Total Tidak Hadir</label><span id="s_total_tidak">-</span></div>
-              </div>
-            </div>
-
-            <!-- Kolom Tabel Log Riwayat -->
-            <div class="section bento-rekap-table">
-              <div class="table-section-header">
-                <div>
-                  <h3>Log Riwayat Harian</h3>
-                  <p>Catatan jam masuk, pulang, dan status presensi.</p>
-                </div>
-                <span class="data-count-badge" id="jumlahRiwayat">Memuat...</span>
-              </div>
-
-              <div class="table-wrapper">
-                <table id="tabelPresensi">
-                  <thead>
-                    <tr>
-                      <th>Tanggal</th>
-                      <th>Masuk</th>
-                      <th>Status</th>
-                      <th>Pulang</th>
-                      <th>Keterangan</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        <!-- ==================================================================
-             TAB 3: STATISTIK & KURVA BEHAVIORAL DOT
-             ================================================================== -->
-        <section id="statistik" class="tab-content">
-          <div class="section bento-statistik-card">
-            <div class="statistik-top-bar">
-              <div>
-                <h3>Statistik & Tren Perilaku</h3>
-                <p class="statistik-subtitle">Visualisasi kedisiplinan jam kedatangan berdasarkan periode waktu.</p>
-              </div>
-              <div class="statistik-filter-box">
-                <div id="filterTimelineStatistik" data-value="1w"></div>
-              </div>
-            </div>
-
-            <!-- Sub-panel Filter Rentang Tanggal Kustom -->
-            <div id="customDateRangeBox" class="custom-date-box" style="display:none;">
-              <div class="custom-date-inputs">
-                <div class="date-field">
-                  <label for="inputDateStart">Dari Tanggal</label>
-                  <input type="date" id="inputDateStart" class="date-input-clean">
-                </div>
-                <div class="date-field">
-                  <label for="inputDateEnd">Sampai Tanggal</label>
-                  <input type="date" id="inputDateEnd" class="date-input-clean">
-                </div>
-              </div>
-              <button type="button" class="btn-apply-filter" onclick="applyCustomDateRange()">Terapkan Filter Tanggal</button>
-            </div>
-
-            <!-- Area Canvas Grafik -->
-            <div class="chart-box-container">
-              <div class="chart-box-header">
-                <span class="chart-title">Kurva Kehadiran Harian</span>
-                <span class="chart-hint">↔️ Klik titik untuk detail • Scroll horizontal</span>
-              </div>
-
-              <div id="chartScrollContainer">
-                <div id="chartInnerWrapper">
-                  <canvas id="trendChartCanvas"></canvas>
-                </div>
-              </div>
-
-              <!-- Legenda 8 Status -->
-              <div class="chart-legend-grid">
-                <div class="legend-item">
-                  <span class="legend-dot" style="background:#15803d;"></span>
-                  <span>Tepat Waktu / Prakerin / Dispensasi</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-dot" style="background:#7c3aed;"></span>
-                  <span>Hadir Tidak Presensi</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-dot" style="background:#d97706;"></span>
-                  <span>Terlambat</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-dot" style="background:#0284c7;"></span>
-                  <span>Izin</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-dot" style="background:#c2410c;"></span>
-                  <span>Sangat Terlambat</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-dot" style="background:#0891b2;"></span>
-                  <span>Sakit</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-dot" style="background:#b91c1c;"></span>
-                  <span>Sangat Terlambat Sekali</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-dot" style="background:#111827;"></span>
-                  <span>Alpa</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ==================================================================
-             TAB 4: PROFIL SISWA
-             ================================================================== -->
-        <section id="profil" class="tab-content">
-          <div class="section bento-profil-card">
-            <div class="profil-avatar-large" id="profilAvatarLarge">S</div>
-            <h3 id="profilNama">Nama Siswa</h3>
-            <p class="profil-kelas-badge" id="profilNamaKelas">-</p>
-
-            <div class="profil-detail-list">
-              <div class="profil-detail-row">
-                <span>NIS / ID Siswa</span>
-                <strong id="profilNis">-</strong>
-              </div>
-              <div class="profil-detail-row">
-                <span>Kompetensi Keahlian</span>
-                <strong id="profilJurusan">-</strong>
-              </div>
-              <div class="profil-detail-row">
-                <span>Instansi Sekolah</span>
-                <strong>SMK MedikaCom Bandung</strong>
-              </div>
-            </div>
-
-            <button type="button" onclick="logout()" class="btn-logout-full">
-              🚪 Keluar dari Aplikasi
-            </button>
-          </div>
-        </section>
-
-      </main>
     </div>
-  </div>
+
+    <!-- Tengah: Desktop Navigation Tabs (Inside Header Box) -->
+    <nav class="tab-container" aria-label="Navigasi Utama">
+      <button type="button" class="tab-btn active" data-tab="hariIni" onclick="showTab(event, 'hariIni')">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        <span>Beranda</span>
+      </button>
+
+      <button type="button" class="tab-btn" data-tab="riwayat" onclick="showTab(event, 'riwayat')">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span>Rekap</span>
+      </button>
+
+      <button type="button" class="tab-btn" data-tab="statistik" onclick="showTab(event, 'statistik')">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <span>Statistik</span>
+      </button>
+
+      <button type="button" class="tab-btn" data-tab="profil" onclick="showTab(event, 'profil')">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>Profil</span>
+      </button>
+    </nav>
+
+    <!-- Kanan: Tema, Profil Siswa & Logout -->
+    <div class="header-actions-area">
+      <!-- Theme Picker Switcher -->
+      <div class="theme-picker-wrapper">
+        <button type="button" id="themePickerBtn" class="btn-header-pill" onclick="toggleThemePopover(event)" title="Ganti Tema Warna">
+          <span class="theme-dot-indicator" id="activeThemeDot"></span>
+          <span class="hide-mobile">Tema</span>
+        </button>
+
+        <div class="theme-popover" id="themePopover" onclick="event.stopPropagation()">
+          <div class="theme-popover-title">Pilih Tema Warna</div>
+          <div class="theme-swatches-grid">
+            <button type="button" class="theme-swatch-btn" data-theme-val="burgundy" onclick="setAppTheme('burgundy')">
+              <span class="swatch-circle" style="background:#824653;"></span>
+              <span>Burgundy</span>
+            </button>
+            <button type="button" class="theme-swatch-btn" data-theme-val="ocean" onclick="setAppTheme('ocean')">
+              <span class="swatch-circle" style="background:#1e40af;"></span>
+              <span>Ocean</span>
+            </button>
+            <button type="button" class="theme-swatch-btn" data-theme-val="emerald" onclick="setAppTheme('emerald')">
+              <span class="swatch-circle" style="background:#065f46;"></span>
+              <span>Emerald</span>
+            </button>
+            <button type="button" class="theme-swatch-btn" data-theme-val="royal" onclick="setAppTheme('royal')">
+              <span class="swatch-circle" style="background:#5b21b6;"></span>
+              <span>Royal</span>
+            </button>
+            <button type="button" class="theme-swatch-btn" data-theme-val="sunset" onclick="setAppTheme('sunset')">
+              <span class="swatch-circle" style="background:#c2410c;"></span>
+              <span>Sunset</span>
+            </button>
+            <button type="button" class="theme-swatch-btn" data-theme-val="teal" onclick="setAppTheme('teal')">
+              <span class="swatch-circle" style="background:#0f766e;"></span>
+              <span>Teal</span>
+            </button>
+            <button type="button" class="theme-swatch-btn" data-theme-val="indigo" onclick="setAppTheme('indigo')">
+              <span class="swatch-circle" style="background:#3730a3;"></span>
+              <span>Indigo</span>
+            </button>
+            <button type="button" class="theme-swatch-btn" data-theme-val="slate" onclick="setAppTheme('slate')">
+              <span class="swatch-circle" style="background:#334155;"></span>
+              <span>Slate</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Student Identity Badge (Desktop) -->
+      <div class="header-user-pill hide-mobile" onclick="showTab(null, 'profil')" title="Lihat Profil Siswa">
+        <div class="user-pill-avatar" id="headerAvatarInitial">S</div>
+        <div class="user-pill-info">
+          <span class="u-name" id="namaSiswa">Nama Siswa</span>
+          <span class="u-class" id="kelasSiswa">Kelas</span>
+        </div>
+      </div>
+
+      <!-- Logout Button -->
+      <button type="button" onclick="logout()" class="btn-logout-circle" title="Keluar dari Aplikasi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       2. MAIN WORKSPACE CONTAINER (BENTO GRID)
+       ======================================================================== -->
+  <main class="app-workspace">
+
+    <!-- ======================================================================
+         TAB 1: BERANDA (BENTO 2-COLUMN SYMMETRIC GRID)
+         ====================================================================== -->
+    <section id="hariIni" class="tab-content active">
+      <div class="bento-home-grid">
+
+        <!-- KOLOM KIRI: GREETING + TIMELINE HARI INI + LAYANAN CEPAT -->
+        <div class="bento-col-left">
+
+          <!-- Bento Card 1: Compact Greeting Banner -->
+          <div class="section bento-greeting-card">
+            <div class="greeting-content">
+              <h2 id="greetingText">Selamat Datang 👋</h2>
+              <p id="greetingSubtext">Pantau kehadiran harian dan aktivitas akademikmu hari ini.</p>
+            </div>
+            <div class="greeting-badge-nis">
+              <span class="nis-label">ID / NIS</span>
+              <span class="nis-val" id="badgeNisSiswa">-</span>
+            </div>
+          </div>
+
+          <!-- Bento Card 2: Presensi Hari Ini -->
+          <div class="section today-timeline-section">
+            <div class="today-header-row">
+              <h3>Presensi Hari Ini</h3>
+              <small id="tanggalHariIni">-</small>
+            </div>
+
+            <div class="timeline-tracker-wrapper">
+              <div class="tracker-labels">
+                <span class="label-left">Presensi Masuk</span>
+                <span class="label-right">Presensi Pulang</span>
+              </div>
+
+              <div class="tracker-line-container">
+                <div class="tracker-icon-circle icon-masuk">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                    <polyline points="10 17 15 12 10 7"></polyline>
+                    <line x1="15" y1="12" x2="3" y2="12"></line>
+                  </svg>
+                </div>
+
+                <div class="tracker-connector"></div>
+
+                <div class="tracker-icon-circle icon-pulang">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  </svg>
+                </div>
+              </div>
+
+              <div class="tracker-values">
+                <div class="val-block block-left">
+                  <span class="jam-text" id="jamMasuk">-</span>
+                  <span class="status-text" id="statusMasuk">-</span>
+                </div>
+                <div class="val-block block-right">
+                  <span class="jam-text" id="jamPulang">-</span>
+                  <span class="status-text" id="statusPulang">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bento Card 3: Layanan & Akses Cepat -->
+          <div class="section bento-services-card">
+            <div class="card-section-header">
+              <h3>Layanan & Akses Cepat</h3>
+            </div>
+            <div class="services-grid-4col">
+              <button type="button" class="service-item-clean" onclick="openModalQuick('modalIzin')">
+                <div class="service-icon-circle">
+                  <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </div>
+                <span class="service-clean-label">Perizinan</span>
+              </button>
+
+              <button type="button" class="service-item-clean" onclick="openModalQuick('modalLogIzin')">
+                <div class="service-icon-circle">
+                  <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                </div>
+                <span class="service-clean-label">Log Izin</span>
+              </button>
+
+              <button type="button" class="service-item-clean" onclick="openModalQuick('modalJadwal')">
+                <div class="service-icon-circle">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                </div>
+                <span class="service-clean-label">Jadwal KBM</span>
+              </button>
+
+              <button type="button" class="service-item-clean" onclick="openModalQuick('modalPengumuman')">
+                <div class="service-icon-circle">
+                  <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                </div>
+                <span class="service-clean-label">Pengumuman</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- KOLOM KANAN (DESKTOP): KARTU QR + PENGUMUMAN TERKINI -->
+        <aside class="bento-col-right">
+
+          <!-- Bento Card 4: Kartu Presensi QR Desktop -->
+          <div class="section bento-qr-card">
+            <div class="bento-qr-header">
+              <h3>Kartu Presensi QR</h3>
+              <span class="qr-status-pill">Aktif</span>
+            </div>
+
+            <div class="bento-qr-preview-box">
+              <div id="qrDesktopSkeleton" class="qr-skeleton-box">Menyiapkan Kartu QR...</div>
+              <img id="qrPreviewDesktop" alt="Kartu QR Presensi Siswa" style="display:none;" />
+            </div>
+
+            <button type="button" class="btn-download-qr-desktop" onclick="downloadQRCard()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Unduh Kartu QR</span>
+            </button>
+          </div>
+
+          <!-- Bento Card 5: Pengumuman Terkini -->
+          <div class="section bento-info-card">
+            <div class="bento-info-header">
+              <h3>📌 Pengumuman Terkini</h3>
+              <button type="button" class="btn-link-subtle" onclick="openModalQuick('modalPengumuman')">Detail</button>
+            </div>
+            <div class="bento-info-item" onclick="openModalQuick('modalPengumuman')">
+              <div class="info-item-title">Gladi Bersih Upacara</div>
+              <div class="info-item-meta">Lapangan Utama • 14:00 WIB</div>
+            </div>
+          </div>
+
+        </aside>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB 2: REKAP PRESENSI (SUMMARY KPI + TABEL RIWAYAT)
+         ====================================================================== -->
+    <section id="riwayat" class="tab-content">
+      <div class="bento-rekap-layout">
+
+        <!-- Kolom Ringkasan Angka -->
+        <div class="section bento-rekap-summary">
+          <div class="section-heading-block">
+            <h3>Rekap Kehadiran</h3>
+            <p>Akumulasi presensi pada semester aktif.</p>
+          </div>
+
+          <div id="rekapPresensiGrid" class="stats-grid">
+            <div class="stat-card"><label>Tepat Waktu</label><span id="s_tepat">-</span></div>
+            <div class="stat-card"><label>Terlambat</label><span id="s_terlambat">-</span></div>
+            <div class="stat-card"><label>Tidak Presensi</label><span id="s_tidak">-</span></div>
+            <div class="stat-card"><label>Daring / Prakerin</label><span id="s_daring">-</span></div>
+            <div class="stat-card total-main full-width"><label>Total Hadir</label><span id="s_total">-</span></div>
+            <div class="stat-card"><label>Sakit</label><span id="s_sakit">-</span></div>
+            <div class="stat-card"><label>Izin</label><span id="s_izin">-</span></div>
+            <div class="stat-card"><label>Alpa</label><span id="s_alpa">-</span></div>
+            <div class="stat-card total-sub full-width"><label>Total Tidak Hadir</label><span id="s_total_tidak">-</span></div>
+          </div>
+        </div>
+
+        <!-- Kolom Tabel Log Riwayat -->
+        <div class="section bento-rekap-table">
+          <div class="table-section-header">
+            <div>
+              <h3>Log Riwayat Harian</h3>
+              <p>Catatan jam masuk, pulang, dan status presensi.</p>
+            </div>
+            <span class="data-count-badge" id="jumlahRiwayat">Memuat...</span>
+          </div>
+
+          <div class="table-wrapper">
+            <table id="tabelPresensi">
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Masuk</th>
+                  <th>Status</th>
+                  <th>Pulang</th>
+                  <th>Keterangan</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB 3: STATISTIK & KURVA BEHAVIORAL DOT
+         ====================================================================== -->
+    <section id="statistik" class="tab-content">
+      <div class="section bento-statistik-card">
+        <div class="statistik-top-bar">
+          <div>
+            <h3>Statistik & Tren Perilaku</h3>
+            <p class="statistik-subtitle">Visualisasi kedisiplinan jam kedatangan berdasarkan periode waktu.</p>
+          </div>
+          <div class="statistik-filter-box">
+            <div id="filterTimelineStatistik" data-value="1w"></div>
+          </div>
+        </div>
+
+        <!-- Sub-panel Filter Rentang Tanggal Kustom -->
+        <div id="customDateRangeBox" class="custom-date-box" style="display:none;">
+          <div class="custom-date-inputs">
+            <div class="date-field">
+              <label for="inputDateStart">Dari Tanggal</label>
+              <input type="date" id="inputDateStart" class="date-input-clean">
+            </div>
+            <div class="date-field">
+              <label for="inputDateEnd">Sampai Tanggal</label>
+              <input type="date" id="inputDateEnd" class="date-input-clean">
+            </div>
+          </div>
+          <button type="button" class="btn-apply-filter" onclick="applyCustomDateRange()">Terapkan Filter Tanggal</button>
+        </div>
+
+        <!-- Area Canvas Grafik -->
+        <div class="chart-box-container">
+          <div class="chart-box-header">
+            <span class="chart-title">Kurva Kehadiran Harian</span>
+            <span class="chart-hint">↔️ Klik titik untuk detail • Scroll horizontal</span>
+          </div>
+
+          <div id="chartScrollContainer">
+            <div id="chartInnerWrapper">
+              <canvas id="trendChartCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Legenda 8 Status -->
+          <div class="chart-legend-grid">
+            <div class="legend-item">
+              <span class="legend-dot" style="background:#15803d;"></span>
+              <span>Tepat Waktu / Prakerin / Dispensasi</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot" style="background:#7c3aed;"></span>
+              <span>Hadir Tidak Presensi</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot" style="background:#d97706;"></span>
+              <span>Terlambat</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot" style="background:#0284c7;"></span>
+              <span>Izin</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot" style="background:#c2410c;"></span>
+              <span>Sangat Terlambat</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot" style="background:#0891b2;"></span>
+              <span>Sakit</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot" style="background:#b91c1c;"></span>
+              <span>Sangat Terlambat Sekali</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot" style="background:#111827;"></span>
+              <span>Alpa</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         TAB 4: PROFIL SISWA
+         ====================================================================== -->
+    <section id="profil" class="tab-content">
+      <div class="section bento-profil-card">
+        <div class="profil-avatar-large" id="profilAvatarLarge">S</div>
+        <h3 id="profilNama">Nama Siswa</h3>
+        <p class="profil-kelas-badge" id="profilNamaKelas">-</p>
+
+        <div class="profil-detail-list">
+          <div class="profil-detail-row">
+            <span>NIS / ID Siswa</span>
+            <strong id="profilNis">-</strong>
+          </div>
+          <div class="profil-detail-row">
+            <span>Kompetensi Keahlian</span>
+            <strong id="profilJurusan">-</strong>
+          </div>
+          <div class="profil-detail-row">
+            <span>Instansi Sekolah</span>
+            <strong>SMK MedikaCom Bandung</strong>
+          </div>
+        </div>
+
+        <button type="button" onclick="logout()" class="btn-logout-full">
+          🚪 Keluar dari Aplikasi
+        </button>
+      </div>
+    </section>
+
+  </main>
 
   <!-- ========================================================================
        3. FLOATING BOTTOM NAVIGATION BAR (MOBILE ONLY)
