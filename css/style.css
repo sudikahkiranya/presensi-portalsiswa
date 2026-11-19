@@ -197,7 +197,6 @@ main {
 }
 
 /* FIX ANOMALI HOVER JITTER ON ICON BUTTONS */
-/* FIX ANOMALI HOVER JITTER ON ICON BUTTONS */
 .header-icon-btn {
   width: 40px !important;
   height: 40px !important;
@@ -559,6 +558,7 @@ button:disabled {
 
 .text-danger { color: #ef4444 !important; }
 .text-center-cell { text-align: center !important; }
+
 /* ==========================================================================
    INFO KETERANGAN DISPENSASI DI SEBELAH KANAN BADGE
    ========================================================================== */
@@ -614,7 +614,7 @@ button:disabled {
    ========================================================================== */
 .filter-wrapper {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto; /* Kolom kanan otomatis ikut jumlah kotak */
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
   width: 100%;
@@ -628,7 +628,6 @@ button:disabled {
 
 .filter-group {
   display: grid;
-  /* Kelas (125px) | Tingkat (105px) | Status (165px) | Nama Siswa (220px) */
   grid-template-columns: 125px 105px 165px 220px;
   align-items: end;
   gap: 10px;
@@ -647,7 +646,6 @@ button:disabled {
   color: var(--primary);
 }
 
-/* Override min-width bawaan agar dropdown & input bisa fleksibel */
 .filter-item .custom-dropdown,
 .filter-item .filter-input-text {
   width: 100% !important;
@@ -719,7 +717,6 @@ button:disabled {
   color: var(--primary-soft);
 }
 
-/* Efek Interaktif untuk Box Clickable (Hadir & Tidak Hadir) */
 .jumlah-data-box.is-clickable {
   cursor: pointer;
   user-select: none;
@@ -762,7 +759,6 @@ button:disabled {
   display: block;
 }
 
-/* Panah kecil penunjuk ke box induk */
 .stat-floating-card::before {
   content: "";
   position: absolute;
@@ -804,7 +800,6 @@ button:disabled {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-/* Item pertama (Tepat Waktu) melebar 2 kolom di paling atas */
 .stat-mini-grid.cols-hadir .stat-mini-card:first-child {
   grid-column: span 2;
 }
@@ -834,7 +829,6 @@ button:disabled {
   line-height: 1.15;
 }
 
-/* Warna Mini-Card Selaras dengan Status Badges Bagian 7 */
 .stat-mini-card.tone-hadir {
   background: #f0fdf4;
   border-color: #bbf7d0;
@@ -889,7 +883,6 @@ button:disabled {
   }
 }
 
-/* Breakpoint Tablet / Layar Menengah */
 @media (max-width: 1280px) {
   .filter-wrapper { grid-template-columns: minmax(0, 1fr); }
   .filter-group { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -958,10 +951,9 @@ th {
   border-bottom: 2px solid var(--border-light) !important; 
 }
 
-/* 💡 KUNCI TINGGI BARIS DENGAN HEIGHT & BOX-SIZING AGAR TDK NAIK TURUN */
 #tbodySiswa td {
-  height: 48px !important;            /* Kunci tinggi konsisten per baris */
-  padding: 6px 10px !important;       /* Sesuaikan padding agar seimbang */
+  height: 48px !important;
+  padding: 6px 10px !important;
   border-bottom: 1px solid #e2e8f0 !important;
   text-align: center;
   vertical-align: middle;
@@ -990,7 +982,6 @@ tr:nth-child(even) td { background-color: #f8fafc; }
   box-sizing: border-box;
 }
 
-/* 💡 SAMAKAN TINGGI DROPDOWN DI DALAM TABEL DENGAN BADGE (32px) */
 #tbodySiswa .custom-dropdown {
   height: 32px !important;
   min-width: 150px;
@@ -1017,7 +1008,6 @@ th:last-child {
   border-top-right-radius: 11px;
 }
 
-/* LENGKUNGKAN KIRI BAWAH DAN KANAN BAWAH UNTUK BARIS TERAKHIR (JIKA ADA DATA) */
 #tbodySiswa tr:last-child td:first-child {
   border-bottom-left-radius: 11px;
 }
@@ -1026,7 +1016,6 @@ th:last-child {
   border-bottom-right-radius: 11px;
 }
 
-/* DROPDOWN STATUS DI TABEL TAMPIL PENUH TANPA SCROLL */
 #tbodySiswa .dropdown-menu,
 #tbodySiswa .dropdown-menu-inner {
   max-height: none !important;
@@ -1042,10 +1031,10 @@ th:last-child {
   justify-content: center;
   gap: 6px;
   width: max-content;
-  height: 32px !important;       /* Kunci tinggi samakan dengan dropdown di tabel */
+  height: 32px !important;
   white-space: nowrap;
-  padding: 0 12px !important;    /* Gunakan padding horizontal saja agar height 32px presisi */
-  border-radius: 10px !important;/* Samakan radius dengan dropdown tabel (10px) */
+  padding: 0 12px !important;
+  border-radius: 10px !important;
   font-size: 12.5px;
   font-weight: 500;
   box-sizing: border-box !important;
@@ -1157,7 +1146,6 @@ footer {
 .modal-actions { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
 .notif-modal-stack { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
 
-/* LOADING OVERLAY MODERN MINIMALIS (DOTS ENGINE) */
 #loadingOverlay {
   display: none;
   position: fixed;
@@ -1259,7 +1247,6 @@ footer {
   color: var(--text-dark);
 }
  
-/* Animasi rotasi chevron */
 .dropdown-selected svg {
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
@@ -1269,9 +1256,6 @@ footer {
   transform: rotate(180deg);
 }
  
-/* ==========================================================================
-   DROPDOWN MENU (OUTER = CLIPPER MELENGKUNG)
-   ========================================================================== */
 .dropdown-menu {
   position: absolute;
   top: calc(100% + 4px);
@@ -1288,7 +1272,7 @@ footer {
   display: none;
   z-index: 99999;
   box-sizing: border-box;
-  overflow: hidden;   /* potong apapun yang keluar dari lengkungan */
+  overflow: hidden;
   padding: 0;
 }
  
@@ -1296,11 +1280,6 @@ footer {
   display: block;
 }
  
-/* ==========================================================================
-   INNER = AREA SCROLL
-   JANGAN pakai scrollbar-width / scrollbar-color di sini, karena Chrome baru
-   akan mengabaikan semua aturan ::-webkit-scrollbar (panah muncul lagi).
-   ========================================================================== */
 .dropdown-menu-inner {
   width: 100%;
   max-height: 198px;
@@ -1310,7 +1289,6 @@ footer {
   box-sizing: border-box;
 }
  
-/* Scrollbar tipis tanpa tombol panah (Chrome / Edge / Safari) */
 .dropdown-menu-inner::-webkit-scrollbar {
   width: 5px;
 }
@@ -1323,7 +1301,7 @@ footer {
  
 .dropdown-menu-inner::-webkit-scrollbar-track {
   background: transparent;
-  margin: 8px 0;   /* thumb berhenti sebelum area lengkung; naikkan kalau masih nabrak */
+  margin: 8px 0;
 }
  
 .dropdown-menu-inner::-webkit-scrollbar-thumb {
@@ -1335,7 +1313,6 @@ footer {
   background: #94a3b8;
 }
  
-/* Firefox (scrollbar thin-nya memang tanpa panah) */
 @supports not selector(::-webkit-scrollbar) {
   .dropdown-menu-inner {
     scrollbar-width: thin;
@@ -1343,9 +1320,6 @@ footer {
   }
 }
  
-/* ==========================================================================
-   ITEM
-   ========================================================================== */
 .dropdown-item {
   padding: 9px 14px;
   text-align: left;
@@ -1360,9 +1334,6 @@ footer {
   color: var(--primary);
 }
  
-/* ==========================================================================
-   FILTER INPUT TEXT
-   ========================================================================== */
 .filter-input-text {
   width: 100%;
   min-width: 180px;
@@ -1384,9 +1355,6 @@ footer {
   box-shadow: 0 0 0 3px var(--theme-glow);
 }
 
-/* ==========================================================================
-   SEARCH INPUT WRAPPER & TOMBOL CLEAR (✕)
-   ========================================================================== */
 .search-input-wrapper {
   position: relative;
   display: flex;
@@ -1505,7 +1473,6 @@ footer {
   height: 18px;
 }
 
-/* Efek Pendaran Cahaya (Glow) Kedip Halus di Pinggiran Garis Awan saat Online */
 .sync-status-panel[data-state="saved"] #syncStatusIcon svg {
   animation: cloudEdgeGlow 2.4s ease-in-out infinite;
 }
@@ -1523,7 +1490,6 @@ footer {
   text-overflow: ellipsis;
 }
 
-/* State: Sedang Menyimpan / Antrean Online (Amber/Kuning Lembut) */
 .sync-status-panel[data-state="pending"],
 .sync-status-panel[data-state="syncing"] {
   border-color: #fde68a !important;
@@ -1535,7 +1501,6 @@ footer {
   animation: syncCloudPulse 1.2s ease-in-out infinite;
 }
 
-/* State: Offline / Error Server (Merah Lembut) */
 .sync-status-panel[data-state="error"],
 .sync-status-panel[data-state="offline"] {
   border-color: #fecaca !important;
@@ -1869,7 +1834,6 @@ footer {
   gap: 8px;
 }
 
-/* Kunci scroll panel utama saat modal aktif */
 html:has(body.modal-open),
 body.modal-open {
   overflow: hidden !important;
@@ -1887,14 +1851,12 @@ body.modal-open {
   overscroll-behavior: contain;
 }
 
-/* Tampilkan semua opsi dropdown status di modal bulk tanpa scroll */
 #bulkTargetStatus .dropdown-menu,
 #bulkTargetStatus .dropdown-menu-inner {
   max-height: none !important;
   overflow-y: visible !important;
 }
 
-/* Progress Checklist Styles */
 .bulk-progress-summary {
   display: flex;
   align-items: center;
@@ -1963,9 +1925,6 @@ body.modal-open {
   justify-content: flex-end !important;
 }
 
-/* ==========================================================================
-   IKON CLOUD UPLOAD MINI & STATE BUTTON MENYIMPAN (BULK PROGRESS)
-   ========================================================================== */
 .mini-cloud-upload {
   display: inline-flex;
   align-items: center;
@@ -2009,14 +1968,12 @@ body.login-body {
   overflow-x: hidden;
   transition: background 0.3s ease;
 
-  /* 🎯 BULATAN BACKGROUND PRESISI (DIAMBIL LANGSUNG DARI ENGINE APP SCANNER) */
   background:
     radial-gradient(circle at 100% 0%, rgba(var(--theme-glow-rgb),.16) 0 120px, transparent 121px),
     radial-gradient(circle at 0% 100%, rgba(var(--theme-glow-rgb),.10) 0 150px, transparent 151px),
     linear-gradient(135deg, var(--bg-page) 0%, #ffffff 55%, var(--bg-page) 100%) !important;
 }
 
-/* Hapus elemen pseudoelement bulatan lama agar tidak bentrok */
 body.login-body::before,
 body.login-body::after {
   display: none !important;
@@ -2477,7 +2434,6 @@ body.login-body > .container-login {
   transform: none !important;
 }
 
-/* Grid 3 Kolom: Scan NIS | Dropdown Kelas | Dropdown Nama Siswa */
 .history-search-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr 1.2fr;
@@ -2560,7 +2516,6 @@ body.login-body > .container-login {
   border: 1px solid #bbf7d0;
 }
 
-/* Toolbar Rentang Waktu */
 .history-toolbar-row {
   display: flex;
   align-items: center;
@@ -2631,7 +2586,6 @@ body.login-body > .container-login {
   min-width: 0;
 }
 
-/* Summary Mini Cards */
 .history-stats-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -2679,7 +2633,6 @@ body.login-body > .container-login {
   color: #b91c1c;
 }
 
-/* Chart & Legend */
 .history-chart-card {
   background: #f8fafc;
   border: 1px solid var(--border-light);
@@ -2793,7 +2746,6 @@ body.login-body > .container-login {
   color: #475569;
 }
 
-/* Klik Nama Siswa di Tabel Utama */
 .student-name-link {
   cursor: pointer;
   font-weight: 500;
@@ -2802,7 +2754,7 @@ body.login-body > .container-login {
 }
 
 .student-name-link:hover {
-  color: var(--primary-color, #824653); /* mengikuti warna tema aktif */
+  color: var(--primary-color, #824653);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -2823,7 +2775,7 @@ body.login-body > .container-login {
 }
 
 /* ==========================================================================
-   14. PORTAL PRESENSI SISWA - BENTO DASHBOARD (SCOPED: body.student-portal-body)
+   14. PORTAL PRESENSI SISWA - SAAS SIDEBAR & BENTO DASHBOARD
    ========================================================================== */
 html[data-theme="ocean"], body[data-theme="ocean"] {
   --theme-glow-rgb: 37, 99, 235;
@@ -2897,7 +2849,7 @@ body.student-portal-body {
   background: var(--bg-page) !important;
   color: var(--text-body);
   margin: 0;
-  padding: 0 24px 24px 24px !important;
+  padding: 0 !important;
   min-height: 100vh;
   height: auto !important;
   display: block !important;
@@ -2919,27 +2871,39 @@ body.student-portal-body .custom-date-box::-webkit-scrollbar {
   display: none;
 }
 
-/* Top Header Banner */
-body.student-portal-body .header-box.main-header {
-  max-width: 1140px;
-  margin: 0 auto 16px auto;
-  background: var(--primary);
-  border-radius: 0 0 18px 18px;
-  padding: 12px 24px;
+/* SaaS Shell Layout */
+body.student-portal-body .saas-layout-shell {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 8px 20px var(--theme-glow);
-  border-left: 3px solid rgba(255, 255, 255, 0.9);
-  border-right: 3px solid rgba(255, 255, 255, 0.9);
-  border-bottom: 3px solid rgba(255, 255, 255, 0.9);
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* 1. Sidebar Kiri Desktop */
+body.student-portal-body .saas-sidebar {
+  width: 245px;
+  flex-shrink: 0;
+  background: var(--primary);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  border-right: 3px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 6px 0 24px var(--theme-glow);
+  z-index: 100;
   transition: background-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-body.student-portal-body .header-brand-area {
+body.student-portal-body .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
+  padding: 4px 6px 18px 6px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 body.student-portal-body .header-logo-circle {
@@ -2983,6 +2947,132 @@ body.student-portal-body .header-brand-text span {
   margin-top: 2px;
 }
 
+body.student-portal-body .sidebar-menu-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 0 12px;
+  margin-bottom: 8px;
+}
+
+body.student-portal-body .saas-sidebar .tab-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 6px;
+  margin: 0;
+  flex: 1;
+}
+
+body.student-portal-body .saas-sidebar .tab-btn {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 11px 14px;
+  height: auto;
+  border-radius: 12px;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: none !important;
+  transition: all 0.2s ease;
+}
+
+body.student-portal-body .saas-sidebar .tab-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  flex-shrink: 0;
+}
+
+body.student-portal-body .saas-sidebar .tab-btn:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  transform: translateX(3px);
+}
+
+body.student-portal-body .saas-sidebar .tab-btn.active {
+  background: #ffffff !important;
+  color: var(--primary) !important;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14) !important;
+}
+
+body.student-portal-body .sidebar-footer {
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  text-align: center;
+}
+
+body.student-portal-body .sidebar-school-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.12);
+  padding: 7px 10px;
+  border-radius: 10px;
+}
+
+/* 2. Area Utama Kanan (Topbar + Workspace) */
+body.student-portal-body .saas-main-wrapper {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 26px 28px 26px;
+  box-sizing: border-box;
+}
+
+body.student-portal-body .header-box.main-header.saas-topbar {
+  max-width: 1240px;
+  width: 100%;
+  margin: 0 auto 18px auto;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid var(--border-light);
+  padding: 10px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  box-sizing: border-box;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+body.student-portal-body .mobile-only-brand {
+  display: none;
+}
+
+body.student-portal-body .topbar-page-context {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+body.student-portal-body .topbar-badge {
+  background: var(--primary-soft-tint);
+  color: var(--primary);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+}
+
+body.student-portal-body .topbar-date-info {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
 body.student-portal-body .header-actions-area {
   display: flex;
   align-items: center;
@@ -2994,9 +3084,9 @@ body.student-portal-body .btn-header-pill {
   height: 38px;
   padding: 0 14px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16) !important;
-  border: 1px solid rgba(255, 255, 255, 0.32) !important;
-  color: #ffffff !important;
+  background: #f8fafc !important;
+  border: 1px solid var(--border-light) !important;
+  color: var(--text-dark) !important;
   font-size: 12.5px;
   font-weight: 600;
   display: inline-flex;
@@ -3007,7 +3097,8 @@ body.student-portal-body .btn-header-pill {
 }
 
 body.student-portal-body .btn-header-pill:hover {
-  background: rgba(255, 255, 255, 0.26) !important;
+  border-color: var(--primary) !important;
+  background: var(--primary-soft-tint) !important;
   transform: translateY(-1px);
 }
 
@@ -3015,8 +3106,8 @@ body.student-portal-body .theme-dot-indicator {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #ffffff;
-  border: 2px solid rgba(255, 255, 255, 0.65);
+  background: var(--primary);
+  border: 2px solid rgba(0, 0, 0, 0.12);
   flex-shrink: 0;
 }
 
@@ -3093,18 +3184,19 @@ body.student-portal-body .swatch-circle {
 /* Student Pill & Logout Circle */
 body.student-portal-body .header-user-pill {
   height: 38px;
-  background: #ffffff;
+  background: #f8fafc;
+  border: 1px solid var(--border-light);
   border-radius: 999px;
   padding: 4px 14px 4px 5px;
   display: flex;
   align-items: center;
   gap: 9px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 body.student-portal-body .header-user-pill:hover {
+  border-color: var(--primary);
   transform: translateY(-1px);
 }
 
@@ -3150,21 +3242,20 @@ body.student-portal-body .btn-logout-circle {
   width: 38px !important;
   height: 38px !important;
   border-radius: 50% !important;
-  background: #ffffff !important;
-  border: none !important;
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
   color: #dc2626 !important;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   padding: 0 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
   transition: transform 0.2s ease, background-color 0.2s ease;
   flex-shrink: 0;
 }
 
 body.student-portal-body .btn-logout-circle:hover {
-  background: #fef2f2 !important;
+  background: #fee2e2 !important;
   transform: scale(1.06);
 }
 
@@ -3174,55 +3265,11 @@ body.student-portal-body .btn-logout-circle svg {
   stroke: #dc2626;
 }
 
-/* Workspace & Navigation Tabs */
+/* Workspace */
 body.student-portal-body .app-workspace {
-  max-width: 1140px;
+  max-width: 1240px;
+  width: 100%;
   margin: 0 auto;
-}
-
-body.student-portal-body .tab-container {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-body.student-portal-body .tab-btn {
-  padding: 9px 20px;
-  height: auto;
-  border-radius: 12px;
-  background: #ffffff !important;
-  border: 1px solid var(--border-light);
-  color: var(--text-dark) !important;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
-  transition: all 0.2s ease;
-}
-
-body.student-portal-body .tab-btn svg {
-  width: 17px;
-  height: 17px;
-  stroke: currentColor;
-  fill: none;
-}
-
-body.student-portal-body .tab-btn:hover {
-  background: #f8fafc !important;
-  border-color: var(--primary);
-  transform: translateY(-1px);
-}
-
-body.student-portal-body .tab-btn.active {
-  background: var(--primary) !important;
-  color: #ffffff !important;
-  border-color: var(--primary);
-  box-shadow: 0 4px 12px var(--theme-glow);
 }
 
 body.student-portal-body .tab-content {
@@ -3962,19 +4009,55 @@ body.student-portal-body .floating-bottom-bar { display: none; }
 
 /* Mobile Responsive for Student Portal */
 @media (max-width: 768px) {
-  body.student-portal-body { padding: 0 12px 96px 12px !important; }
   body.student-portal-body .hide-mobile { display: none !important; }
-  body.student-portal-body .header-box.main-header { padding: 12px 16px; margin-bottom: 14px; }
+  body.student-portal-body .saas-sidebar { display: none !important; }
+  body.student-portal-body .saas-main-wrapper { padding: 0 12px 96px 12px !important; }
+  body.student-portal-body .mobile-only-brand { display: flex !important; }
+
+  body.student-portal-body .header-box.main-header.saas-topbar {
+    background: var(--primary) !important;
+    border-radius: 0 0 18px 18px !important;
+    border-top: none !important;
+    border-left: 3px solid rgba(255, 255, 255, 0.9) !important;
+    border-right: 3px solid rgba(255, 255, 255, 0.9) !important;
+    border-bottom: 3px solid rgba(255, 255, 255, 0.9) !important;
+    padding: 12px 16px !important;
+    margin-bottom: 14px !important;
+    box-shadow: 0 8px 20px var(--theme-glow) !important;
+  }
+
   body.student-portal-body .header-logo-circle { width: 40px; height: 40px; }
   body.student-portal-body .header-brand-text h1 { font-size: 14px; }
   body.student-portal-body .header-brand-text span { font-size: 10.5px; }
-  body.student-portal-body .tab-container { display: none !important; }
+
+  body.student-portal-body .saas-topbar .btn-header-pill {
+    background: rgba(255, 255, 255, 0.16) !important;
+    border: 1px solid rgba(255, 255, 255, 0.32) !important;
+    color: #ffffff !important;
+  }
+
+  body.student-portal-body .saas-topbar .theme-dot-indicator {
+    background: #ffffff;
+    border-color: rgba(255, 255, 255, 0.65);
+  }
+
+  body.student-portal-body .saas-topbar .btn-logout-circle {
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+  }
+
   body.student-portal-body .bento-home-grid { grid-template-columns: 1fr; gap: 12px; }
   body.student-portal-body .bento-qr-card { display: none !important; }
   body.student-portal-body .bento-greeting-card { padding: 14px 16px; }
   body.student-portal-body .greeting-content h2 { font-size: 15px; }
   body.student-portal-body .services-grid-4col { gap: 8px; }
-  body.student-portal-body .service-item-clean { background: transparent; border: none; padding: 4px 0; }
+  body.student-portal-body .service-item-clean {
+    min-height: auto !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 4px 0 !important;
+  }
   body.student-portal-body .service-clean-label { font-size: 10.5px; }
   body.student-portal-body .bento-rekap-layout { grid-template-columns: 1fr; }
   body.student-portal-body .stats-grid { grid-template-columns: repeat(3, 1fr); }
