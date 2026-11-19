@@ -95,9 +95,32 @@ async function loadSystemBranding() {
 // ==========================================================================
 function toggleThemePopover(event) {
   if (event) event.stopPropagation();
-  const popover = document.getElementById("themePopover");
-  if (popover) popover.classList.toggle("open");
+  const profilePopover = document.getElementById("profilePopover");
+  if (profilePopover) profilePopover.classList.remove("is-open");
+
+  const themePopover = document.getElementById("themePopover");
+  if (themePopover) themePopover.classList.toggle("open"); // pakai class bawaan tema lu ('open' / 'is-open')
 }
+
+function toggleProfilePopover(event) {
+  if (event) event.stopPropagation();
+  const themePopover = document.getElementById("themePopover");
+  const profilePopover = document.getElementById("profilePopover");
+
+  if (themePopover) themePopover.classList.remove("open", "is-open");
+  if (profilePopover) profilePopover.classList.toggle("is-open");
+}
+
+document.addEventListener("click", function (event) {
+  const profilePopover = document.getElementById("profilePopover");
+  const profileBtn = document.getElementById("profilePickerBtn");
+
+  if (profilePopover && profilePopover.classList.contains("is-open")) {
+    if (!profilePopover.contains(event.target) && (!profileBtn || !profileBtn.contains(event.target))) {
+      profilePopover.classList.remove("is-open");
+    }
+  }
+});
 
 function setAppTheme(themeName, persist = true) {
   const validThemes = ["burgundy", "ocean", "emerald", "royal", "sunset", "teal", "indigo", "slate"];

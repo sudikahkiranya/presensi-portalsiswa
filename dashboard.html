@@ -90,12 +90,18 @@
     </nav>
 
     <!-- Kanan: Tema, Profil Siswa & Logout -->
+    <!-- Kanan: Tema & Profil Popover -->
     <div class="header-actions-area">
-      <!-- Theme Picker Switcher -->
+      <!-- 1. Theme Picker Switcher (Icon Bulat) -->
       <div class="theme-picker-wrapper">
-        <button type="button" id="themePickerBtn" class="btn-header-pill" onclick="toggleThemePopover(event)" title="Ganti Tema Warna">
-          <span class="theme-dot-indicator" id="activeThemeDot"></span>
-          <span class="hide-mobile">Tema</span>
+        <button type="button" id="themePickerBtn" class="header-icon-btn" onclick="toggleThemePopover(event)" title="Pilih Tema Warna" aria-label="Pilih Tema Warna">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
+            <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
+            <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
+            <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
+            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.7-.71 1.7-1.63 0-.44-.18-.85-.46-1.16-.29-.32-.46-.74-.46-1.21 0-.92.78-1.7 1.7-1.7h2.52c3.04 0 5.5-2.46 5.5-5.5 0-5.25-4.5-9.3-10.5-9.3z"></path>
+          </svg>
         </button>
 
         <div class="theme-popover" id="themePopover" onclick="event.stopPropagation()">
@@ -137,23 +143,31 @@
         </div>
       </div>
 
-      <!-- Student Identity Badge (Desktop) -->
-      <div class="header-user-pill hide-mobile" onclick="showTab(null, 'profil')" title="Lihat Profil Siswa">
-        <div class="user-pill-avatar" id="headerAvatarInitial">S</div>
-        <div class="user-pill-info">
-          <span class="u-name" id="namaSiswa">Nama Siswa</span>
-          <span class="u-class" id="kelasSiswa">Kelas</span>
+      <!-- 2. User Profile Dropdown (Nama, Kelas & Logout) -->
+      <div class="user-profile-wrapper">
+        <button type="button" id="profilePickerBtn" class="header-icon-btn" onclick="toggleProfilePopover(event)" title="Profil Siswa" aria-label="Profil Siswa">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </button>
+
+        <div id="profilePopover" class="profile-popover" onclick="event.stopPropagation()">
+          <div class="profile-popover-header">
+            <div class="profile-info-text">
+              <div class="profile-name" id="namaSiswa">Nama Siswa</div>
+              <div class="profile-role" id="kelasSiswa">Kelas</div>
+            </div>
+            <button type="button" class="profile-action-btn btn-logout" onclick="logout()" title="Keluar dari Aplikasi" aria-label="Logout">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
-
-      <!-- Logout Button -->
-      <button type="button" onclick="logout()" class="btn-logout-circle" title="Keluar dari Aplikasi">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
-        </svg>
-      </button>
     </div>
   </header>
 
