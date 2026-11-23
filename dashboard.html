@@ -37,7 +37,7 @@
 <body class="student-portal-body">
 
   <!-- ========================================================================
-       1. TOP HEADER BANNER (CLEAN BRANDING + THEME & PROFILE POPOVER)
+       1. TOP HEADER BANNER
        ======================================================================== -->
   <header class="header-box main-header" id="topHeaderBanner">
     <!-- Kiri: Logo & Identitas Portal -->
@@ -53,7 +53,7 @@
 
     <!-- Kanan: Tema & Profil Popover -->
     <div class="header-actions-area">
-      <!-- 1. Theme Picker Switcher -->
+      <!-- Theme Picker Switcher -->
       <div class="theme-picker-wrapper">
         <button type="button" id="themePickerBtn" class="header-icon-btn" onclick="toggleThemePopover(event)" title="Pilih Tema Warna" aria-label="Pilih Tema Warna">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -104,7 +104,7 @@
         </div>
       </div>
 
-      <!-- 2. User Profile Dropdown (Nama, Kelas & Logout) -->
+      <!-- User Profile Dropdown -->
       <div class="user-profile-wrapper">
         <button type="button" id="profilePickerBtn" class="header-icon-btn" onclick="toggleProfilePopover(event)" title="Profil Siswa" aria-label="Profil Siswa">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -133,90 +133,42 @@
   </header>
 
   <!-- ========================================================================
-       2. MAIN WORKSPACE (DESKTOP: 2-ROW BENTO | MOBILE: HYBRID LAZY TABS)
+       2. MAIN WORKSPACE
        ======================================================================== -->
-  <main class="app-workspace hybrid-dashboard-grid">
+  <main class="app-workspace">
 
     <!-- ======================================================================
-         BLOK 1 (MOBILE: TAB BERANDA | DESKTOP: BARIS 1 — SEJAJAR 2 KOLOM)
+         BARIS 1 (ATAS): KIRI (SAPAAN + PRESENSI HARI INI) | KANAN (AKSI CEPAT)
          ====================================================================== -->
     <section id="hariIni" class="tab-content active bento-row-top">
       <div class="bento-top-grid">
 
-        <!-- KOLOM KIRI: CARD SAPAAN + NO URUT KLASEMEN & CARD TOMBOL AKSI -->
+        <!-- KOLOM KIRI: CARD SAPAAN (POLOS + NO URUT TANPA CARD) & PRESENSI HARI INI -->
         <div class="bento-col-left">
 
-          <!-- Card 1A: Sapaan 2 Baris + No Urut Peringkat Disiplin -->
+          <!-- Card 1A: Sapaan Polos + No Urut Klasemen Tanpa Card -->
           <div class="section bento-greeting-card">
             <div class="greeting-stack">
               <span class="greeting-salutation" id="greetingSalutation">Selamat Malam 🌙</span>
               <h2 class="greeting-student-name" id="greetingStudentName">Nama Siswa</h2>
             </div>
 
-            <div class="rank-pill-box" title="Peringkat kedisiplinan dari keseluruhan siswa sekolah">
-              <div class="rank-pill-top">
-                <span class="rank-pill-label">NO. URUT DISIPLIN</span>
+            <div class="rank-inline-info" title="Peringkat kedisiplinan dari keseluruhan siswa sekolah">
+              <div class="rank-inline-top">
+                <span class="rank-inline-label">NO. URUT DISIPLIN</span>
                 <span class="rank-trend-badge is-up" id="rankTrendBadge">
                   <span id="rankTrendArrow">▲</span>
                   <span id="rankTrendText">Naik 3</span>
                 </span>
               </div>
-              <div class="rank-pill-bottom">
+              <div class="rank-inline-bottom">
                 <span class="rank-num-main" id="rankNumber">#14</span>
                 <span class="rank-num-sub" id="rankTotalSiswa">/ 640 siswa</span>
               </div>
             </div>
           </div>
 
-          <!-- Card 1B: Tombol Aksi Cepat (Kartu QR, Izin Keluar, Riwayat Izin, Biodata) -->
-          <div class="section bento-actions-card">
-            <div class="quick-actions-row">
-              <button type="button" class="btn-quick-primary" onclick="openQrModal()">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="14" width="7" height="7"></rect>
-                  <rect x="3" y="14" width="7" height="7"></rect>
-                </svg>
-                <span>Kartu QR</span>
-              </button>
-
-              <button type="button" class="btn-quick-outline" onclick="openModalQuick('modalIzin')">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
-                <span>Izin Keluar</span>
-              </button>
-
-              <button type="button" class="btn-quick-outline" onclick="openModalQuick('modalLogIzin')">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                </svg>
-                <span>Riwayat Izin</span>
-                <span class="izin-count-pill" id="badgeJumlahIzin">2</span>
-              </button>
-
-              <button type="button" class="btn-quick-outline" onclick="openModalQuick('modalBiodata')">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="4" width="18" height="16" rx="2"></rect>
-                  <circle cx="9" cy="10" r="2"></circle>
-                  <line x1="15" y1="8" x2="17" y2="8"></line>
-                  <line x1="15" y1="12" x2="17" y2="12"></line>
-                  <line x1="7" y1="16" x2="17" y2="16"></line>
-                </svg>
-                <span>Biodata</span>
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- KOLOM KANAN: CARD PRESENSI HARI INI (COMPACT & SEJAJAR TINGGI) -->
-        <aside class="bento-col-right">
+          <!-- Card 1B: Presensi Hari Ini (Compact) -->
           <div class="section today-timeline-section">
             <div class="today-header-row">
               <h3>Presensi Hari Ini</h3>
@@ -261,31 +213,120 @@
               </div>
             </div>
           </div>
+
+        </div>
+
+        <!-- KOLOM KANAN: CARD TOMBOL AKSI CEPAT (ICON DI ATAS, LABEL DI BAWAH) -->
+        <aside class="bento-col-right">
+          <div class="section bento-actions-card">
+            <div class="actions-card-header">
+              <h3>Menu Layanan</h3>
+              <span>Akses cepat siswa</span>
+            </div>
+
+            <div class="quick-actions-grid">
+              <button type="button" class="tile-action-btn is-primary" onclick="openQrModal()">
+                <div class="tile-icon-wrap">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                  </svg>
+                </div>
+                <span class="tile-label">Kartu QR</span>
+              </button>
+
+              <button type="button" class="tile-action-btn" onclick="openModalQuick('modalIzin')">
+                <div class="tile-icon-wrap">
+                  <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                </div>
+                <span class="tile-label">Izin Keluar</span>
+              </button>
+
+              <button type="button" class="tile-action-btn" onclick="openModalQuick('modalLogIzin')">
+                <span class="tile-badge-pill" id="badgeJumlahIzin">2</span>
+                <div class="tile-icon-wrap">
+                  <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                </div>
+                <span class="tile-label">Riwayat Izin</span>
+              </button>
+
+              <button type="button" class="tile-action-btn" onclick="openModalQuick('modalBiodata')">
+                <div class="tile-icon-wrap">
+                  <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                    <circle cx="9" cy="10" r="2"></circle>
+                    <line x1="15" y1="8" x2="17" y2="8"></line>
+                    <line x1="15" y1="12" x2="17" y2="12"></line>
+                    <line x1="7" y1="16" x2="17" y2="16"></line>
+                  </svg>
+                </div>
+                <span class="tile-label">Biodata</span>
+              </button>
+            </div>
+          </div>
         </aside>
 
       </div>
     </section>
 
     <!-- ======================================================================
-         BLOK 2 (MOBILE: TAB STATISTIK | DESKTOP: BARIS 2 KIRI 3/4)
+         BARIS 2 (BAWAH): 1 CARD TERPADU DENGAN DIVIDER (3/4 KIRI & 1/4 KANAN)
          ====================================================================== -->
-    <section id="statistik" class="tab-content bento-row-bottom-main">
-      <div class="section bento-analytics-card">
+    <section class="section unified-bottom-card" id="unifiedAnalyticsCard">
 
-        <!-- Header Card + Kontrol Rentang Waktu + Switch Mode (Kurva / Log) -->
-        <div class="analytics-top-bar">
-          <div>
-            <h3>Statistik &amp; Riwayat Presensi</h3>
-            <p class="analytics-subtitle" id="analyticsPeriodSubtitle">Periode Bulan Berjalan</p>
+      <!-- HEADER UTAMA CARD BAWAH: JUDUL + KONTROL RENTANG WAKTU BERSAMA -->
+      <div class="unified-card-header">
+        <div>
+          <h3>Laporan &amp; Statistik Kehadiran</h3>
+          <p class="unified-period-subtitle" id="analyticsPeriodSubtitle">Periode Bulan Berjalan</p>
+        </div>
+
+        <!-- Filter Rentang Waktu (Mengontrol Grafik/Log 3/4 & Rekap Angka 1/4 sekaligus) -->
+        <div class="unified-filter-area">
+          <div class="analytics-filter-wrap">
+            <div id="filterTimelineStatistik" data-value="month_current"></div>
           </div>
+        </div>
+      </div>
 
-          <div class="analytics-controls-group">
-            <!-- Dropdown Rentang Waktu -->
-            <div class="analytics-filter-wrap">
-              <div id="filterTimelineStatistik" data-value="month_current"></div>
-            </div>
+      <!-- Inline Sub-Filter Dinamis (Semester / Tahun Ajaran / Kustom Tanggal) -->
+      <div id="semesterSelectBox" class="inline-subfilter-bar" style="display:none;">
+        <select id="selectTaForSemester" onchange="updateSemesterDropdownOptions()"></select>
+        <select id="selectSemesterType"></select>
+        <button type="button" class="btn-apply-inline" onclick="applySemesterFilter()">Terapkan</button>
+      </div>
 
-            <!-- Segmented Switch: Mode Kurva vs Mode Log (Desktop) -->
+      <div id="thnAjaranSelectBox" class="inline-subfilter-bar" style="display:none;">
+        <select id="selectTahunAjaranFull"></select>
+        <button type="button" class="btn-apply-inline" onclick="applyTahunAjaranFilter()">Terapkan</button>
+      </div>
+
+      <div id="customDateRangeBox" class="inline-subfilter-bar" style="display:none;">
+        <input type="date" id="inputDateStart">
+        <span class="date-sep">s/d</span>
+        <input type="date" id="inputDateEnd">
+        <button type="button" class="btn-apply-inline" onclick="applyCustomDateRange()">Terapkan</button>
+      </div>
+
+      <!-- BODY TERPADU: SKALA 3/4 (KIRI) + DIVIDER + SKALA 1/4 (KANAN) -->
+      <div class="unified-split-body">
+
+        <!-- BAGIAN 3/4 KIRI (MOBILE: TAB STATISTIK) -->
+        <div id="statistik" class="tab-content unified-pane-left">
+          <div class="pane-sub-header">
+            <span class="pane-title-label" id="leftPaneTitle">Kurva Tren Kehadiran</span>
+
+            <!-- Switch Mode Kurva vs Log -->
             <div class="view-mode-switch" role="tablist" aria-label="Mode Tampilan Data">
               <button type="button" class="mode-switch-btn active" data-mode="chart" onclick="switchAnalyticsMode('chart')">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -306,97 +347,154 @@
               </button>
             </div>
           </div>
-        </div>
 
-        <!-- Inline Sub-Filter Dinamis (Muncul saat pilih Semester / Tahun Ajaran / Kustom Tanggal) -->
-        <div id="semesterSelectBox" class="inline-subfilter-bar" style="display:none;">
-          <select id="selectTaForSemester" onchange="updateSemesterDropdownOptions()"></select>
-          <select id="selectSemesterType"></select>
-          <button type="button" class="btn-apply-inline" onclick="applySemesterFilter()">Terapkan</button>
-        </div>
+          <!-- MODE A: KURVA TREN KEHADIRAN -->
+          <div id="analyticsChartView" class="chart-box-container">
+            <div class="chart-box-header">
+              <span class="chart-title" id="selectedDotDetailBar">Klik titik pada grafik untuk melihat detail jam masuk &amp; pulang</span>
+              <span class="chart-hint">↔️ Geser jika periode panjang</span>
+            </div>
 
-        <div id="thnAjaranSelectBox" class="inline-subfilter-bar" style="display:none;">
-          <select id="selectTahunAjaranFull"></select>
-          <button type="button" class="btn-apply-inline" onclick="applyTahunAjaranFilter()">Terapkan</button>
-        </div>
+            <div id="chartScrollContainer">
+              <div id="chartInnerWrapper">
+                <canvas id="trendChartCanvas"></canvas>
+              </div>
+            </div>
 
-        <div id="customDateRangeBox" class="inline-subfilter-bar" style="display:none;">
-          <input type="date" id="inputDateStart">
-          <span class="date-sep">s/d</span>
-          <input type="date" id="inputDateEnd">
-          <button type="button" class="btn-apply-inline" onclick="applyCustomDateRange()">Terapkan</button>
-        </div>
-
-        <!-- MODE A: KURVA TREN KEHADIRAN -->
-        <div id="analyticsChartView" class="chart-box-container">
-          <div class="chart-box-header">
-            <span class="chart-title" id="selectedDotDetailBar">Klik titik pada grafik untuk melihat detail jam masuk &amp; pulang</span>
-            <span class="chart-hint">↔️ Geser jika periode panjang</span>
+            <!-- Legenda 8 Status -->
+            <div class="chart-legend-grid">
+              <div class="legend-item">
+                <span class="legend-dot" style="background:#15803d;"></span>
+                <span>Tepat Waktu / Prakerin / Dispensasi</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background:#7c3aed;"></span>
+                <span>Hadir Tidak Presensi</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background:#d97706;"></span>
+                <span>Terlambat</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background:#0284c7;"></span>
+                <span>Izin</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background:#c2410c;"></span>
+                <span>Sangat Terlambat</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background:#0891b2;"></span>
+                <span>Sakit</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background:#b91c1c;"></span>
+                <span>Sangat Terlambat Sekali</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background:#111827;"></span>
+                <span>Alpa</span>
+              </div>
+            </div>
           </div>
 
-          <div id="chartScrollContainer">
-            <div id="chartInnerWrapper">
-              <canvas id="trendChartCanvas"></canvas>
+          <!-- MODE B: TABEL LOG PRESENSI (DESKTOP SWITCH) -->
+          <div id="analyticsLogView" class="inline-log-view" style="display:none;">
+            <div class="inline-log-meta">
+              <span>Catatan jam masuk, pulang, dan status kehadiran</span>
+              <span class="data-count-badge" id="jumlahRiwayatDesktop">0 Hari</span>
             </div>
-          </div>
 
-          <!-- Legenda 8 Status -->
-          <div class="chart-legend-grid">
-            <div class="legend-item">
-              <span class="legend-dot" style="background:#15803d;"></span>
-              <span>Tepat Waktu / Prakerin / Dispensasi</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot" style="background:#7c3aed;"></span>
-              <span>Hadir Tidak Presensi</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot" style="background:#d97706;"></span>
-              <span>Terlambat</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot" style="background:#0284c7;"></span>
-              <span>Izin</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot" style="background:#c2410c;"></span>
-              <span>Sangat Terlambat</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot" style="background:#0891b2;"></span>
-              <span>Sakit</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot" style="background:#b91c1c;"></span>
-              <span>Sangat Terlambat Sekali</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-dot" style="background:#111827;"></span>
-              <span>Alpa</span>
+            <div class="table-wrapper">
+              <table id="tabelPresensiDesktop">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Masuk</th>
+                    <th>Status</th>
+                    <th>Pulang</th>
+                    <th>Keterangan</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
             </div>
           </div>
         </div>
 
-        <!-- MODE B: TABEL LOG PRESENSI (DESKTOP SWITCH) -->
-        <div id="analyticsLogView" class="inline-log-view" style="display:none;">
-          <div class="inline-log-meta">
-            <span>Catatan jam masuk, pulang, dan status kehadiran</span>
-            <span class="data-count-badge" id="jumlahRiwayatDesktop">0 Hari</span>
+        <!-- GARIS PEMISAH VERTIKAL (DIVIDER) -->
+        <div class="unified-vertical-divider" aria-hidden="true"></div>
+
+        <!-- BAGIAN 1/4 KANAN (MOBILE: TAB REKAP) -->
+        <div id="riwayat" class="tab-content unified-pane-right">
+          <div class="pane-sub-header">
+            <span class="pane-title-label">Rekap Kehadiran</span>
+            <span class="rate-pill-badge" id="boxRatePersen">100%</span>
           </div>
 
-          <div class="table-wrapper">
-            <table id="tabelPresensiDesktop">
-              <thead>
-                <tr>
-                  <th>Tanggal</th>
-                  <th>Masuk</th>
-                  <th>Status</th>
-                  <th>Pulang</th>
-                  <th>Keterangan</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+          <!-- Grid Box Number -->
+          <div class="rekap-number-grid">
+            <div class="num-box tone-hadir">
+              <span class="num-box-val" id="boxTepat">0</span>
+              <span class="num-box-lbl">Tepat Waktu</span>
+            </div>
+
+            <div class="num-box tone-late">
+              <span class="num-box-val" id="boxTerlambat">0</span>
+              <span class="num-box-lbl">Terlambat</span>
+            </div>
+
+            <div class="num-box tone-htp">
+              <span class="num-box-val" id="boxHtp">0</span>
+              <span class="num-box-lbl">Tidak Presensi</span>
+            </div>
+
+            <div class="num-box tone-daring">
+              <span class="num-box-val" id="boxDaring">0</span>
+              <span class="num-box-lbl">Prakerin / Disp</span>
+            </div>
+
+            <div class="num-box tone-total-hadir span-2">
+              <span class="num-box-lbl">Total Kehadiran</span>
+              <span class="num-box-val" id="boxTotalHadir">0</span>
+            </div>
+
+            <div class="num-box tone-sakit">
+              <span class="num-box-val" id="boxSakit">0</span>
+              <span class="num-box-lbl">Sakit</span>
+            </div>
+
+            <div class="num-box tone-izin">
+              <span class="num-box-val" id="boxIzin">0</span>
+              <span class="num-box-lbl">Izin</span>
+            </div>
+
+            <div class="num-box tone-alpa span-2">
+              <span class="num-box-lbl">Alpa (Tanpa Keterangan)</span>
+              <span class="num-box-val" id="boxAlpa">0</span>
+            </div>
+          </div>
+
+          <!-- Tabel Log Harian Khusus Mobile Tab Rekap -->
+          <div class="mobile-only-log-section">
+            <div class="mobile-log-divider">
+              <span>Log Riwayat Harian</span>
+              <span class="data-count-badge" id="jumlahRiwayatMobile">0 Hari</span>
+            </div>
+            <div class="table-wrapper">
+              <table id="tabelPresensiMobile">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Masuk</th>
+                    <th>Status</th>
+                    <th>Pulang</th>
+                    <th>Keterangan</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -404,87 +502,7 @@
     </section>
 
     <!-- ======================================================================
-         BLOK 3 (MOBILE: TAB REKAP | DESKTOP: BARIS 2 KANAN 1/4 — BOX NUMBER)
-         ====================================================================== -->
-    <section id="riwayat" class="tab-content bento-row-bottom-side">
-      <div class="section bento-rekap-box-card">
-        <div class="rekap-box-header">
-          <div>
-            <h3>Rekap Kehadiran</h3>
-            <p class="rekap-box-sub" id="rekapPeriodSubtitle">Ringkasan angka periode terpilih</p>
-          </div>
-          <span class="rate-pill-badge" id="boxRatePersen">100%</span>
-        </div>
-
-        <!-- Grid Box Number (Sinkron otomatis dengan kontrol waktu) -->
-        <div class="rekap-number-grid">
-          <div class="num-box tone-hadir">
-            <span class="num-box-val" id="boxTepat">0</span>
-            <span class="num-box-lbl">Tepat Waktu</span>
-          </div>
-
-          <div class="num-box tone-late">
-            <span class="num-box-val" id="boxTerlambat">0</span>
-            <span class="num-box-lbl">Terlambat</span>
-          </div>
-
-          <div class="num-box tone-htp">
-            <span class="num-box-val" id="boxHtp">0</span>
-            <span class="num-box-lbl">Tidak Presensi</span>
-          </div>
-
-          <div class="num-box tone-daring">
-            <span class="num-box-val" id="boxDaring">0</span>
-            <span class="num-box-lbl">Prakerin / Disp</span>
-          </div>
-
-          <div class="num-box tone-total-hadir span-2">
-            <span class="num-box-lbl">Total Kehadiran</span>
-            <span class="num-box-val" id="boxTotalHadir">0</span>
-          </div>
-
-          <div class="num-box tone-sakit">
-            <span class="num-box-val" id="boxSakit">0</span>
-            <span class="num-box-lbl">Sakit</span>
-          </div>
-
-          <div class="num-box tone-izin">
-            <span class="num-box-val" id="boxIzin">0</span>
-            <span class="num-box-lbl">Izin</span>
-          </div>
-
-          <div class="num-box tone-alpa span-2">
-            <span class="num-box-lbl">Alpa (Tanpa Keterangan)</span>
-            <span class="num-box-val" id="boxAlpa">0</span>
-          </div>
-        </div>
-
-        <!-- Tabel Log Harian Khusus Mobile Tab Rekap -->
-        <div class="mobile-only-log-section">
-          <div class="mobile-log-divider">
-            <span>Log Riwayat Harian</span>
-            <span class="data-count-badge" id="jumlahRiwayatMobile">0 Hari</span>
-          </div>
-          <div class="table-wrapper">
-            <table id="tabelPresensiMobile">
-              <thead>
-                <tr>
-                  <th>Tanggal</th>
-                  <th>Masuk</th>
-                  <th>Status</th>
-                  <th>Pulang</th>
-                  <th>Keterangan</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ======================================================================
-         BLOK 4 (MOBILE ONLY TAB: PROFIL & BIODATA SISWA)
+         MOBILE ONLY TAB: PROFIL & BIODATA SISWA
          ====================================================================== -->
     <section id="profil" class="tab-content mobile-only-tab">
       <div class="section bento-profil-card">
@@ -528,7 +546,7 @@
   </main>
 
   <!-- ========================================================================
-       3. FLOATING BOTTOM NAVIGATION BAR (MOBILE ONLY - LAZY LOAD TRIGGER)
+       3. FLOATING BOTTOM NAVIGATION BAR (MOBILE ONLY)
        ======================================================================== -->
   <nav class="floating-bottom-bar" aria-label="Navigasi Mobile">
     <button type="button" class="float-nav-btn active" data-tab="hariIni" onclick="switchMobileTab(event, 'hariIni')">
@@ -564,7 +582,7 @@
   </nav>
 
   <!-- ========================================================================
-       4. MODALS & OVERLAYS (QR, IZIN KELUAR, RIWAYAT IZIN, BIODATA)
+       4. MODALS & OVERLAYS
        ======================================================================== -->
 
   <!-- Modal 1: Kartu QR Presensi -->

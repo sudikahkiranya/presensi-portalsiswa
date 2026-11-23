@@ -529,13 +529,16 @@ function switchAnalyticsMode(mode) {
 
   const chartView = document.getElementById("analyticsChartView");
   const logView = document.getElementById("analyticsLogView");
+  const leftTitle = document.getElementById("leftPaneTitle");
 
   if (mode === "log") {
     if (chartView) chartView.style.display = "none";
     if (logView) logView.style.display = "flex";
+    if (leftTitle) leftTitle.textContent = "Log Riwayat Presensi";
   } else {
     if (logView) logView.style.display = "none";
     if (chartView) chartView.style.display = "flex";
+    if (leftTitle) leftTitle.textContent = "Kurva Tren Kehadiran";
     renderActiveAnalyticsData();
   }
 }
