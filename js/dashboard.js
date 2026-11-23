@@ -363,17 +363,74 @@ function submitDummyIzin() {
 // ==========================================================================
 function setGreeting() {
   const nama = localStorage.getItem("namaSiswa") || "Siswa";
-  const now = new Date();
-  const hour = now.getHours();
+  const kelas = localStorage.getItem("kelasSiswa") || "";
+  const idSiswa = localStorage.getItem("idSiswa") || "";
+  const hour = new Date().getHours();
 
   let greeting = "";
-  if (hour >= 4 && hour < 11) greeting = "Selamat Pagi ☀️";
-  else if (hour >= 11 && hour < 15) greeting = "Selamat Siang 🌤️";
-  else if (hour >= 15 && hour < 18) greeting = "Selamat Sore 🌇";
-  else greeting = "Selamat Malam 🌙";
+  if (hour >= 4 && hour < 11) greeting = "Selamat Pagi";
+  else if (hour >= 11 && hour < 15) greeting = "Selamat Siang";
+  else if (hour >= 15 && hour < 18) greeting = "Selamat Sore";
+  else greeting = "Selamat Malam";
 
   const elGreeting = document.getElementById("greetingText");
-  if (elGreeting) elGreeting.textContent = `${greeting}, ${nama}!`;
+  if (elGreeting) elGreeting.textContent = `${greeting}, ${nama}`;
+
+  const elSub = document.getElementById("greetingSubtext");
+  if (elSub) {
+    const parts = [];
+    if (idSiswa) parts.push(`NIS ${idSiswa}`);
+    if (kelas && kelas !== "-") parts.push(kelas);
+    if (parts.length) elSub.textContent = parts.join(" \u00b7 ");
+  }
+}
+
+// Badge status presensi di kartu hero (Belum presensi / Tepat waktu / Terlambat / dst.)
+function updateHeroStatus(data) {
+  const pill = document.getElementById("heroStatusPill");
+  const text = document.getElementById("heroStatusText");
+  if (!pill || !text) return;
+
+  const jamMasuk = data && data.jamMasuk && data.jamMasuk !== "-" ? data.jamMasuk : "";
+  const jamPulang = data && data.jamPulang && data.jamPulang !== "-" ? data.jamPulang : "";
+  const statusVal = data && data.statusMasuk && data.statusMasuk !== "-" ? String(data.statusMasuk) : "";
+  const s = statusVal.toLowerCase();
+  const belum = !statusVal || s.includes("belum");
+
+  let tone = "neutral";
+  let label = "";
+
+  if (belum && !jamMasuk) {
+    tone = "pending";
+    label = "Belum presensi masuk";
+  } else {
+    if (s.includes("terlambat")) tone = "late";
+    else if (s.includes("alpa")) tone = "alpa";
+    else if (s.includes("sakit")) tone = "sakit";
+    else if (s.includes("izin")) tone = "izin";
+    else if (s.includes("prakerin") || s.includes("daring") || s.includes("dispensasi")) tone = "info";
+    else tone = "ok";
+
+    label = statusVal || "Sudah presensi masuk";
+    if (jamMasuk) label += ` \u00b7 ${jamMasuk}`;
+    if (jamPulang) label += " \u00b7 sudah pulang";
+  }
+
+  pill.className = `rd-pill rd-pill-${tone}`;
+  text.textContent = label;
+}
+
+// Ringkasan semester di Beranda (pakai endpoint rekap yang sama dengan tab Rekap)
+async function loadRingkasanBeranda(idSiswa) {
+  try {
+    const data = await callBackendApi("getRekapTotalByNIS", { idSiswa });
+    if (data && data.sukses) {
+      tampilkanRekapPresensi(data);
+      window.isLoaded.statistik = true; // tab Rekap tidak perlu fetch ulang
+    }
+  } catch (err) {
+    console.warn("Ringkasan Beranda gagal dimuat:", err);
+  }
 }
 
 async function loadHariIni(idSiswa) {
@@ -417,6 +474,8 @@ async function loadHariIni(idSiswa) {
           elStatusPulang.style.color = "var(--text-muted)";
         }
       }
+
+      updateHeroStatus(data);
     }
   } catch (err) {
     console.error("Gagal loadHariIni:", err);
@@ -448,7 +507,11 @@ function tampilkanRekapPresensi(data) {
     s_sakit: data.sakit,
     s_izin: data.izin,
     s_alpa: data.alpa,
-    s_total_tidak: data.totalTidakHadir
+    s_total_tidak: data.totalTidakHadir,
+    h_hadir: data.totalHadir,
+    h_izin: data.izin,
+    h_sakit: data.sakit,
+    h_alpa: data.alpa
   };
   Object.entries(mapping).forEach(([id, nilai]) => {
     const el = document.getElementById(id);
@@ -1264,6 +1327,7 @@ function initFormSiswa() {
   });
   loadHariIni(idSiswa);
   window.isLoaded.hariIni = true;
+  loadRingkasanBeranda(idSiswa);
 }
 
 // Global Click Listener untuk menutup Dropdown & Theme Popover
