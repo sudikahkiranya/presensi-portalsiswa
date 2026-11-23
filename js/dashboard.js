@@ -1,6 +1,6 @@
 /* ==========================================================================
    PORTAL PRESENSI SISWA - SMK MEDICACOM BANDUNG
-   File: js/dashboard.js (Hybrid Bento Dashboard + Lazy Mobile + Mock Klasemen & Izin)
+   File: js/dashboard.js (Aligned 2-Row Bento 3/4 + 1/4 & Hybrid Viewport Loader)
    ========================================================================== */
 
 // ==========================================================================
@@ -18,44 +18,48 @@ window.AppStore = {
   activeSemester: null,
   rawPresensi: [],
 
-  // Ambil data presensi khusus bulan berjalan (untuk Bento Home Desktop & Tab Rekap/Statistik awal)
-  getCurrentMonthPresensi: function () {
-    if (!this.rawPresensi.length) return [];
-    const now = new Date();
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const yyyy = String(now.getFullYear());
-    const suffix = `/${mm}/${yyyy}`;
-    const prefix = `${yyyy}-${mm}`;
-
-    const filtered = this.rawPresensi.filter(p => {
-      const tgl = String(p.tanggal || "");
-      return tgl.endsWith(suffix) || tgl.startsWith(prefix);
-    });
-
-    // Fallback jika tanggal server/sheet belum masuk bulan kalender lokal (misal awal bulan)
-    return filtered.length > 0 ? filtered : this.rawPresensi.slice(-22);
-  },
-
-  // Filter lintas periode untuk Modal "Selengkapnya"
+  // Filter data presensi berdasarkan kontrol rentang waktu di dashboard
   getPresensiByRange: function (rangeType, param1, param2) {
     if (!this.rawPresensi.length) return [];
 
+    if (rangeType === "month_current") {
+      const now = new Date();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const yyyy = String(now.getFullYear());
+      const suffix = `/${mm}/${yyyy}`;
+      const prefix = `${yyyy}-${mm}`;
+
+      const filtered = this.rawPresensi.filter(p => {
+        const tgl = String(p.tanggal || "");
+        return tgl.endsWith(suffix) || tgl.startsWith(prefix);
+      });
+      return filtered.length > 0 ? filtered : this.rawPresensi.slice(-22);
+    }
+
     if (rangeType === "1w") {
       return this.rawPresensi.slice(-5);
-    } else if (rangeType === "1m") {
-      return this.rawPresensi.slice(-30);
-    } else if (rangeType === "semester") {
+    }
+
+    if (rangeType === "semester") {
       const targetDigit = param2 === "Ganjil" ? "1" : (param2 === "Genap" ? "2" : "");
       return this.rawPresensi.filter(p => {
         const matchTA = p.tahunAjaran === param1;
         if (p.idSemester) return matchTA && p.idSemester.endsWith(targetDigit);
         return matchTA && p.semester === param2;
       });
-    } else if (rangeType === "tahun_ajaran") {
-      return this.rawPresensi.filter(p => p.tahunAjaran === param1);
-    } else if (rangeType === "custom") {
-      return this.rawPresensi.filter(p => p.tanggal >= param1 && p.tanggal <= param2);
     }
+
+    if (rangeType === "tahun_ajaran") {
+      return this.rawPresensi.filter(p => p.tahunAjaran === param1);
+    }
+
+    if (rangeType === "custom") {
+      return this.rawPresensi.filter(p => {
+        const isoDate = normalizeDateToISO(p.tanggal);
+        return isoDate >= param1 && isoDate <= param2;
+      });
+    }
+
     return this.rawPresensi;
   }
 };
@@ -64,10 +68,18 @@ window.idSiswaGlobal = null;
 window.__INIT_CALLED = false;
 window.loadingCount = 0;
 
-// State interaksi titik grafik terpisah antara Home & Modal Arsip
+// State Filter Aktif & Interaksi Grafik
+window.activeFilterState = {
+  rangeType: "month_current",
+  param1: null,
+  param2: null,
+  label: "Periode Bulan Berjalan",
+  viewMode: "chart" // 'chart' | 'log'
+};
+
 window.chartState = {
-  main: { data: [], selectedIndex: null },
-  archive: { data: [], selectedIndex: null }
+  data: [],
+  selectedIndex: null
 };
 
 // ==========================================================================
@@ -76,8 +88,7 @@ window.chartState = {
 window.DummyKlasemen = {
   rankSekarang: 14,
   rankKemarin: 17,
-  totalSiswaSekolah: 640,
-  poinDisiplin: 98
+  totalSiswaSekolah: 640
 };
 
 window.DummyIzinList = [
@@ -102,7 +113,7 @@ window.DummyIzinList = [
 ];
 
 // ==========================================================================
-// 3. API HELPER & BRANDING CONFIG
+// 3. API HELPER, DATE NORMALIZER & BRANDING CONFIG
 // ==========================================================================
 async function callBackendApi(action, params = {}) {
   const response = await fetch(API_URL, {
@@ -111,6 +122,16 @@ async function callBackendApi(action, params = {}) {
     body: JSON.stringify({ action, ...params })
   });
   return await response.json();
+}
+
+function normalizeDateToISO(dateStr) {
+  const s = String(dateStr || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const parts = s.split("/");
+  if (parts.length === 3) {
+    return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+  }
+  return s;
 }
 
 async function loadSystemBranding() {
@@ -184,9 +205,8 @@ function setAppTheme(themeName, persist = true) {
   const popover = document.getElementById("themePopover");
   if (popover) popover.classList.remove("open", "is-open");
 
-  // Re-render warna garis grafik utama jika sudah tergambar
-  if (PortalLoader.loaded.statistik) {
-    renderMainMonthChart();
+  if (PortalLoader.loaded.analytics) {
+    renderActiveAnalyticsData();
   }
 }
 
@@ -202,40 +222,34 @@ const PortalLoader = {
   isDesktop: window.matchMedia("(min-width: 769px)").matches,
   loaded: {
     home: false,
-    rekap: false,
-    statistik: false,
+    analytics: false,
     qr: false
   },
 
   async init() {
-    // 1. Modul Beranda selalu dimuat pertama kali (Desktop & Mobile)
+    // 1. Beranda (Baris 1) selalu dimuat pertama
     await this.loadHomeModule();
 
-    // 2. Jika Desktop, langsung muat Rekap & Statistik Bulan Berjalan secara paralel
+    // 2. Di Desktop, langsung muat Baris 2 (Kurva/Log 3/4 + Rekap Box 1/4)
     if (this.isDesktop) {
-      await Promise.all([
-        this.loadRekapModule(),
-        this.loadStatistikModule()
-      ]);
+      await this.loadAnalyticsAndRekapModule();
     }
 
-    // 3. Antisipasi perubahan ukuran layar (misal resize browser dari mobile ke desktop)
+    // 3. Responsif saat viewport berubah ukuran
     const mq = window.matchMedia("(min-width: 769px)");
     mq.addEventListener("change", async (e) => {
       this.isDesktop = e.matches;
       if (this.isDesktop) {
-        // Pastikan semua section tampil di desktop
         document.querySelectorAll(".tab-content").forEach(el => {
           if (!el.classList.contains("mobile-only-tab")) {
             el.style.display = "";
           }
         });
-        await Promise.all([
-          this.loadRekapModule(),
-          this.loadStatistikModule()
-        ]);
+        await this.loadAnalyticsAndRekapModule();
+        if (window.activeFilterState.viewMode === "chart") {
+          renderActiveAnalyticsData();
+        }
       } else {
-        // Kembalikan perilaku tab mobile
         const activeBtn = document.querySelector(".float-nav-btn.active");
         const activeTab = activeBtn ? activeBtn.getAttribute("data-tab") : "hariIni";
         switchMobileTab(null, activeTab);
@@ -247,19 +261,9 @@ const PortalLoader = {
     if (this.loaded.home) return;
     this.loaded.home = true;
 
-    const idSiswa = window.idSiswaGlobal;
     renderDisciplineRankDummy();
     renderRiwayatIzinList();
-    updateBulanBerjalanLabel();
-
-    // Muat Presensi Hari Ini & Sinkronkan Data Bulan Berjalan
-    await Promise.all([
-      loadHariIni(idSiswa),
-      this.syncMasterPresensi(false)
-    ]);
-
-    // Isi 5 mini KPI Ringkasan Bulan Berjalan di Baris 1 Kanan
-    renderMonthTopKpi();
+    await loadHariIni(window.idSiswaGlobal);
   },
 
   async syncMasterPresensi(showLoading = false) {
@@ -271,7 +275,7 @@ const PortalLoader = {
     const idSiswa = window.idSiswaGlobal;
     if (!idSiswa) return;
 
-    if (showLoading) showSpinner("Menyinkronkan data presensi...");
+    if (showLoading) showSpinner("Memuat data presensi...");
 
     window.AppStore.isLoadingPromise = callBackendApi("getMasterDataSiswaApi", { idSiswa })
       .then(res => {
@@ -295,28 +299,21 @@ const PortalLoader = {
     return window.AppStore.isLoadingPromise;
   },
 
-  async loadRekapModule() {
-    if (this.loaded.rekap) return;
-    this.loaded.rekap = true;
+  async loadAnalyticsAndRekapModule() {
+    if (this.loaded.analytics) return;
+    this.loaded.analytics = true;
 
+    initTimelineDropdown();
     await this.syncMasterPresensi(!this.isDesktop);
-    const monthData = window.AppStore.getCurrentMonthPresensi();
-    renderMonthSummaryAndTable(monthData);
-  },
 
-  async loadStatistikModule() {
-    if (this.loaded.statistik) return;
-    this.loaded.statistik = true;
-
-    await this.syncMasterPresensi(!this.isDesktop);
     setTimeout(() => {
-      renderMainMonthChart();
-      attachChartClickInteraction("trendChartCanvas", "main");
+      attachChartClickInteraction("trendChartCanvas");
+      renderActiveAnalyticsData();
     }, 40);
   }
 };
 
-// Handler Navigasi Tab Khusus Mobile Floating Bottom Bar
+// Handler Tab Mobile (Lazy Load per Tab)
 function switchMobileTab(event, tabName) {
   if (window.matchMedia("(min-width: 769px)").matches) return;
 
@@ -335,13 +332,14 @@ function switchMobileTab(event, tabName) {
     targetTab.style.display = "block";
   }
 
-  // Lazy Load per Tab di Mobile
   if (tabName === "hariIni") {
     PortalLoader.loadHomeModule();
-  } else if (tabName === "riwayat") {
-    PortalLoader.loadRekapModule();
-  } else if (tabName === "statistik") {
-    PortalLoader.loadStatistikModule();
+  } else if (tabName === "riwayat" || tabName === "statistik") {
+    PortalLoader.loadAnalyticsAndRekapModule().then(() => {
+      if (tabName === "statistik") {
+        renderActiveAnalyticsData();
+      }
+    });
   }
 }
 
@@ -349,34 +347,30 @@ function switchMobileTab(event, tabName) {
 // 6. KLASEMEN DISIPLIN & IZIN MENINGGALKAN SEKOLAH (DUMMY + INTERAKTIF)
 // ==========================================================================
 function renderDisciplineRankDummy() {
-  const { rankSekarang, rankKemarin, totalSiswaSekolah, poinDisiplin } = window.DummyKlasemen;
-  const diff = rankKemarin - rankSekarang; // Positif = peringkat naik (angka makin kecil)
+  const { rankSekarang, rankKemarin, totalSiswaSekolah } = window.DummyKlasemen;
+  const diff = rankKemarin - rankSekarang;
 
   const elRankNum = document.getElementById("rankNumber");
   const elTotal = document.getElementById("rankTotalSiswa");
-  const elPill = document.getElementById("rankTrendPill");
+  const elBadge = document.getElementById("rankTrendBadge");
   const elArrow = document.getElementById("rankTrendArrow");
   const elText = document.getElementById("rankTrendText");
-  const elPoin = document.getElementById("rankPoinDisiplin");
-  const elKemarin = document.getElementById("rankKemarin");
 
-  if (elRankNum) elRankNum.textContent = rankSekarang;
-  if (elTotal) elTotal.textContent = `/ ${totalSiswaSekolah} Siswa`;
-  if (elPoin) elPoin.textContent = `${poinDisiplin} Poin`;
-  if (elKemarin) elKemarin.textContent = `#${rankKemarin}`;
+  if (elRankNum) elRankNum.textContent = `#${rankSekarang}`;
+  if (elTotal) elTotal.textContent = `/ ${totalSiswaSekolah} siswa`;
 
-  if (elPill && elArrow && elText) {
-    elPill.classList.remove("is-up", "is-down", "is-flat");
+  if (elBadge && elArrow && elText) {
+    elBadge.classList.remove("is-up", "is-down", "is-flat");
     if (diff > 0) {
-      elPill.classList.add("is-up");
+      elBadge.classList.add("is-up");
       elArrow.textContent = "▲";
       elText.textContent = `Naik ${diff}`;
     } else if (diff < 0) {
-      elPill.classList.add("is-down");
+      elBadge.classList.add("is-down");
       elArrow.textContent = "▼";
       elText.textContent = `Turun ${Math.abs(diff)}`;
     } else {
-      elPill.classList.add("is-flat");
+      elBadge.classList.add("is-flat");
       elArrow.textContent = "—";
       elText.textContent = "Tetap";
     }
@@ -416,7 +410,6 @@ function submitDummyIzinKeluar() {
     status: "Menunggu Piket"
   });
 
-  // Reset form & perbarui daftar riwayat
   const elAlasan = document.getElementById("inputAlasanIzinKeluar");
   if (elAlasan) elAlasan.value = "";
 
@@ -460,7 +453,7 @@ function renderRiwayatIzinList() {
 }
 
 // ==========================================================================
-// 7. GREETING, PRESENSI HARI INI, RINGKASAN BULAN BERJALAN & TABEL
+// 7. GREETING 2 BARIS & PRESENSI HARI INI
 // ==========================================================================
 function setGreeting() {
   const nama = localStorage.getItem("namaSiswa") || "Siswa";
@@ -472,17 +465,10 @@ function setGreeting() {
   else if (hour >= 11 && hour < 15) greeting = "Selamat Siang 🌤️";
   else if (hour >= 15 && hour < 18) greeting = "Selamat Sore 🌇";
 
-  const elGreeting = document.getElementById("greetingText");
-  if (elGreeting) elGreeting.textContent = `${greeting}, ${nama}!`;
-}
-
-function updateBulanBerjalanLabel() {
-  const now = new Date();
-  const bulanTahun = now.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
-  const elLabel = document.getElementById("labelBulanBerjalan");
-  const elSub = document.getElementById("statistikPeriodSubtitle");
-  if (elLabel) elLabel.textContent = `Periode ${bulanTahun}`;
-  if (elSub) elSub.textContent = `Grafik kedisiplinan jam kedatangan periode ${bulanTahun}.`;
+  const elSalutation = document.getElementById("greetingSalutation");
+  const elName = document.getElementById("greetingStudentName");
+  if (elSalutation) elSalutation.textContent = greeting;
+  if (elName) elName.textContent = nama;
 }
 
 async function loadHariIni(idSiswa) {
@@ -531,6 +517,153 @@ async function loadHariIni(idSiswa) {
   }
 }
 
+// ==========================================================================
+// 8. KONTROL RENTANG WAKTU, MODE KURVA/LOG (3/4) & BOX REKAP (1/4)
+// ==========================================================================
+function switchAnalyticsMode(mode) {
+  window.activeFilterState.viewMode = mode;
+
+  document.querySelectorAll(".mode-switch-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-mode") === mode);
+  });
+
+  const chartView = document.getElementById("analyticsChartView");
+  const logView = document.getElementById("analyticsLogView");
+
+  if (mode === "log") {
+    if (chartView) chartView.style.display = "none";
+    if (logView) logView.style.display = "flex";
+  } else {
+    if (logView) logView.style.display = "none";
+    if (chartView) chartView.style.display = "flex";
+    renderActiveAnalyticsData();
+  }
+}
+
+function populateFilterDropdowns() {
+  const taList = window.AppStore.filterOptions.taList || [];
+  const selectTaSem = document.getElementById("selectTaForSemester");
+  const selectTaFull = document.getElementById("selectTahunAjaranFull");
+  if (!selectTaSem || !selectTaFull) return;
+
+  selectTaSem.innerHTML = "";
+  selectTaFull.innerHTML = "";
+
+  if (taList.length === 0) {
+    selectTaSem.innerHTML = `<option value="">Tidak ada data TA</option>`;
+    selectTaFull.innerHTML = `<option value="">Tidak ada data TA</option>`;
+    return;
+  }
+
+  taList.forEach(ta => {
+    selectTaSem.innerHTML += `<option value="${ta}">Tahun Ajaran ${ta}</option>`;
+    selectTaFull.innerHTML += `<option value="${ta}">Tahun Ajaran ${ta}</option>`;
+  });
+
+  updateSemesterDropdownOptions();
+}
+
+function updateSemesterDropdownOptions() {
+  const selectedTA = document.getElementById("selectTaForSemester")?.value;
+  const selectSem = document.getElementById("selectSemesterType");
+  if (!selectSem || !selectedTA) return;
+
+  selectSem.innerHTML = "";
+  const availableSemesters = window.AppStore.filterOptions.semesterMap[selectedTA] || [];
+
+  if (availableSemesters.length === 0) {
+    selectSem.innerHTML = `<option value="">Tidak ada semester</option>`;
+    return;
+  }
+
+  availableSemesters.forEach(sem => {
+    selectSem.innerHTML += `<option value="${sem}">${sem === "Ganjil" ? "Ganjil (Semester 1)" : "Genap (Semester 2)"}</option>`;
+  });
+}
+
+function initTimelineDropdown() {
+  const container = document.getElementById("filterTimelineStatistik");
+  if (!container || container.querySelector(".dropdown-selected")) return;
+
+  const now = new Date();
+  const namaBulanIni = now.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  window.activeFilterState.label = `Periode ${namaBulanIni}`;
+
+  const timelineOptions = [
+    { value: "month_current", label: `🗓️ Bulan Ini (${namaBulanIni})` },
+    { value: "1w", label: "📅 1 Minggu (5 Hari KBM)" },
+    { value: "semester_select", label: "🎓 Per Semester..." },
+    { value: "ta_select", label: "🏫 Per Tahun Ajaran..." },
+    { value: "custom", label: "⚙️ Kustom Rentang Tanggal..." }
+  ];
+
+  createCustomDropdown(container, timelineOptions, "month_current", function (selectedVal) {
+    const customBox = document.getElementById("customDateRangeBox");
+    const semesterBox = document.getElementById("semesterSelectBox");
+    const taBox = document.getElementById("thnAjaranSelectBox");
+
+    if (customBox) customBox.style.display = "none";
+    if (semesterBox) semesterBox.style.display = "none";
+    if (taBox) taBox.style.display = "none";
+
+    window.chartState.selectedIndex = null;
+
+    if (selectedVal === "custom") {
+      if (customBox) customBox.style.display = "flex";
+    } else if (selectedVal === "semester_select") {
+      if (semesterBox) semesterBox.style.display = "flex";
+      applySemesterFilter();
+    } else if (selectedVal === "ta_select") {
+      if (taBox) taBox.style.display = "flex";
+      applyTahunAjaranFilter();
+    } else {
+      window.activeFilterState.rangeType = selectedVal;
+      window.activeFilterState.param1 = null;
+      window.activeFilterState.param2 = null;
+      window.activeFilterState.label = selectedVal === "1w"
+        ? "Periode 1 Minggu Terakhir (5 Hari KBM)"
+        : `Periode ${namaBulanIni}`;
+      renderActiveAnalyticsData();
+    }
+  });
+}
+
+function applySemesterFilter() {
+  const ta = document.getElementById("selectTaForSemester")?.value;
+  const sem = document.getElementById("selectSemesterType")?.value;
+  window.chartState.selectedIndex = null;
+  window.activeFilterState.rangeType = "semester";
+  window.activeFilterState.param1 = ta;
+  window.activeFilterState.param2 = sem;
+  window.activeFilterState.label = `Semester ${sem || "-"} • TA ${ta || "-"}`;
+  renderActiveAnalyticsData();
+}
+
+function applyTahunAjaranFilter() {
+  const taFull = document.getElementById("selectTahunAjaranFull")?.value;
+  window.chartState.selectedIndex = null;
+  window.activeFilterState.rangeType = "tahun_ajaran";
+  window.activeFilterState.param1 = taFull;
+  window.activeFilterState.param2 = null;
+  window.activeFilterState.label = `Tahun Ajaran ${taFull || "-"}`;
+  renderActiveAnalyticsData();
+}
+
+function applyCustomDateRange() {
+  const startDate = document.getElementById("inputDateStart")?.value;
+  const endDate = document.getElementById("inputDateEnd")?.value;
+  if (!startDate || !endDate) {
+    alert("Harap isi tanggal Mulai dan Selesai!");
+    return;
+  }
+  window.chartState.selectedIndex = null;
+  window.activeFilterState.rangeType = "custom";
+  window.activeFilterState.param1 = startDate;
+  window.activeFilterState.param2 = endDate;
+  window.activeFilterState.label = `Rentang ${startDate} s/d ${endDate}`;
+  renderActiveAnalyticsData();
+}
+
 function summarizePresensiList(list) {
   const stats = {
     tepatWaktu: 0,
@@ -576,47 +709,63 @@ function summarizePresensiList(list) {
   return stats;
 }
 
-function renderMonthTopKpi() {
-  const monthData = window.AppStore.getCurrentMonthPresensi();
-  const st = summarizePresensiList(monthData);
+function renderActiveAnalyticsData() {
+  const { rangeType, param1, param2, label } = window.activeFilterState;
+  const records = window.AppStore.getPresensiByRange(rangeType, param1, param2);
 
-  const elHadir = document.getElementById("kpiBulanHadir");
-  const elTelat = document.getElementById("kpiBulanTerlambat");
-  const elSakitIzin = document.getElementById("kpiBulanSakitIzin");
-  const elAlpa = document.getElementById("kpiBulanAlpa");
-  const elPersen = document.getElementById("kpiBulanPersen");
+  // 1. Update Subjudul Periode di Kartu Kiri (3/4) & Kartu Kanan (1/4)
+  const elSubAnalytics = document.getElementById("analyticsPeriodSubtitle");
+  const elSubRekap = document.getElementById("rekapPeriodSubtitle");
+  if (elSubAnalytics) elSubAnalytics.textContent = label;
+  if (elSubRekap) elSubRekap.textContent = label;
 
-  if (elHadir) elHadir.textContent = st.totalHadir;
-  if (elTelat) elTelat.textContent = st.terlambat;
-  if (elSakitIzin) elSakitIzin.textContent = st.sakit + st.izin;
-  if (elAlpa) elAlpa.textContent = st.alpa;
-  if (elPersen) elPersen.textContent = `${st.persenHadir}%`;
-}
-
-function renderMonthSummaryAndTable(data) {
-  const st = summarizePresensiList(data);
-
-  // Update kartu detail khusus tampilan Mobile Tab Rekap
-  const mapping = {
-    s_tepat: st.tepatWaktu,
-    s_terlambat: st.terlambat,
-    s_tidak: st.tidakPresensi,
-    s_daring: st.daring,
-    s_total: st.totalHadir,
-    s_sakit: st.sakit,
-    s_izin: st.izin,
-    s_alpa: st.alpa,
-    s_total_tidak: st.totalTidakHadir
+  // 2. Update Box Number Rekap Kehadiran (Kartu 1/4 Kanan)
+  const st = summarizePresensiList(records);
+  const boxMap = {
+    boxTepat: st.tepatWaktu,
+    boxTerlambat: st.terlambat,
+    boxHtp: st.tidakPresensi,
+    boxDaring: st.daring,
+    boxTotalHadir: st.totalHadir,
+    boxSakit: st.sakit,
+    boxIzin: st.izin,
+    boxAlpa: st.alpa
   };
-  Object.entries(mapping).forEach(([id, val]) => {
+  Object.entries(boxMap).forEach(([id, val]) => {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   });
 
-  renderPresensiTableRows("#tabelPresensi tbody", "jumlahRiwayat", data, true);
+  const elRate = document.getElementById("boxRatePersen");
+  if (elRate) elRate.textContent = `${st.persenHadir}%`;
+
+  // 3. Update Tabel Log (Desktop Switch & Mobile Tab Rekap)
+  renderPresensiTableRows("#tabelPresensiDesktop tbody", "jumlahRiwayatDesktop", records);
+  renderPresensiTableRows("#tabelPresensiMobile tbody", "jumlahRiwayatMobile", records);
+
+  // 4. Update Bar Detail Titik Grafik
+  updateSelectedDotDetailBar(records);
+
+  // 5. Render Kurva Tren Kehadiran
+  renderTrendChartOnCanvas(records, rangeType === "1w");
 }
 
-function renderPresensiTableRows(tbodySelector, badgeId, data, reverseLatest = false) {
+function updateSelectedDotDetailBar(records) {
+  const bar = document.getElementById("selectedDotDetailBar");
+  if (!bar) return;
+
+  const idx = window.chartState.selectedIndex;
+  if (idx === null || !records || !records[idx]) {
+    bar.textContent = "Klik titik pada grafik untuk melihat detail jam masuk & pulang";
+    return;
+  }
+
+  const r = records[idx];
+  const ket = r.keterangan && r.keterangan !== "-" ? ` • Ket: ${r.keterangan}` : "";
+  bar.textContent = `📌 ${r.tanggal} • Masuk: ${r.jamMasuk || "-"} (${r.statusMasuk || "-"}) • Pulang: ${r.jamPulang || "-"}${ket}`;
+}
+
+function renderPresensiTableRows(tbodySelector, badgeId, data) {
   const tbody = document.querySelector(tbodySelector);
   const info = badgeId ? document.getElementById(badgeId) : null;
   if (!tbody) return;
@@ -629,7 +778,7 @@ function renderPresensiTableRows(tbodySelector, badgeId, data, reverseLatest = f
     return;
   }
 
-  const rows = reverseLatest ? [...data].reverse() : data;
+  const rows = [...data].reverse();
   rows.forEach(item => {
     tbody.innerHTML += `
       <tr>
@@ -646,7 +795,303 @@ function renderPresensiTableRows(tbodySelector, badgeId, data, reverseLatest = f
 }
 
 // ==========================================================================
-// 8. KARTU QR PRESENSI ON-DEMAND (TOMBOL DI PRESENSI HARI INI & MOBILE BAR)
+// 9. ENGINE GRAFIK KURVA TREN PRESENSI (CANVAS)
+// ==========================================================================
+function renderTrendChartOnCanvas(records, compactFit = false) {
+  const canvas = document.getElementById("trendChartCanvas");
+  const wrapper = document.getElementById("chartInnerWrapper");
+  const scrollEl = document.getElementById("chartScrollContainer");
+  if (!canvas || !wrapper || !scrollEl) return;
+
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+
+  const levelColors = {
+    8: "#15803d",
+    7: "#d97706",
+    6: "#c2410c",
+    5: "#b91c1c",
+    4: "#7c3aed",
+    3: "#0284c7",
+    2: "#0891b2",
+    1: "#111827"
+  };
+
+  function getStatusInfo(statusStr) {
+    const s = String(statusStr || "").toLowerCase();
+    if (s.includes("prakerin") || s.includes("dispensasi") || s.includes("tepat")) return { level: 8, color: levelColors[8], fullName: "Tepat Waktu" };
+    if (s.includes("sangat terlambat sekali")) return { level: 5, color: levelColors[5], fullName: "Sangat Terlambat Sekali" };
+    if (s.includes("sangat terlambat")) return { level: 6, color: levelColors[6], fullName: "Sangat Terlambat" };
+    if (s.includes("terlambat")) return { level: 7, color: levelColors[7], fullName: "Terlambat" };
+    if (s.includes("tidak presensi")) return { level: 4, color: levelColors[4], fullName: "Hadir Tidak Presensi" };
+    if (s.includes("izin")) return { level: 3, color: levelColors[3], fullName: "Izin" };
+    if (s.includes("sakit")) return { level: 2, color: levelColors[2], fullName: "Sakit" };
+    if (s.includes("alpa")) return { level: 1, color: levelColors[1], fullName: "Alpa" };
+    return { level: 8, color: levelColors[8], fullName: "Tepat Waktu" };
+  }
+
+  const sampleData = (records || []).map(item => {
+    const st = getStatusInfo(item.statusMasuk);
+    return {
+      label: String(item.tanggal || "").slice(0, 5),
+      val: st.level,
+      color: st.color,
+      fullName: st.fullName
+    };
+  });
+
+  window.chartState.data = sampleData;
+
+  const parentWidth = scrollEl.clientWidth || 600;
+  let computedWidth = parentWidth;
+
+  // Untuk <= 25 hari (1 bulan), muat penuh di lebar card 3/4 tanpa scroll samping
+  if (!compactFit && sampleData.length > 25) {
+    const pointSpacing = 44;
+    if (sampleData.length * pointSpacing > parentWidth) {
+      computedWidth = sampleData.length * pointSpacing;
+    }
+  }
+
+  wrapper.style.width = computedWidth + "px";
+  canvas.width = computedWidth * dpr;
+  canvas.height = wrapper.clientHeight * dpr;
+  ctx.scale(dpr, dpr);
+
+  const width = computedWidth;
+  const height = wrapper.clientHeight;
+  ctx.clearRect(0, 0, width, height);
+
+  if (sampleData.length === 0) {
+    ctx.font = "500 12px Roboto";
+    ctx.fillStyle = "#64748b";
+    ctx.textAlign = "center";
+    ctx.fillText("Belum ada data presensi pada periode ini", width / 2, height / 2);
+    return;
+  }
+
+  const axisXPos = 3;
+  const paddingLeft = compactFit ? 44 : 38;
+  const paddingRight = compactFit ? 38 : 26;
+  const paddingTop = 20;
+  const paddingBottom = 46;
+
+  const graphWidth = width - paddingLeft - paddingRight;
+  const graphHeight = height - paddingTop - paddingBottom;
+  const minY = 1;
+  const maxY = 8;
+
+  function getX(index) {
+    if (sampleData.length === 1) return paddingLeft + graphWidth / 2;
+    return paddingLeft + (index / (sampleData.length - 1)) * graphWidth;
+  }
+
+  function getY(val) {
+    return paddingTop + graphHeight - ((val - minY) / (maxY - minY)) * graphHeight;
+  }
+
+  sampleData.forEach((item, i) => {
+    item.x = getX(i);
+    item.y = getY(item.val);
+  });
+
+  const bottomAxisY = height - 20;
+
+  // Sumbu Y & X
+  ctx.beginPath();
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 1;
+  ctx.setLineDash([]);
+  ctx.moveTo(axisXPos, paddingTop);
+  ctx.lineTo(axisXPos, bottomAxisY);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 1;
+  ctx.moveTo(axisXPos, bottomAxisY);
+  ctx.lineTo(width - (paddingRight - 10), bottomAxisY);
+  ctx.stroke();
+
+  // Garis Grid Level 1..8
+  for (let level = 1; level <= 8; level++) {
+    const yPos = getY(level);
+    ctx.strokeStyle = "#cbd5e1";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(axisXPos + 5, yPos);
+    ctx.lineTo(width - (paddingRight - 10), yPos);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(axisXPos, yPos, 2.8, 0, Math.PI * 2);
+    ctx.fillStyle = levelColors[level] || "#94a3b8";
+    ctx.fill();
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  ctx.setLineDash([]);
+
+  const primaryStroke = getComputedStyle(document.documentElement).getPropertyValue("--header-bg").trim() || "#824653";
+
+  // Kurva Bezier
+  if (sampleData.length > 1) {
+    ctx.beginPath();
+    ctx.strokeStyle = primaryStroke;
+    ctx.lineWidth = 2.5;
+
+    for (let i = 0; i < sampleData.length; i++) {
+      const x = sampleData[i].x;
+      const y = sampleData[i].y;
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        const prevX = sampleData[i - 1].x;
+        const prevY = sampleData[i - 1].y;
+        const cpX1 = prevX + (x - prevX) / 2;
+        const cpX2 = prevX + (x - prevX) / 2;
+        ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
+      }
+    }
+    ctx.stroke();
+  }
+
+  // Crosshair Titik Terpilih
+  const selectedIdx = window.chartState.selectedIndex;
+  if (selectedIdx !== null && sampleData[selectedIdx]) {
+    const selectedItem = sampleData[selectedIdx];
+    ctx.strokeStyle = primaryStroke;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+
+    ctx.beginPath();
+    ctx.moveTo(selectedItem.x, paddingTop);
+    ctx.lineTo(selectedItem.x, bottomAxisY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(axisXPos, selectedItem.y);
+    ctx.lineTo(width - (paddingRight - 10), selectedItem.y);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+  }
+
+  // Titik Data & Label Tanggal
+  sampleData.forEach((item, index) => {
+    const isSelected = selectedIdx === index;
+
+    if (isSelected) {
+      ctx.beginPath();
+      ctx.arc(item.x, item.y, 10, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(130, 70, 83, 0.22)";
+      ctx.fill();
+    }
+
+    ctx.beginPath();
+    ctx.arc(item.x, item.y, isSelected ? 6.5 : 4.8, 0, Math.PI * 2);
+    ctx.fillStyle = item.color;
+    ctx.fill();
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Tampilkan label status di bawah titik (atau hanya saat terpilih jika terlalu rapat)
+    const showStatusText = sampleData.length <= 18 || isSelected;
+    if (showStatusText) {
+      const maxLabelWidth = 54;
+      const words = item.fullName.split(" ");
+      const lines = [];
+      let currentLine = words[0];
+
+      for (let w = 1; w < words.length; w++) {
+        ctx.font = "400 9px Roboto";
+        const testLine = currentLine + " " + words[w];
+        if (ctx.measureText(testLine).width > maxLabelWidth) {
+          lines.push(currentLine);
+          currentLine = words[w];
+        } else {
+          currentLine = testLine;
+        }
+      }
+      lines.push(currentLine);
+
+      ctx.font = "400 9px Roboto";
+      ctx.textAlign = "center";
+      const startTextY = item.y + 13;
+
+      lines.forEach((lineText, lineIdx) => {
+        const lineY = startTextY + (lineIdx * 10);
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 3;
+        ctx.lineJoin = "round";
+        ctx.strokeText(lineText, item.x, lineY);
+        ctx.fillStyle = item.color;
+        ctx.fillText(lineText, item.x, lineY);
+      });
+    }
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = isSelected ? "#0f172a" : "#64748b";
+    ctx.font = isSelected ? "700 10.5px Roboto" : "500 10px Roboto";
+    ctx.fillText(item.label, item.x, height - 6);
+  });
+}
+
+function attachChartClickInteraction(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || canvas.dataset.hasClickListener) return;
+  canvas.dataset.hasClickListener = "true";
+
+  let startX = 0;
+  let startY = 0;
+
+  const handleSelect = (clientX) => {
+    const rect = canvas.getBoundingClientRect();
+    const clickX = clientX - rect.left;
+    const data = window.chartState.data || [];
+
+    let clickedIndex = null;
+    let minDist = Infinity;
+    data.forEach((item, i) => {
+      const dist = Math.abs(item.x - clickX);
+      if (dist < minDist && dist <= 28) {
+        minDist = dist;
+        clickedIndex = i;
+      }
+    });
+
+    window.chartState.selectedIndex =
+      clickedIndex !== null && window.chartState.selectedIndex !== clickedIndex
+        ? clickedIndex
+        : null;
+
+    renderActiveAnalyticsData();
+  };
+
+  canvas.addEventListener("touchstart", e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  canvas.addEventListener("touchend", e => {
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    if (Math.abs(endX - startX) > 8 || Math.abs(endY - startY) > 8) return;
+    handleSelect(endX);
+  });
+
+  canvas.addEventListener("click", e => {
+    handleSelect(e.clientX);
+  });
+}
+
+// ==========================================================================
+// 10. KARTU QR PRESENSI ON-DEMAND
 // ==========================================================================
 function generateQROffline(text) {
   return new Promise((resolve, reject) => {
@@ -853,467 +1298,6 @@ function getJurusan(kelas) {
 }
 
 // ==========================================================================
-// 9. GRAFIK KURVA TREN PRESENSI (ENGINE PORTAL PIKET - REUSABLE)
-// ==========================================================================
-function renderMainMonthChart() {
-  const monthData = window.AppStore.getCurrentMonthPresensi();
-  renderTrendChartOnCanvas({
-    canvasId: "trendChartCanvas",
-    wrapperId: "chartInnerWrapper",
-    scrollId: "chartScrollContainer",
-    stateKey: "main",
-    records: monthData,
-    compactFit: false
-  });
-}
-
-function renderTrendChartOnCanvas({ canvasId, wrapperId, scrollId, stateKey, records, compactFit = false }) {
-  const canvas = document.getElementById(canvasId);
-  const wrapper = document.getElementById(wrapperId);
-  const scrollEl = document.getElementById(scrollId);
-  if (!canvas || !wrapper || !scrollEl) return;
-
-  const ctx = canvas.getContext("2d");
-  const dpr = window.devicePixelRatio || 1;
-
-  const rawData = (records || []).map(item => ({
-    label: String(item.tanggal || "").slice(0, 5),
-    status: item.statusMasuk
-  }));
-
-  const levelColors = {
-    8: "#15803d",
-    7: "#d97706",
-    6: "#c2410c",
-    5: "#b91c1c",
-    4: "#7c3aed",
-    3: "#0284c7",
-    2: "#0891b2",
-    1: "#111827"
-  };
-
-  function getStatusInfo(statusStr) {
-    const s = String(statusStr || "").toLowerCase();
-    if (s.includes("prakerin") || s.includes("dispensasi") || s.includes("tepat")) return { level: 8, color: levelColors[8], fullName: "Tepat Waktu" };
-    if (s.includes("sangat terlambat sekali")) return { level: 5, color: levelColors[5], fullName: "Sangat Terlambat Sekali" };
-    if (s.includes("sangat terlambat")) return { level: 6, color: levelColors[6], fullName: "Sangat Terlambat" };
-    if (s.includes("terlambat")) return { level: 7, color: levelColors[7], fullName: "Terlambat" };
-    if (s.includes("tidak presensi")) return { level: 4, color: levelColors[4], fullName: "Hadir Tidak Presensi" };
-    if (s.includes("izin")) return { level: 3, color: levelColors[3], fullName: "Izin" };
-    if (s.includes("sakit")) return { level: 2, color: levelColors[2], fullName: "Sakit" };
-    if (s.includes("alpa")) return { level: 1, color: levelColors[1], fullName: "Alpa" };
-    return { level: 8, color: levelColors[8], fullName: "Tepat Waktu" };
-  }
-
-  const sampleData = rawData.map(item => {
-    const st = getStatusInfo(item.status);
-    return { label: item.label, val: st.level, color: st.color, fullName: st.fullName };
-  });
-
-  window.chartState[stateKey].data = sampleData;
-
-  const parentWidth = scrollEl.clientWidth || 500;
-  let computedWidth = parentWidth;
-
-  if (!compactFit) {
-    const pointSpacing = 56;
-    if (sampleData.length * pointSpacing > parentWidth) {
-      computedWidth = sampleData.length * pointSpacing;
-    }
-  }
-
-  wrapper.style.width = computedWidth + "px";
-  canvas.width = computedWidth * dpr;
-  canvas.height = wrapper.clientHeight * dpr;
-  ctx.scale(dpr, dpr);
-
-  const width = computedWidth;
-  const height = wrapper.clientHeight;
-  ctx.clearRect(0, 0, width, height);
-
-  if (sampleData.length === 0) {
-    ctx.font = "500 12px Roboto";
-    ctx.fillStyle = "#64748b";
-    ctx.textAlign = "center";
-    ctx.fillText("Belum ada data presensi pada periode ini", width / 2, height / 2);
-    return;
-  }
-
-  const axisXPos = 3;
-  const paddingLeft = compactFit ? 40 : 44;
-  const paddingRight = compactFit ? 34 : 28;
-  const paddingTop = 20;
-  const paddingBottom = 46;
-
-  const graphWidth = width - paddingLeft - paddingRight;
-  const graphHeight = height - paddingTop - paddingBottom;
-  const minY = 1;
-  const maxY = 8;
-
-  function getX(index) {
-    if (sampleData.length === 1) return paddingLeft + graphWidth / 2;
-    return paddingLeft + (index / (sampleData.length - 1)) * graphWidth;
-  }
-
-  function getY(val) {
-    return paddingTop + graphHeight - ((val - minY) / (maxY - minY)) * graphHeight;
-  }
-
-  sampleData.forEach((item, i) => {
-    item.x = getX(i);
-    item.y = getY(item.val);
-  });
-
-  const bottomAxisY = height - 20;
-
-  ctx.beginPath();
-  ctx.strokeStyle = "#cbd5e1";
-  ctx.lineWidth = 1;
-  ctx.setLineDash([]);
-  ctx.moveTo(axisXPos, paddingTop);
-  ctx.lineTo(axisXPos, bottomAxisY);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.strokeStyle = "#cbd5e1";
-  ctx.lineWidth = 1;
-  ctx.moveTo(axisXPos, bottomAxisY);
-  ctx.lineTo(width - (paddingRight - 10), bottomAxisY);
-  ctx.stroke();
-
-  for (let level = 1; level <= 8; level++) {
-    const yPos = getY(level);
-    ctx.strokeStyle = "#cbd5e1";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(axisXPos + 5, yPos);
-    ctx.lineTo(width - (paddingRight - 10), yPos);
-    ctx.stroke();
-
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.arc(axisXPos, yPos, 2.8, 0, Math.PI * 2);
-    ctx.fillStyle = levelColors[level] || "#94a3b8";
-    ctx.fill();
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
-
-  ctx.setLineDash([]);
-
-  const primaryStroke = getComputedStyle(document.documentElement).getPropertyValue("--header-bg").trim() || "#824653";
-
-  if (sampleData.length > 1) {
-    ctx.beginPath();
-    ctx.strokeStyle = primaryStroke;
-    ctx.lineWidth = 2.5;
-
-    for (let i = 0; i < sampleData.length; i++) {
-      const x = sampleData[i].x;
-      const y = sampleData[i].y;
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        const prevX = sampleData[i - 1].x;
-        const prevY = sampleData[i - 1].y;
-        const cpX1 = prevX + (x - prevX) / 2;
-        const cpX2 = prevX + (x - prevX) / 2;
-        ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
-      }
-    }
-    ctx.stroke();
-  }
-
-  const selectedIdx = window.chartState[stateKey].selectedIndex;
-  if (selectedIdx !== null && sampleData[selectedIdx]) {
-    const selectedItem = sampleData[selectedIdx];
-    ctx.strokeStyle = primaryStroke;
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
-
-    ctx.beginPath();
-    ctx.moveTo(selectedItem.x, paddingTop);
-    ctx.lineTo(selectedItem.x, bottomAxisY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(axisXPos, selectedItem.y);
-    ctx.lineTo(width - (paddingRight - 10), selectedItem.y);
-    ctx.stroke();
-
-    ctx.setLineDash([]);
-  }
-
-  sampleData.forEach((item, index) => {
-    const isSelected = selectedIdx === index;
-
-    if (isSelected) {
-      ctx.beginPath();
-      ctx.arc(item.x, item.y, 10, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(130, 70, 83, 0.22)";
-      ctx.fill();
-    }
-
-    ctx.beginPath();
-    ctx.arc(item.x, item.y, isSelected ? 6.5 : 5, 0, Math.PI * 2);
-    ctx.fillStyle = item.color;
-    ctx.fill();
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    const maxLabelWidth = 54;
-    const words = item.fullName.split(" ");
-    const lines = [];
-    let currentLine = words[0];
-
-    for (let w = 1; w < words.length; w++) {
-      ctx.font = "400 9px Roboto";
-      const testLine = currentLine + " " + words[w];
-      if (ctx.measureText(testLine).width > maxLabelWidth) {
-        lines.push(currentLine);
-        currentLine = words[w];
-      } else {
-        currentLine = testLine;
-      }
-    }
-    lines.push(currentLine);
-
-    ctx.font = "400 9px Roboto";
-    ctx.textAlign = "center";
-    const startTextY = item.y + 13;
-
-    lines.forEach((lineText, lineIdx) => {
-      const lineY = startTextY + (lineIdx * 10);
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 3;
-      ctx.lineJoin = "round";
-      ctx.strokeText(lineText, item.x, lineY);
-      ctx.fillStyle = item.color;
-      ctx.fillText(lineText, item.x, lineY);
-    });
-
-    ctx.fillStyle = isSelected ? "#0f172a" : "#64748b";
-    ctx.font = isSelected ? "700 10.5px Roboto" : "500 10px Roboto";
-    ctx.fillText(item.label, item.x, height - 6);
-  });
-}
-
-function attachChartClickInteraction(canvasId, stateKey) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas || canvas.dataset.hasClickListener) return;
-  canvas.dataset.hasClickListener = "true";
-
-  let startX = 0;
-  let startY = 0;
-
-  const handleSelect = (clientX) => {
-    const rect = canvas.getBoundingClientRect();
-    const clickX = clientX - rect.left;
-    const data = window.chartState[stateKey].data || [];
-
-    let clickedIndex = null;
-    let minDist = Infinity;
-    data.forEach((item, i) => {
-      const dist = Math.abs(item.x - clickX);
-      if (dist < minDist && dist <= 32) {
-        minDist = dist;
-        clickedIndex = i;
-      }
-    });
-
-    window.chartState[stateKey].selectedIndex =
-      clickedIndex !== null && window.chartState[stateKey].selectedIndex !== clickedIndex
-        ? clickedIndex
-        : null;
-
-    if (stateKey === "main") {
-      renderMainMonthChart();
-    } else {
-      const activeRange = document.getElementById("filterTimelineStatistik")?.getAttribute("data-value") || "1m";
-      refreshArchiveFromCurrentFilter(activeRange);
-    }
-  };
-
-  canvas.addEventListener("touchstart", e => {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-  }, { passive: true });
-
-  canvas.addEventListener("touchend", e => {
-    const endX = e.changedTouches[0].clientX;
-    const endY = e.changedTouches[0].clientY;
-    if (Math.abs(endX - startX) > 8 || Math.abs(endY - startY) > 8) return;
-    handleSelect(endX);
-  });
-
-  canvas.addEventListener("click", e => {
-    handleSelect(e.clientX);
-  });
-}
-
-// ==========================================================================
-// 10. MODAL "SELENGKAPNYA" — ARSIP REKAP & GRAFIK LINTAS PERIODE
-// ==========================================================================
-async function openArchiveModal(focusMode = "rekap") {
-  const modal = document.getElementById("modalArsipPresensi");
-  if (!modal) return;
-  modal.classList.add("active");
-
-  if (!window.AppStore.isLoaded) {
-    await PortalLoader.syncMasterPresensi(true);
-  }
-
-  initTimelineDropdown();
-  attachChartClickInteraction("archiveTrendChartCanvas", "archive");
-
-  setTimeout(() => {
-    renderArchiveView("1m");
-    if (focusMode === "rekap") {
-      const tableBox = document.getElementById("tabelArsipPresensi");
-      tableBox?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-  }, 50);
-}
-
-function populateFilterDropdowns() {
-  const taList = window.AppStore.filterOptions.taList || [];
-  const selectTaSem = document.getElementById("selectTaForSemester");
-  const selectTaFull = document.getElementById("selectTahunAjaranFull");
-  if (!selectTaSem || !selectTaFull) return;
-
-  selectTaSem.innerHTML = "";
-  selectTaFull.innerHTML = "";
-
-  if (taList.length === 0) {
-    selectTaSem.innerHTML = `<option value="">Tidak ada data TA</option>`;
-    selectTaFull.innerHTML = `<option value="">Tidak ada data TA</option>`;
-    return;
-  }
-
-  taList.forEach(ta => {
-    selectTaSem.innerHTML += `<option value="${ta}">Tahun Ajaran ${ta}</option>`;
-    selectTaFull.innerHTML += `<option value="${ta}">Tahun Ajaran ${ta}</option>`;
-  });
-
-  updateSemesterDropdownOptions();
-}
-
-function updateSemesterDropdownOptions() {
-  const selectedTA = document.getElementById("selectTaForSemester")?.value;
-  const selectSem = document.getElementById("selectSemesterType");
-  if (!selectSem || !selectedTA) return;
-
-  selectSem.innerHTML = "";
-  const availableSemesters = window.AppStore.filterOptions.semesterMap[selectedTA] || [];
-
-  if (availableSemesters.length === 0) {
-    selectSem.innerHTML = `<option value="">Tidak ada semester</option>`;
-    return;
-  }
-
-  availableSemesters.forEach(sem => {
-    selectSem.innerHTML += `<option value="${sem}">${sem === "Ganjil" ? "Ganjil (Semester 1)" : "Genap (Semester 2)"}</option>`;
-  });
-}
-
-function initTimelineDropdown() {
-  const container = document.getElementById("filterTimelineStatistik");
-  if (!container || container.querySelector(".dropdown-selected")) return;
-
-  const timelineOptions = [
-    { value: "1w", label: "📅 1 Minggu (5 Hari KBM)" },
-    { value: "1m", label: "🗓️ 1 Bulan Terakhir" },
-    { value: "semester_select", label: "🎓 Per Semester..." },
-    { value: "ta_select", label: "🏫 Per Tahun Ajaran..." },
-    { value: "custom", label: "⚙️ Kustom Rentang Tanggal..." }
-  ];
-
-  createCustomDropdown(container, timelineOptions, "1m", function (selectedVal) {
-    const customBox = document.getElementById("customDateRangeBox");
-    const semesterBox = document.getElementById("semesterSelectBox");
-    const taBox = document.getElementById("thnAjaranSelectBox");
-
-    if (customBox) customBox.style.display = "none";
-    if (semesterBox) semesterBox.style.display = "none";
-    if (taBox) taBox.style.display = "none";
-
-    if (selectedVal === "custom") {
-      if (customBox) customBox.style.display = "flex";
-    } else if (selectedVal === "semester_select") {
-      if (semesterBox) semesterBox.style.display = "flex";
-      applySemesterFilter();
-    } else if (selectedVal === "ta_select") {
-      if (taBox) taBox.style.display = "flex";
-      applyTahunAjaranFilter();
-    } else {
-      renderArchiveView(selectedVal);
-    }
-  });
-}
-
-function refreshArchiveFromCurrentFilter(activeRange) {
-  if (activeRange === "semester_select") applySemesterFilter();
-  else if (activeRange === "ta_select") applyTahunAjaranFilter();
-  else if (activeRange === "custom") applyCustomDateRange();
-  else renderArchiveView(activeRange);
-}
-
-function applySemesterFilter() {
-  const ta = document.getElementById("selectTaForSemester")?.value;
-  const sem = document.getElementById("selectSemesterType")?.value;
-  renderArchiveView("semester", ta, sem);
-}
-
-function applyTahunAjaranFilter() {
-  const taFull = document.getElementById("selectTahunAjaranFull")?.value;
-  renderArchiveView("tahun_ajaran", taFull);
-}
-
-function applyCustomDateRange() {
-  const startDate = document.getElementById("inputDateStart")?.value;
-  const endDate = document.getElementById("inputDateEnd")?.value;
-  if (!startDate || !endDate) {
-    alert("Harap isi tanggal Mulai dan Selesai!");
-    return;
-  }
-  renderArchiveView("custom", startDate, endDate);
-}
-
-function renderArchiveView(rangeType, param1 = null, param2 = null) {
-  const records = window.AppStore.getPresensiByRange(rangeType, param1, param2);
-  const st = summarizePresensiList(records);
-
-  const statMap = {
-    arcTepat: st.tepatWaktu,
-    arcTerlambat: st.terlambat,
-    arcHtp: st.tidakPresensi,
-    arcPrakerin: st.daring,
-    arcSakit: st.sakit,
-    arcIzin: st.izin,
-    arcAlpa: st.alpa,
-    arcTotalHadir: st.totalHadir
-  };
-  Object.entries(statMap).forEach(([id, val]) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = val;
-  });
-
-  renderTrendChartOnCanvas({
-    canvasId: "archiveTrendChartCanvas",
-    wrapperId: "archiveChartInnerWrapper",
-    scrollId: "archiveChartScrollContainer",
-    stateKey: "archive",
-    records,
-    compactFit: rangeType === "1w"
-  });
-
-  renderPresensiTableRows("#tabelArsipPresensi tbody", null, records, true);
-}
-
-// ==========================================================================
 // 11. CUSTOM DROPDOWN COMPONENT
 // ==========================================================================
 function createCustomDropdown(containerElement, optionsArray, selectedValue, onSelectCallback) {
@@ -1432,7 +1416,6 @@ function populateBiodataUI(idSiswa, nama, kelas, jurusan) {
   const jk = userObj.jenisKelamin || userObj.jk || "-";
   const ttl = userObj.ttl || (userObj.tempatLahir && userObj.tanggalLahir ? `${userObj.tempatLahir}, ${userObj.tanggalLahir}` : "-");
 
-  // Header & Greeting
   const setTxt = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
@@ -1440,7 +1423,6 @@ function populateBiodataUI(idSiswa, nama, kelas, jurusan) {
 
   setTxt("namaSiswa", nama);
   setTxt("kelasSiswa", kelas);
-  setTxt("badgeNisSiswa", idSiswa);
 
   // Mobile Tab Profil
   setTxt("profilAvatarLarge", initial);
@@ -1452,7 +1434,7 @@ function populateBiodataUI(idSiswa, nama, kelas, jurusan) {
   setTxt("profilJk", jk);
   setTxt("profilTtl", ttl);
 
-  // Modal Biodata (Desktop)
+  // Modal Biodata (Desktop & Quick Action)
   setTxt("modalBiodataAvatar", initial);
   setTxt("modalBiodataNama", nama);
   setTxt("modalBiodataKelas", kelas);
@@ -1488,7 +1470,7 @@ function initFormSiswa() {
   PortalLoader.init();
 }
 
-// Global Click Listener untuk menutup Dropdown, Theme Popover, & Profile Popover
+// Global Click Listener untuk menutup Dropdown & Popover
 document.addEventListener("click", function (e) {
   if (!e.target.closest(".custom-dropdown")) {
     document.querySelectorAll(".custom-dropdown.open").forEach(el => el.classList.remove("open"));
