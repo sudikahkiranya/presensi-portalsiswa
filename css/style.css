@@ -2775,7 +2775,7 @@ body.login-body > .container-login {
 }
 
 /* ==========================================================================
-   14. PORTAL PRESENSI SISWA - INLINE HEADER TABS & BENTO DASHBOARD
+   14. PORTAL PRESENSI SISWA - HYBRID BENTO DASHBOARD (DESKTOP & MOBILE)
    ========================================================================== */
 html[data-theme="ocean"], body[data-theme="ocean"] {
   --theme-glow-rgb: 37, 99, 235;
@@ -2849,7 +2849,7 @@ body.student-portal-body {
   background: var(--bg-page) !important;
   color: var(--text-body);
   margin: 0;
-  padding: 0 24px 24px 24px !important;
+  padding: 0 28px 28px 28px !important;
   min-height: 100vh;
   height: auto !important;
   display: block !important;
@@ -2864,21 +2864,20 @@ html:has(body.student-portal-body) {
 }
 
 html:has(body.student-portal-body)::-webkit-scrollbar,
-body.student-portal-body::-webkit-scrollbar,
-body.student-portal-body .dropdown-menu::-webkit-scrollbar,
-body.student-portal-body .tab-content::-webkit-scrollbar,
-body.student-portal-body .custom-date-box::-webkit-scrollbar {
+body.student-portal-body::-webkit-scrollbar {
   display: none;
 }
 
-/* Top Header Banner + Inline Pill Tabs */
+/* ==========================================================================
+   TOP HEADER BANNER (CLEAN BRANDING + THEME & PROFILE POPOVER)
+   ========================================================================== */
 body.student-portal-body #topHeaderBanner.header-box.main-header {
-  max-width: 1180px;
+  max-width: 1380px;
   width: 100%;
   margin: 0 auto 18px auto !important;
   background: var(--primary) !important;
   border-radius: 0 0 16px 16px !important;
-  padding: 14px 30px !important;
+  padding: 14px 28px !important;
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
@@ -2929,7 +2928,7 @@ body.student-portal-body .header-brand-text {
 
 body.student-portal-body .header-brand-text h1 {
   margin: 0;
-  font-size: 16px;
+  font-size: 16.5px;
   font-weight: 700;
   color: #ffffff;
   line-height: 1.2;
@@ -2937,67 +2936,12 @@ body.student-portal-body .header-brand-text h1 {
 }
 
 body.student-portal-body .header-brand-text span {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.85);
   margin-top: 2px;
 }
 
-/* Segmented Pill Dock di Tengah Header */
-body.student-portal-body .tab-container {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 4px;
-  margin: 0;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 999px;
-  backdrop-filter: blur(6px);
-}
-
-body.student-portal-body .tab-btn {
-  padding: 7px 16px;
-  height: auto;
-  border-radius: 999px;
-  background: transparent !important;
-  border: none !important;
-  color: rgba(255, 255, 255, 0.88) !important;
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  cursor: pointer;
-  box-shadow: none !important;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-}
-
-body.student-portal-body .tab-btn svg {
-  width: 15px;
-  height: 15px;
-  stroke: currentColor;
-  fill: none;
-  flex-shrink: 0;
-}
-
-body.student-portal-body .tab-btn:hover {
-  background: rgba(255, 255, 255, 0.18) !important;
-  color: #ffffff !important;
-  transform: none !important;
-}
-
-body.student-portal-body .tab-btn.active {
-  background: #ffffff !important;
-  color: var(--primary) !important;
-  font-weight: 700;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14) !important;
-}
-
-/* Header Actions Kanan (Icon Bulat Tema & Profil ala Portal Piket) */
 body.student-portal-body .header-actions-area {
   display: flex;
   align-items: center;
@@ -3025,13 +2969,10 @@ body.student-portal-body .header-icon-btn {
   color: var(--primary) !important;
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s ease !important;
   flex-shrink: 0;
-  transform-origin: center center;
-  backface-visibility: hidden;
-  will-change: transform;
 }
 
 body.student-portal-body .header-icon-btn:hover {
-  transform: scale(1.08) translateZ(0) !important;
+  transform: scale(1.08) !important;
   background: #ffffff !important;
 }
 
@@ -3116,12 +3057,12 @@ body.student-portal-body .swatch-circle {
   flex-shrink: 0;
 }
 
-/* Profile Popover (Nama, Kelas & Logout - Tanpa Clear Cache) */
+/* Profile Popover */
 body.student-portal-body .profile-popover {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 245px;
+  width: 255px;
   background: #ffffff;
   border-radius: 14px;
   box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
@@ -3204,39 +3145,100 @@ body.student-portal-body .profile-action-btn.btn-logout svg {
   stroke: currentColor;
 }
 
-/* Workspace Container */
+body.student-portal-body .profile-popover-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 12px 0 10px;
+}
+
+body.student-portal-body .profile-biodata-btn {
+  width: 100% !important;
+  height: 36px !important;
+  padding: 0 12px !important;
+  border-radius: 10px !important;
+  background: #f8fafc !important;
+  color: var(--text-dark) !important;
+  border: 1px solid #e2e8f0 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  cursor: pointer;
+  transition: all 0.15s ease !important;
+}
+
+body.student-portal-body .profile-biodata-btn:hover {
+  background: var(--primary-soft-tint) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+  transform: none !important;
+}
+
+/* ==========================================================================
+   WORKSPACE CONTAINER (DESKTOP: 2-ROW BENTO | MOBILE: TABS)
+   ========================================================================== */
 body.student-portal-body .app-workspace {
-  max-width: 1180px;
+  max-width: 1380px;
   width: 100%;
   margin: 0 auto;
-}
-
-body.student-portal-body .tab-content {
-  display: none;
-}
-
-body.student-portal-body .tab-content.active {
-  display: block;
 }
 
 body.student-portal-body .section {
   background: #ffffff;
   border-radius: 18px;
-  padding: 16px 20px;
+  padding: 18px 22px;
   border: 1px solid var(--border-light);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  box-sizing: border-box;
 }
 
 body.student-portal-body .section h3 {
   margin: 0;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-dark);
   line-height: 1.25;
 }
 
-/* Tab 1: Beranda Bento Grid */
-body.student-portal-body .bento-home-grid {
+/* DESKTOP UNIFIED 2-ROW BENTO LAYOUT */
+@media (min-width: 769px) {
+  body.student-portal-body .hybrid-dashboard-grid {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  body.student-portal-body .bento-row-top {
+    grid-column: 1 / -1;
+    display: block !important;
+  }
+
+  body.student-portal-body .bento-row-bottom-left,
+  body.student-portal-body .bento-row-bottom-right {
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  body.student-portal-body .bento-row-bottom-left .section,
+  body.student-portal-body .bento-row-bottom-right .section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.student-portal-body .mobile-only-tab,
+  body.student-portal-body .mobile-only-rekap-grid {
+    display: none !important;
+  }
+}
+
+/* ==========================================================================
+   BARIS 1 BENTO: GREETING, PRESENSI HARI INI, KLASEMEN & RINGKASAN BULAN
+   ========================================================================== */
+body.student-portal-body .bento-top-grid {
   display: grid;
   grid-template-columns: 1.55fr 1fr;
   gap: 16px;
@@ -3250,18 +3252,19 @@ body.student-portal-body .bento-col-right {
   gap: 14px;
 }
 
+/* Greeting Card */
 body.student-portal-body .bento-greeting-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 14px;
-  padding: 15px 20px;
-  background: linear-gradient(135deg, #ffffff 60%, var(--primary-soft-tint) 100%);
+  padding: 16px 22px;
+  background: linear-gradient(135deg, #ffffff 58%, var(--primary-soft-tint) 100%);
 }
 
 body.student-portal-body .greeting-content h2 {
   margin: 0;
-  font-size: 16.5px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--text-dark);
   line-height: 1.3;
@@ -3269,17 +3272,29 @@ body.student-portal-body .greeting-content h2 {
 
 body.student-portal-body .greeting-content p {
   margin: 4px 0 0 0;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--text-muted);
 }
 
 body.student-portal-body .greeting-badge-nis {
-  background: #ffffff;
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  padding: 7px 12px;
-  text-align: right;
+  background: #ffffff !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: 12px !important;
+  padding: 8px 14px !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 1px !important;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.2s ease !important;
+}
+
+body.student-portal-body .greeting-badge-nis:hover {
+  border-color: var(--primary) !important;
+  box-shadow: 0 4px 12px var(--theme-glow) !important;
+  transform: translateY(-1px) !important;
 }
 
 body.student-portal-body .greeting-badge-nis .nis-label {
@@ -3293,26 +3308,29 @@ body.student-portal-body .greeting-badge-nis .nis-label {
 
 body.student-portal-body .greeting-badge-nis .nis-val {
   display: block;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--primary);
-  margin-top: 1px;
 }
 
-/* Presensi Hari Ini Timeline */
+/* Presensi Hari Ini Card */
 body.student-portal-body .today-timeline-section {
-  padding: 16px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 22px;
 }
 
 body.student-portal-body .today-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 body.student-portal-body .today-header-row small {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--text-muted);
 }
@@ -3320,6 +3338,7 @@ body.student-portal-body .today-header-row small {
 body.student-portal-body .timeline-tracker-wrapper {
   display: flex;
   flex-direction: column;
+  margin: 4px 0;
 }
 
 body.student-portal-body .tracker-labels {
@@ -3331,7 +3350,7 @@ body.student-portal-body .tracker-labels {
 
 body.student-portal-body .label-left,
 body.student-portal-body .label-right {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-muted);
 }
@@ -3344,8 +3363,8 @@ body.student-portal-body .tracker-line-container {
 }
 
 body.student-portal-body .tracker-icon-circle {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -3354,8 +3373,8 @@ body.student-portal-body .tracker-icon-circle {
 }
 
 body.student-portal-body .tracker-icon-circle svg {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
 }
 
 body.student-portal-body .icon-masuk { background: #e6f4ea; color: #137333; }
@@ -3365,7 +3384,7 @@ body.student-portal-body .tracker-connector {
   flex: 1;
   height: 2px;
   background: #cbd5e1;
-  margin: 0 10px;
+  margin: 0 12px;
   border-radius: 2px;
 }
 
@@ -3380,14 +3399,14 @@ body.student-portal-body .block-left { text-align: left; }
 body.student-portal-body .block-right { text-align: right; }
 
 body.student-portal-body .jam-text {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-dark);
   line-height: 1.2;
 }
 
 body.student-portal-body .status-text {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-muted);
   margin-top: 3px;
@@ -3400,176 +3419,204 @@ body.student-portal-body .status-text-sakit { color: #0369a1 !important; }
 body.student-portal-body .status-text-izin { color: #475569 !important; }
 body.student-portal-body .status-text-prakerin { color: #3730a3 !important; }
 
-/* Layanan & Akses Cepat */
-body.student-portal-body .bento-services-card {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  padding: 16px 20px;
-}
-
-body.student-portal-body .card-section-header {
-  margin-bottom: 14px;
-}
-
-body.student-portal-body .services-grid-4col {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-body.student-portal-body .service-item-clean {
-  height: auto !important;
-  min-height: 94px;
-  background: #f8fafc !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 14px !important;
-  padding: 14px 8px !important;
-  text-align: center;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.2s ease;
-}
-
-body.student-portal-body .service-item-clean:hover {
-  background: var(--primary-soft-tint) !important;
-  border-color: var(--primary) !important;
-  transform: translateY(-2px);
-}
-
-body.student-portal-body .service-icon-circle {
-  width: 42px;
-  height: 42px;
-  aspect-ratio: 1 / 1;
-  flex-shrink: 0;
-  background: var(--primary);
-  border-radius: 50%;
+/* Action Bar di dalam Card Presensi Hari Ini */
+body.student-portal-body .today-action-bar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  box-shadow: 0 4px 10px var(--theme-glow);
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed #e2e8f0;
 }
 
-body.student-portal-body .service-icon-circle svg {
-  width: 19px;
-  height: 19px;
-  stroke: #ffffff;
-  stroke-width: 2.2;
-  fill: none;
-}
-
-body.student-portal-body .service-clean-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-dark);
-  line-height: 1.25;
-}
-
-/* Kartu Presensi QR Desktop */
-body.student-portal-body .bento-qr-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 15px 18px;
-}
-
-body.student-portal-body .bento-qr-header {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-body.student-portal-body .qr-status-pill {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #15803d;
-  background: #dcfce7;
-  padding: 3px 10px;
-  border-radius: 999px;
-}
-
-body.student-portal-body .bento-qr-preview-box {
-  width: 100%;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 14px;
-  padding: 10px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-body.student-portal-body .qr-skeleton-box {
-  height: 225px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-body.student-portal-body #qrPreviewDesktop {
-  width: 152px;
-  height: 228px;
-  object-fit: contain;
-  border-radius: 10px;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
-  background: #ffffff;
-  transition: transform 0.2s ease;
-}
-
-body.student-portal-body #qrPreviewDesktop:hover {
-  transform: scale(1.02);
-}
-
-body.student-portal-body .btn-download-qr-desktop {
-  width: 100%;
-  padding: 9px 14px;
-  border-radius: 10px;
+body.student-portal-body .btn-today-primary {
   background: var(--primary) !important;
   color: #ffffff !important;
-  font-size: 12.5px;
-  font-weight: 600;
+  height: 38px !important;
+  padding: 0 16px !important;
+  border-radius: 10px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  box-shadow: 0 4px 12px var(--theme-glow) !important;
 }
 
-body.student-portal-body .btn-download-qr-desktop:hover {
+body.student-portal-body .btn-today-primary:hover {
   background: var(--primary-hover) !important;
 }
 
-/* Pengumuman Terkini */
-body.student-portal-body .bento-info-card {
+body.student-portal-body .btn-today-outline {
+  background: #f8fafc !important;
+  color: var(--text-dark) !important;
+  border: 1px solid var(--border-light) !important;
+  height: 38px !important;
+  padding: 0 14px !important;
+  border-radius: 10px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+body.student-portal-body .btn-today-outline:hover {
+  background: var(--primary-soft-tint) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+body.student-portal-body .izin-count-pill {
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+
+/* Klasemen Disiplin Card */
+body.student-portal-body .bento-rank-card {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #ffffff 65%, #fefce8 100%);
+}
+
+body.student-portal-body .rank-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+body.student-portal-body .rank-scope-label {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+body.student-portal-body .rank-update-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--primary-soft-tint);
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+body.student-portal-body .rank-main-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+body.student-portal-body .rank-number-group {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+body.student-portal-body .rank-hash {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+body.student-portal-body .rank-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-dark);
+  line-height: 1;
+}
+
+body.student-portal-body .rank-total {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+body.student-portal-body .rank-trend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+body.student-portal-body .rank-trend-pill.is-up {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+body.student-portal-body .rank-trend-pill.is-down {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+body.student-portal-body .rank-trend-pill.is-flat {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+body.student-portal-body .rank-footer-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+body.student-portal-body .rank-footer-meta strong {
+  color: var(--text-dark);
+}
+
+/* Ringkasan Kehadiran Bulan Berjalan Card */
+body.student-portal-body .bento-month-kpi-card {
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 16px 20px;
 }
 
-body.student-portal-body .bento-info-header {
+body.student-portal-body .month-kpi-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+body.student-portal-body .month-period-label {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 
 body.student-portal-body .btn-link-subtle {
   background: transparent !important;
   border: none !important;
   color: var(--primary) !important;
-  font-size: 11.5px;
-  font-weight: 700;
+  font-size: 12px !important;
+  font-weight: 700 !important;
   padding: 2px 6px !important;
   height: auto !important;
+  cursor: pointer;
 }
 
 body.student-portal-body .btn-link-subtle:hover {
@@ -3577,94 +3624,88 @@ body.student-portal-body .btn-link-subtle:hover {
   transform: none !important;
 }
 
-body.student-portal-body .bento-info-item {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-left: 3.5px solid var(--primary);
-  border-radius: 10px;
-  padding: 9px 12px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-body.student-portal-body .bento-info-item:hover {
-  background: var(--primary-soft-tint);
-}
-
-body.student-portal-body .info-item-title {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--text-dark);
-}
-
-body.student-portal-body .info-item-meta {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-/* Tab 2: Rekap Presensi */
-body.student-portal-body .bento-rekap-layout {
+body.student-portal-body .month-kpi-grid {
   display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 16px;
-  align-items: start;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
 }
 
-body.student-portal-body .section-heading-block p,
-body.student-portal-body .table-section-header p {
-  margin: 4px 0 0 0;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-body.student-portal-body .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-top: 14px;
-}
-
-body.student-portal-body .stat-card {
-  background: #f8fafc;
-  padding: 11px 10px;
+body.student-portal-body .kpi-mini-box {
   border-radius: 12px;
+  padding: 10px 6px;
   text-align: center;
-  border: 1px solid var(--border-light);
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
-body.student-portal-body .stat-card label {
+body.student-portal-body .kpi-mini-val {
   display: block;
-  font-size: 10px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  margin-bottom: 4px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
-body.student-portal-body .stat-card span {
+body.student-portal-body .kpi-mini-lbl {
   display: block;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-dark);
+  font-size: 10.5px;
+  font-weight: 600;
+  margin-top: 3px;
 }
 
-body.student-portal-body .stat-card.full-width { grid-column: span 2; }
-body.student-portal-body .stat-card.total-main { background: var(--primary); border-color: var(--primary); }
-body.student-portal-body .stat-card.total-sub { background: #d97706; border-color: #d97706; }
-
-body.student-portal-body .stat-card.total-main label,
-body.student-portal-body .stat-card.total-sub label,
-body.student-portal-body .stat-card.total-main span,
-body.student-portal-body .stat-card.total-sub span {
-  color: #ffffff;
+body.student-portal-body .kpi-mini-box.tone-hadir {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #15803d;
 }
 
+body.student-portal-body .kpi-mini-box.tone-late {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+}
+
+body.student-portal-body .kpi-mini-box.tone-izin {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+body.student-portal-body .kpi-mini-box.tone-alpa {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+body.student-portal-body .kpi-mini-box.tone-rate {
+  background: var(--primary-soft-tint);
+  border-color: var(--primary-ring);
+  color: var(--primary);
+}
+
+/* ==========================================================================
+   BARIS 2 BENTO: STATISTIK GRAFIK & LOG PRESENSI BULAN INI
+   ========================================================================== */
+body.student-portal-body .statistik-top-bar,
 body.student-portal-body .table-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+body.student-portal-body .statistik-subtitle,
+body.student-portal-body .table-section-header p {
+  margin: 3px 0 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+body.student-portal-body .rekap-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 body.student-portal-body .data-count-badge {
@@ -3672,85 +3713,42 @@ body.student-portal-body .data-count-badge {
   font-weight: 700;
   color: var(--primary);
   background: var(--primary-soft-tint);
-  padding: 4px 10px;
+  padding: 5px 10px;
   border-radius: 999px;
+  white-space: nowrap;
 }
 
-body.student-portal-body .table-wrapper {
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  overflow-x: auto;
-  max-height: 440px;
-  overflow-y: auto;
-  background: #ffffff;
+body.student-portal-body .btn-selengkapnya-pill {
+  background: #f8fafc !important;
+  color: var(--primary) !important;
+  border: 1px solid var(--border-light) !important;
+  height: 32px !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  white-space: nowrap;
 }
 
-body.student-portal-body #tabelPresensi th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+body.student-portal-body .btn-selengkapnya-pill:hover {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  border-color: var(--primary) !important;
 }
 
-body.student-portal-body #tabelPresensi td {
-  padding: 10px;
-  border-bottom: 1px solid #e2e8f0;
-  text-align: center;
-  font-size: 12.5px;
-  color: var(--text-dark);
-}
-
-/* Tab 3: Statistik & Kurva Tren */
-body.student-portal-body .statistik-top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 14px;
-}
-
-body.student-portal-body .statistik-subtitle {
-  margin: 4px 0 0 0;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-body.student-portal-body .statistik-filter-box {
-  width: 240px;
-  flex-shrink: 0;
-}
-
-body.student-portal-body .custom-date-box {
-  background: #f8fafc;
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
-}
-
-body.student-portal-body .custom-date-inputs {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-body.student-portal-body .date-field { flex: 1; }
-body.student-portal-body .date-field label {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-}
-
-body.student-portal-body .date-input-clean { width: 100%; }
-body.student-portal-body .btn-apply-filter { width: 100%; }
-
+/* Chart Box */
 body.student-portal-body .chart-box-container {
   background: #f8fafc;
   border: 1px solid var(--border-light);
   border-radius: 14px;
   padding: 14px 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 body.student-portal-body .chart-box-header {
@@ -3763,7 +3761,8 @@ body.student-portal-body .chart-box-header {
 body.student-portal-body .chart-title { font-size: 12.5px; font-weight: 700; color: var(--text-dark); }
 body.student-portal-body .chart-hint { font-size: 11px; color: var(--text-muted); }
 
-body.student-portal-body #chartScrollContainer {
+body.student-portal-body #chartScrollContainer,
+body.student-portal-body #archiveChartScrollContainer {
   width: 100%;
   overflow-x: auto;
   padding-bottom: 6px;
@@ -3775,10 +3774,17 @@ body.student-portal-body #chartScrollContainer {
 body.student-portal-body #chartInnerWrapper {
   position: relative;
   min-width: 100%;
-  height: 245px;
+  height: 230px;
 }
 
-body.student-portal-body #trendChartCanvas {
+body.student-portal-body #archiveChartInnerWrapper {
+  position: relative;
+  min-width: 100%;
+  height: 210px;
+}
+
+body.student-portal-body #trendChartCanvas,
+body.student-portal-body #archiveTrendChartCanvas {
   height: 100%;
   display: block;
 }
@@ -3786,97 +3792,60 @@ body.student-portal-body #trendChartCanvas {
 body.student-portal-body .chart-legend-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px 14px;
+  gap: 7px 12px;
   margin-top: 12px;
-  padding-top: 12px;
+  padding-top: 10px;
   border-top: 1px dashed #cbd5e1;
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--text-muted);
 }
 
 body.student-portal-body .legend-item { display: flex; align-items: center; gap: 6px; }
 body.student-portal-body .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-/* Tab 4: Profil Siswa */
-body.student-portal-body .bento-profil-card {
-  max-width: 460px;
-  margin: 0 auto;
-  text-align: center;
-  padding: 28px 24px;
-}
-
-body.student-portal-body .profil-avatar-large {
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: #ffffff;
-  font-size: 26px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 12px auto;
-  box-shadow: 0 6px 16px var(--theme-glow);
-}
-
-body.student-portal-body .bento-profil-card h3 { font-size: 17px; margin-bottom: 6px; }
-
-body.student-portal-body .profil-kelas-badge {
-  display: inline-block;
-  margin: 0 0 18px 0;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--primary-soft-tint);
-  color: var(--primary);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-body.student-portal-body .profil-detail-list {
-  background: #f8fafc;
+/* Table Log Presensi */
+body.student-portal-body .table-wrapper {
   border: 1px solid var(--border-light);
-  border-radius: 14px;
-  padding: 6px 14px;
-  margin-bottom: 20px;
-  text-align: left;
-}
-
-body.student-portal-body .profil-detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px dashed #e2e8f0;
-  font-size: 12.5px;
-}
-
-body.student-portal-body .profil-detail-row:last-child { border-bottom: none; }
-body.student-portal-body .profil-detail-row span { color: var(--text-muted); }
-body.student-portal-body .profil-detail-row strong { color: var(--text-dark); font-weight: 700; }
-
-body.student-portal-body .btn-logout-full {
-  width: 100%;
-  background: #dc2626 !important;
   border-radius: 12px;
+  overflow-x: auto;
+  max-height: 325px;
+  overflow-y: auto;
+  background: #ffffff;
+  flex: 1;
 }
 
-body.student-portal-body .btn-logout-full:hover { background: #b91c1c !important; }
+body.student-portal-body #tabelPresensi th,
+body.student-portal-body #tabelArsipPresensi th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
 
-/* Student Modals & Loading */
+body.student-portal-body #tabelPresensi td,
+body.student-portal-body #tabelArsipPresensi td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-dark);
+}
+
+/* ==========================================================================
+   MODALS (QR, IZIN KELUAR, RIWAYAT IZIN, BIODATA, ARSIP SELENGKAPNYA)
+   ========================================================================== */
 body.student-portal-body .qr-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.55);
   backdrop-filter: blur(4px);
   z-index: 9000;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 16px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.22s ease;
 }
 
 body.student-portal-body .qr-modal-overlay.active {
@@ -3887,51 +3856,358 @@ body.student-portal-body .qr-modal-overlay.active {
 body.student-portal-body .qr-modal-card {
   background: #ffffff;
   border-radius: 20px;
-  padding: 22px;
-  text-align: center;
-  max-width: 350px;
+  padding: 20px 22px;
+  text-align: left;
+  max-width: 390px;
   width: 100%;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.22);
+  box-sizing: border-box;
 }
 
-body.student-portal-body .qr-modal-card h4 { margin: 0; color: var(--text-dark); font-size: 16px; }
-body.student-portal-body .modal-sub { margin: 4px 0 12px 0; font-size: 12px; color: var(--text-muted); }
+body.student-portal-body .qr-modal-card.modal-wide-sm { max-width: 440px; }
+body.student-portal-body .qr-modal-card.modal-wide-md { max-width: 520px; }
+body.student-portal-body .qr-modal-card.modal-archive-box { max-width: 880px; }
+
+body.student-portal-body .modal-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+body.student-portal-body .modal-card-top h4 {
+  margin: 0;
+  color: var(--text-dark);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+body.student-portal-body .modal-sub {
+  margin: 3px 0 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+body.student-portal-body .modal-x-btn {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  font-size: 13px !important;
+  flex-shrink: 0;
+}
+
+body.student-portal-body .modal-x-btn:hover {
+  background: #e2e8f0 !important;
+  color: var(--text-dark) !important;
+  transform: none !important;
+}
+
+/* QR Modal Preview */
+body.student-portal-body .qr-modal-preview-wrap {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+body.student-portal-body .qr-skeleton-box {
+  height: 290px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
 
 body.student-portal-body #qrPreviewModal {
-  width: 220px;
-  border-radius: 14px;
-  margin: 10px auto;
+  width: 210px;
+  height: 315px;
+  object-fit: contain;
+  border-radius: 12px;
   display: block;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
 }
 
-body.student-portal-body .modal-actions-center { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
-body.student-portal-body .modal-actions-end { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
-body.student-portal-body .qr-modal-card button.btn-secondary-modal { background: #e2e8f0 !important; color: var(--text-dark) !important; }
-body.student-portal-body .qr-modal-card button.btn-full { width: 100%; margin-top: 12px; }
+body.student-portal-body .modal-actions-center {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
 
-body.student-portal-body .form-group-modal { text-align: left; margin-bottom: 12px; }
-body.student-portal-body .form-group-modal label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-dark); margin-bottom: 4px; }
+body.student-portal-body .modal-actions-end {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+body.student-portal-body .btn-primary-modal {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+body.student-portal-body .btn-primary-modal:hover {
+  background: var(--primary-hover) !important;
+}
+
+body.student-portal-body .qr-modal-card button.btn-secondary-modal {
+  background: #e2e8f0 !important;
+  color: var(--text-dark) !important;
+}
+
+body.student-portal-body .qr-modal-card button.btn-full {
+  width: 100%;
+  margin-top: 12px;
+}
+
+/* Form Izin Keluar */
+body.student-portal-body .form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+body.student-portal-body .form-group-modal {
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+body.student-portal-body .form-group-modal label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 5px;
+}
+
 body.student-portal-body .form-group-modal select,
+body.student-portal-body .form-group-modal input[type="time"],
 body.student-portal-body .form-group-modal textarea {
   width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: 9px 11px;
+  border-radius: 10px;
   border: 1px solid var(--border-light);
   font-family: inherit;
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--text-dark);
+  background: #ffffff;
+  box-sizing: border-box;
   outline: none;
 }
 
-body.student-portal-body .modal-list-scroll { margin: 12px 0; text-align: left; max-height: 200px; overflow-y: auto; }
-body.student-portal-body .modal-list-card { padding: 9px 10px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 6px; }
-body.student-portal-body .modal-list-top { display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 700; }
-body.student-portal-body .badge-approved { color: #15803d; }
-body.student-portal-body .modal-list-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-body.student-portal-body .modal-info-box { text-align: left; font-size: 12px; line-height: 1.55; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; margin-top: 10px; }
+body.student-portal-body .form-group-modal select:focus,
+body.student-portal-body .form-group-modal input[type="time"]:focus,
+body.student-portal-body .form-group-modal textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--theme-glow);
+}
 
+/* Riwayat Izin List */
+body.student-portal-body .modal-list-scroll {
+  overflow-y: auto;
+  max-height: 310px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 2px;
+}
+
+body.student-portal-body .izin-history-item {
+  padding: 11px 13px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+body.student-portal-body .izin-history-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+body.student-portal-body .izin-history-type {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+body.student-portal-body .izin-status-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+
+body.student-portal-body .izin-status-pill.is-approved {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+body.student-portal-body .izin-status-pill.is-pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+body.student-portal-body .izin-status-pill.is-rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+body.student-portal-body .izin-history-meta {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 3px;
+}
+
+body.student-portal-body .izin-history-reason {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Biodata Modal & Tab Profil */
+body.student-portal-body .biodata-modal-hero {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+body.student-portal-body .biodata-modal-hero h4 {
+  margin: 0 0 4px 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+body.student-portal-body .profil-avatar-large {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px auto;
+  box-shadow: 0 6px 16px var(--theme-glow);
+}
+
+body.student-portal-body .profil-kelas-badge {
+  display: inline-block;
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--primary-soft-tint);
+  color: var(--primary);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+body.student-portal-body .profil-detail-list {
+  background: #f8fafc;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 4px 14px;
+  text-align: left;
+}
+
+body.student-portal-body .profil-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px dashed #e2e8f0;
+  font-size: 12.5px;
+}
+
+body.student-portal-body .profil-detail-row:last-child { border-bottom: none; }
+body.student-portal-body .profil-detail-row span { color: var(--text-muted); }
+body.student-portal-body .profil-detail-row strong { color: var(--text-dark); font-weight: 700; text-align: right; }
+
+body.student-portal-body .btn-logout-full {
+  width: 100%;
+  margin-top: 16px;
+  background: #dc2626 !important;
+  border-radius: 12px;
+}
+
+body.student-portal-body .btn-logout-full:hover { background: #b91c1c !important; }
+
+/* Modal Arsip Selengkapnya */
+body.student-portal-body .archive-toolbar-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+body.student-portal-body .archive-range-wrap {
+  width: 225px;
+  flex-shrink: 0;
+}
+
+body.student-portal-body .archive-inline-subfilter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+}
+
+body.student-portal-body .archive-inline-subfilter select,
+body.student-portal-body .archive-inline-subfilter input[type="date"] {
+  height: 38px;
+  min-width: 145px;
+}
+
+body.student-portal-body .date-sep {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+body.student-portal-body .archive-body-scroll {
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+body.student-portal-body .archive-stats-row {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+body.student-portal-body .h-stat-pill.is-total {
+  background: var(--primary-soft-tint);
+  border-color: var(--primary-ring);
+}
+
+body.student-portal-body .h-stat-pill.is-total span {
+  color: var(--primary);
+}
+
+/* Spinner */
 body.student-portal-body .spinner {
   border: 3px solid #e2e8f0;
   border-top: 3px solid var(--primary);
@@ -3946,44 +4222,105 @@ body.student-portal-body .spinner {
 
 body.student-portal-body .floating-bottom-bar { display: none; }
 
-/* Tablet / Layar Menengah: Sembunyikan sub-judul brand jika ruang mulai sempit */
-@media (max-width: 1024px) {
-  body.student-portal-body .header-brand-text span {
-    display: none;
-  }
-  body.student-portal-body .tab-btn {
-    padding: 7px 12px;
-    font-size: 12px;
-  }
-}
-
-/* Mobile Responsive for Student Portal */
+/* ==========================================================================
+   MOBILE RESPONSIVE (LAZY-LOADED TABS + FLOATING BOTTOM BAR)
+   ========================================================================== */
 @media (max-width: 768px) {
-  body.student-portal-body { padding: 0 12px 96px 12px !important; }
-  body.student-portal-body .hide-mobile { display: none !important; }
+  body.student-portal-body {
+    padding: 0 12px 96px 12px !important;
+  }
+
   body.student-portal-body #topHeaderBanner.header-box.main-header {
     padding: 12px 16px !important;
     margin-bottom: 14px !important;
   }
+
   body.student-portal-body .header-logo-circle { width: 40px; height: 40px; }
-  body.student-portal-body .header-brand-text h1 { font-size: 14px; }
-  body.student-portal-body .header-brand-text span { display: block; font-size: 10.5px; }
-  body.student-portal-body .tab-container { display: none !important; }
-  body.student-portal-body .bento-home-grid { grid-template-columns: 1fr; gap: 12px; }
-  body.student-portal-body .bento-qr-card { display: none !important; }
-  body.student-portal-body .bento-greeting-card { padding: 14px 16px; }
-  body.student-portal-body .greeting-content h2 { font-size: 15px; }
-  body.student-portal-body .services-grid-4col { gap: 8px; }
-  body.student-portal-body .service-item-clean {
-    min-height: auto !important;
-    background: transparent !important;
-    border: none !important;
-    padding: 4px 0 !important;
+  body.student-portal-body .header-brand-text h1 { font-size: 14.5px; }
+  body.student-portal-body .header-brand-text span { font-size: 11px; }
+
+  /* Tab Switching Active State di Mobile */
+  body.student-portal-body .tab-content {
+    display: none;
   }
-  body.student-portal-body .service-clean-label { font-size: 10.5px; }
-  body.student-portal-body .bento-rekap-layout { grid-template-columns: 1fr; }
-  body.student-portal-body .stats-grid { grid-template-columns: repeat(3, 1fr); }
+
+  body.student-portal-body .tab-content.active {
+    display: block;
+  }
+
+  body.student-portal-body .bento-top-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  body.student-portal-body .bento-greeting-card {
+    padding: 14px 16px;
+  }
+
+  body.student-portal-body .greeting-content h2 {
+    font-size: 15px;
+  }
+
+  body.student-portal-body .today-action-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  body.student-portal-body .today-action-bar .btn-today-primary {
+    grid-column: span 2;
+    justify-content: center !important;
+  }
+
+  body.student-portal-body .today-action-bar .btn-today-outline {
+    justify-content: center !important;
+    padding: 0 8px !important;
+    font-size: 11.5px !important;
+  }
+
+  body.student-portal-body .month-kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Tab Rekap Mobile */
+  body.student-portal-body .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  body.student-portal-body .stat-card {
+    background: #f8fafc;
+    padding: 10px 8px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid var(--border-light);
+  }
+
+  body.student-portal-body .stat-card label {
+    display: block;
+    font-size: 9.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 3px;
+    font-weight: 700;
+  }
+
+  body.student-portal-body .stat-card span {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+
   body.student-portal-body .stat-card.full-width { grid-column: span 3; }
+  body.student-portal-body .stat-card.total-main { background: var(--primary); border-color: var(--primary); }
+  body.student-portal-body .stat-card.total-sub { background: #d97706; border-color: #d97706; }
+  body.student-portal-body .stat-card.total-main label,
+  body.student-portal-body .stat-card.total-sub label,
+  body.student-portal-body .stat-card.total-main span,
+  body.student-portal-body .stat-card.total-sub span { color: #ffffff; }
 
   body.student-portal-body #tabelPresensi thead { display: none; }
   body.student-portal-body #tabelPresensi,
@@ -3997,6 +4334,7 @@ body.student-portal-body .floating-bottom-bar { display: none; }
     border-radius: 12px;
     margin-bottom: 10px;
     padding: 10px 12px;
+    box-sizing: border-box;
   }
 
   body.student-portal-body #tabelPresensi td {
@@ -4016,10 +4354,11 @@ body.student-portal-body .floating-bottom-bar { display: none; }
     font-size: 11.5px;
   }
 
-  body.student-portal-body .statistik-top-bar { flex-direction: column; align-items: stretch; }
-  body.student-portal-body .statistik-filter-box { width: 100%; }
   body.student-portal-body .chart-legend-grid { grid-template-columns: repeat(2, 1fr); }
+  body.student-portal-body .archive-stats-row { grid-template-columns: repeat(4, 1fr); }
+  body.student-portal-body .bento-profil-card { text-align: center; padding: 24px 18px; }
 
+  /* Floating Bottom Bar */
   body.student-portal-body .floating-bottom-bar {
     position: fixed;
     bottom: 14px;

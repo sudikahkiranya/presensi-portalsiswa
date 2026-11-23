@@ -1,6 +1,6 @@
 /* ==========================================================================
    PORTAL PRESENSI SISWA - SMK MEDICACOM BANDUNG
-   File: js/dashboard.js
+   File: js/dashboard.js (Hybrid Bento Dashboard + Lazy Mobile + Mock Klasemen & Izin)
    ========================================================================== */
 
 // ==========================================================================
@@ -12,11 +12,31 @@ window.generatedQrDataUrl = null;
 
 window.AppStore = {
   isLoaded: false,
+  isLoadingPromise: null,
   logs: [],
   filterOptions: { taList: [], semesterMap: {} },
   activeSemester: null,
   rawPresensi: [],
 
+  // Ambil data presensi khusus bulan berjalan (untuk Bento Home Desktop & Tab Rekap/Statistik awal)
+  getCurrentMonthPresensi: function () {
+    if (!this.rawPresensi.length) return [];
+    const now = new Date();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const yyyy = String(now.getFullYear());
+    const suffix = `/${mm}/${yyyy}`;
+    const prefix = `${yyyy}-${mm}`;
+
+    const filtered = this.rawPresensi.filter(p => {
+      const tgl = String(p.tanggal || "");
+      return tgl.endsWith(suffix) || tgl.startsWith(prefix);
+    });
+
+    // Fallback jika tanggal server/sheet belum masuk bulan kalender lokal (misal awal bulan)
+    return filtered.length > 0 ? filtered : this.rawPresensi.slice(-22);
+  },
+
+  // Filter lintas periode untuk Modal "Selengkapnya"
   getPresensiByRange: function (rangeType, param1, param2) {
     if (!this.rawPresensi.length) return [];
 
@@ -40,16 +60,49 @@ window.AppStore = {
   }
 };
 
-window.riwayatData = [];
 window.idSiswaGlobal = null;
-window.isLoaded = { hariIni: false, statistik: false, riwayat: false, qr: false };
 window.__INIT_CALLED = false;
 window.loadingCount = 0;
-window.currentChartData = [];
-window.selectedDotIndex = null;
+
+// State interaksi titik grafik terpisah antara Home & Modal Arsip
+window.chartState = {
+  main: { data: [], selectedIndex: null },
+  archive: { data: [], selectedIndex: null }
+};
 
 // ==========================================================================
-// 2. API HELPER & BRANDING CONFIG
+// 2. DATA DUMMY (KLASEMEN DISIPLIN & IZIN MENINGGALKAN SEKOLAH)
+// ==========================================================================
+window.DummyKlasemen = {
+  rankSekarang: 14,
+  rankKemarin: 17,
+  totalSiswaSekolah: 640,
+  poinDisiplin: 98
+};
+
+window.DummyIzinList = [
+  {
+    id: "IZN-20261120-01",
+    tanggal: "20/11/2026",
+    kategori: "Izin Keluar Sementara",
+    jamKeluar: "10:15",
+    jamKembali: "11:20",
+    alasan: "Kontrol kawat gigi di klinik dekat sekolah (surat keterangan orang tua terlampir).",
+    status: "Disetujui"
+  },
+  {
+    id: "IZN-20261112-02",
+    tanggal: "12/11/2026",
+    kategori: "Izin Pulang Awal",
+    jamKeluar: "13:00",
+    jamKembali: "-",
+    alasan: "Menghadiri acara keluarga mendesak di luar kota, dijemput orang tua.",
+    status: "Disetujui"
+  }
+];
+
+// ==========================================================================
+// 3. API HELPER & BRANDING CONFIG
 // ==========================================================================
 async function callBackendApi(action, params = {}) {
   const response = await fetch(API_URL, {
@@ -91,36 +144,27 @@ async function loadSystemBranding() {
 }
 
 // ==========================================================================
-// 3. 8-THEME ENGINE (SYNC DENGAN PORTAL PIKET)
+// 4. 8-THEME ENGINE & HEADER POPOVERS
 // ==========================================================================
 function toggleThemePopover(event) {
   if (event) event.stopPropagation();
-  const profilePopover = document.getElementById("profilePopover");
-  if (profilePopover) profilePopover.classList.remove("is-open");
-
+  closeProfilePopover();
   const themePopover = document.getElementById("themePopover");
-  if (themePopover) themePopover.classList.toggle("open"); // pakai class bawaan tema lu ('open' / 'is-open')
+  if (themePopover) themePopover.classList.toggle("open");
 }
 
 function toggleProfilePopover(event) {
   if (event) event.stopPropagation();
   const themePopover = document.getElementById("themePopover");
   const profilePopover = document.getElementById("profilePopover");
-
   if (themePopover) themePopover.classList.remove("open", "is-open");
   if (profilePopover) profilePopover.classList.toggle("is-open");
 }
 
-document.addEventListener("click", function (event) {
+function closeProfilePopover() {
   const profilePopover = document.getElementById("profilePopover");
-  const profileBtn = document.getElementById("profilePickerBtn");
-
-  if (profilePopover && profilePopover.classList.contains("is-open")) {
-    if (!profilePopover.contains(event.target) && (!profileBtn || !profileBtn.contains(event.target))) {
-      profilePopover.classList.remove("is-open");
-    }
-  }
-});
+  if (profilePopover) profilePopover.classList.remove("is-open", "open");
+}
 
 function setAppTheme(themeName, persist = true) {
   const validThemes = ["burgundy", "ocean", "emerald", "royal", "sunset", "teal", "indigo", "slate"];
@@ -138,7 +182,12 @@ function setAppTheme(themeName, persist = true) {
   });
 
   const popover = document.getElementById("themePopover");
-  if (popover) popover.classList.remove("open");
+  if (popover) popover.classList.remove("open", "is-open");
+
+  // Re-render warna garis grafik utama jika sudah tergambar
+  if (PortalLoader.loaded.statistik) {
+    renderMainMonthChart();
+  }
 }
 
 function initThemeUI() {
@@ -147,146 +196,136 @@ function initThemeUI() {
 }
 
 // ==========================================================================
-// 4. MASTER DATA COLLECTOR & DYNAMIC FILTER SUB-PANELS
+// 5. HYBRID VIEWPORT LOADER (EAGER DESKTOP vs LAZY MOBILE)
 // ==========================================================================
-async function initAppDataCollector(callback) {
-  const idSiswa = window.idSiswaGlobal || localStorage.getItem("idSiswa");
-  if (!idSiswa) return;
+const PortalLoader = {
+  isDesktop: window.matchMedia("(min-width: 769px)").matches,
+  loaded: {
+    home: false,
+    rekap: false,
+    statistik: false,
+    qr: false
+  },
 
-  showSpinner("Menyinkronkan arsip presensi lintas semester...");
+  async init() {
+    // 1. Modul Beranda selalu dimuat pertama kali (Desktop & Mobile)
+    await this.loadHomeModule();
 
-  const loadingTimer1 = setTimeout(() => {
-    const el = document.getElementById("loadingText");
-    if (el) el.textContent = "Membaca data rekap tingkat & angkatan...";
-  }, 4000);
-
-  const loadingTimer2 = setTimeout(() => {
-    const el = document.getElementById("loadingText");
-    if (el) el.textContent = "Menyusun tren grafik & riwayat harian...";
-  }, 9000);
-
-  try {
-    const res = await callBackendApi("getMasterDataSiswaApi", { idSiswa });
-    clearTimeout(loadingTimer1);
-    clearTimeout(loadingTimer2);
-    hideSpinner();
-
-    if (res && res.success) {
-      window.AppStore.isLoaded = true;
-      window.AppStore.logs = res.logs || [];
-      window.AppStore.filterOptions = res.filterOptions || { taList: [], semesterMap: {} };
-      window.AppStore.activeSemester = res.activeSemester || null;
-      window.AppStore.rawPresensi = res.rawPresensi || [];
-
-      ensureDynamicSubPanelsExist();
-      populateFilterDropdowns();
-
-      if (typeof callback === "function") callback(res);
+    // 2. Jika Desktop, langsung muat Rekap & Statistik Bulan Berjalan secara paralel
+    if (this.isDesktop) {
+      await Promise.all([
+        this.loadRekapModule(),
+        this.loadStatistikModule()
+      ]);
     }
-  } catch (err) {
-    clearTimeout(loadingTimer1);
-    clearTimeout(loadingTimer2);
-    hideSpinner();
-    console.error("❌ [NETWORK ERROR] Collector Backend:", err);
+
+    // 3. Antisipasi perubahan ukuran layar (misal resize browser dari mobile ke desktop)
+    const mq = window.matchMedia("(min-width: 769px)");
+    mq.addEventListener("change", async (e) => {
+      this.isDesktop = e.matches;
+      if (this.isDesktop) {
+        // Pastikan semua section tampil di desktop
+        document.querySelectorAll(".tab-content").forEach(el => {
+          if (!el.classList.contains("mobile-only-tab")) {
+            el.style.display = "";
+          }
+        });
+        await Promise.all([
+          this.loadRekapModule(),
+          this.loadStatistikModule()
+        ]);
+      } else {
+        // Kembalikan perilaku tab mobile
+        const activeBtn = document.querySelector(".float-nav-btn.active");
+        const activeTab = activeBtn ? activeBtn.getAttribute("data-tab") : "hariIni";
+        switchMobileTab(null, activeTab);
+      }
+    });
+  },
+
+  async loadHomeModule() {
+    if (this.loaded.home) return;
+    this.loaded.home = true;
+
+    const idSiswa = window.idSiswaGlobal;
+    renderDisciplineRankDummy();
+    renderRiwayatIzinList();
+    updateBulanBerjalanLabel();
+
+    // Muat Presensi Hari Ini & Sinkronkan Data Bulan Berjalan
+    await Promise.all([
+      loadHariIni(idSiswa),
+      this.syncMasterPresensi(false)
+    ]);
+
+    // Isi 5 mini KPI Ringkasan Bulan Berjalan di Baris 1 Kanan
+    renderMonthTopKpi();
+  },
+
+  async syncMasterPresensi(showLoading = false) {
+    if (window.AppStore.isLoaded) return;
+    if (window.AppStore.isLoadingPromise) {
+      return window.AppStore.isLoadingPromise;
+    }
+
+    const idSiswa = window.idSiswaGlobal;
+    if (!idSiswa) return;
+
+    if (showLoading) showSpinner("Menyinkronkan data presensi...");
+
+    window.AppStore.isLoadingPromise = callBackendApi("getMasterDataSiswaApi", { idSiswa })
+      .then(res => {
+        if (res && res.success) {
+          window.AppStore.isLoaded = true;
+          window.AppStore.logs = res.logs || [];
+          window.AppStore.filterOptions = res.filterOptions || { taList: [], semesterMap: {} };
+          window.AppStore.activeSemester = res.activeSemester || null;
+          window.AppStore.rawPresensi = res.rawPresensi || [];
+          populateFilterDropdowns();
+        }
+      })
+      .catch(err => {
+        console.error("❌ Gagal sinkronisasi master presensi:", err);
+      })
+      .finally(() => {
+        window.AppStore.isLoadingPromise = null;
+        if (showLoading) hideSpinner();
+      });
+
+    return window.AppStore.isLoadingPromise;
+  },
+
+  async loadRekapModule() {
+    if (this.loaded.rekap) return;
+    this.loaded.rekap = true;
+
+    await this.syncMasterPresensi(!this.isDesktop);
+    const monthData = window.AppStore.getCurrentMonthPresensi();
+    renderMonthSummaryAndTable(monthData);
+  },
+
+  async loadStatistikModule() {
+    if (this.loaded.statistik) return;
+    this.loaded.statistik = true;
+
+    await this.syncMasterPresensi(!this.isDesktop);
+    setTimeout(() => {
+      renderMainMonthChart();
+      attachChartClickInteraction("trendChartCanvas", "main");
+    }, 40);
   }
-}
+};
 
-function ensureDynamicSubPanelsExist() {
-  const customBox = document.getElementById("customDateRangeBox");
-  if (!customBox) return;
-
-  if (!document.getElementById("semesterSelectBox")) {
-    const semBox = document.createElement("div");
-    semBox.id = "semesterSelectBox";
-    semBox.className = "custom-date-box";
-    semBox.style.display = "none";
-    semBox.innerHTML = `
-      <div class="custom-date-inputs">
-        <div class="date-field">
-          <label for="selectTaForSemester">Tahun Ajaran</label>
-          <select id="selectTaForSemester" class="date-input-clean" onchange="updateSemesterDropdownOptions()"></select>
-        </div>
-        <div class="date-field">
-          <label for="selectSemesterType">Semester</label>
-          <select id="selectSemesterType" class="date-input-clean"></select>
-        </div>
-      </div>
-      <button type="button" class="btn-apply-filter" onclick="applySemesterFilter()">Terapkan Filter Semester</button>
-    `;
-    customBox.parentNode.insertBefore(semBox, customBox.nextSibling);
-  }
-
-  if (!document.getElementById("thnAjaranSelectBox")) {
-    const taBox = document.createElement("div");
-    taBox.id = "thnAjaranSelectBox";
-    taBox.className = "custom-date-box";
-    taBox.style.display = "none";
-    taBox.innerHTML = `
-      <div class="custom-date-inputs">
-        <div class="date-field">
-          <label for="selectTahunAjaranFull">Pilih Tahun Ajaran Full</label>
-          <select id="selectTahunAjaranFull" class="date-input-clean"></select>
-        </div>
-      </div>
-      <button type="button" class="btn-apply-filter" onclick="applyTahunAjaranFilter()">Terapkan Filter Tahun Ajaran</button>
-    `;
-    customBox.parentNode.insertBefore(taBox, customBox.nextSibling);
-  }
-}
-
-function populateFilterDropdowns() {
-  const taList = window.AppStore.filterOptions.taList;
-  const selectTaSem = document.getElementById("selectTaForSemester");
-  const selectTaFull = document.getElementById("selectTahunAjaranFull");
-  if (!selectTaSem || !selectTaFull) return;
-
-  selectTaSem.innerHTML = "";
-  selectTaFull.innerHTML = "";
-
-  if (!taList || taList.length === 0) {
-    selectTaSem.innerHTML = `<option value="">Tidak ada data TA</option>`;
-    selectTaFull.innerHTML = `<option value="">Tidak ada data TA</option>`;
-    return;
-  }
-
-  taList.forEach(ta => {
-    selectTaSem.innerHTML += `<option value="${ta}">Tahun Ajaran ${ta}</option>`;
-    selectTaFull.innerHTML += `<option value="${ta}">Tahun Ajaran ${ta}</option>`;
-  });
-
-  updateSemesterDropdownOptions();
-}
-
-function updateSemesterDropdownOptions() {
-  const selectedTA = document.getElementById("selectTaForSemester")?.value;
-  const selectSem = document.getElementById("selectSemesterType");
-  if (!selectSem || !selectedTA) return;
-
-  selectSem.innerHTML = "";
-  const availableSemesters = window.AppStore.filterOptions.semesterMap[selectedTA] || [];
-
-  if (availableSemesters.length === 0) {
-    selectSem.innerHTML = `<option value="">Tidak ada semester</option>`;
-    return;
-  }
-
-  availableSemesters.forEach(sem => {
-    selectSem.innerHTML += `<option value="${sem}">${sem === "Ganjil" ? "Ganjil (Semester 1)" : "Genap (Semester 2)"}</option>`;
-  });
-}
-
-// ==========================================================================
-// 5. NAVIGATION & TAB SWITCHING
-// ==========================================================================
-function showTab(event, tabName) {
-  const idSiswa = window.idSiswaGlobal || localStorage.getItem("idSiswa");
+// Handler Navigasi Tab Khusus Mobile Floating Bottom Bar
+function switchMobileTab(event, tabName) {
+  if (window.matchMedia("(min-width: 769px)").matches) return;
 
   document.querySelectorAll(".tab-content").forEach(el => {
     el.classList.remove("active");
     el.style.display = "none";
   });
 
-  document.querySelectorAll(".tab-btn, .float-nav-btn").forEach(btn => {
+  document.querySelectorAll(".float-nav-btn").forEach(btn => {
     btn.classList.toggle("active", btn.getAttribute("data-tab") === tabName);
   });
 
@@ -296,88 +335,157 @@ function showTab(event, tabName) {
     targetTab.style.display = "block";
   }
 
-  if (tabName === "hariIni" && !window.isLoaded.hariIni) {
-    loadHariIni(idSiswa);
-    window.isLoaded.hariIni = true;
-  }
-
-  if (tabName === "statistik") {
-    const triggerStatistik = () => {
-      if (!window.isLoaded.statistik) {
-        loadStatistik(idSiswa);
-        window.isLoaded.statistik = true;
-      }
-      setTimeout(() => {
-        initTimelineDropdown();
-        renderTrendChart("1w");
-        attachChartClickInteraction();
-      }, 50);
-    };
-
-    if (!window.AppStore.isLoaded) {
-      initAppDataCollector(() => triggerStatistik());
-    } else {
-      triggerStatistik();
-    }
-  }
-
-  if (tabName === "riwayat") {
-    const triggerRiwayat = () => {
-      if (!window.isLoaded.statistik) {
-        loadStatistik(idSiswa);
-        window.isLoaded.statistik = true;
-      }
-      renderRiwayat(window.AppStore.rawPresensi);
-    };
-
-    if (!window.AppStore.isLoaded) {
-      initAppDataCollector(() => triggerRiwayat());
-    } else {
-      triggerRiwayat();
-    }
+  // Lazy Load per Tab di Mobile
+  if (tabName === "hariIni") {
+    PortalLoader.loadHomeModule();
+  } else if (tabName === "riwayat") {
+    PortalLoader.loadRekapModule();
+  } else if (tabName === "statistik") {
+    PortalLoader.loadStatistikModule();
   }
 }
 
 // ==========================================================================
-// 6. QUICK MODALS
+// 6. KLASEMEN DISIPLIN & IZIN MENINGGALKAN SEKOLAH (DUMMY + INTERAKTIF)
 // ==========================================================================
-function openModalQuick(id) {
-  const modal = document.getElementById(id);
-  if (modal) modal.classList.add("active");
-}
+function renderDisciplineRankDummy() {
+  const { rankSekarang, rankKemarin, totalSiswaSekolah, poinDisiplin } = window.DummyKlasemen;
+  const diff = rankKemarin - rankSekarang; // Positif = peringkat naik (angka makin kecil)
 
-function closeModalQuick(e, id) {
-  if (!e || e.target.id === id) {
-    const modal = document.getElementById(id);
-    if (modal) modal.classList.remove("active");
+  const elRankNum = document.getElementById("rankNumber");
+  const elTotal = document.getElementById("rankTotalSiswa");
+  const elPill = document.getElementById("rankTrendPill");
+  const elArrow = document.getElementById("rankTrendArrow");
+  const elText = document.getElementById("rankTrendText");
+  const elPoin = document.getElementById("rankPoinDisiplin");
+  const elKemarin = document.getElementById("rankKemarin");
+
+  if (elRankNum) elRankNum.textContent = rankSekarang;
+  if (elTotal) elTotal.textContent = `/ ${totalSiswaSekolah} Siswa`;
+  if (elPoin) elPoin.textContent = `${poinDisiplin} Poin`;
+  if (elKemarin) elKemarin.textContent = `#${rankKemarin}`;
+
+  if (elPill && elArrow && elText) {
+    elPill.classList.remove("is-up", "is-down", "is-flat");
+    if (diff > 0) {
+      elPill.classList.add("is-up");
+      elArrow.textContent = "▲";
+      elText.textContent = `Naik ${diff}`;
+    } else if (diff < 0) {
+      elPill.classList.add("is-down");
+      elArrow.textContent = "▼";
+      elText.textContent = `Turun ${Math.abs(diff)}`;
+    } else {
+      elPill.classList.add("is-flat");
+      elArrow.textContent = "—";
+      elText.textContent = "Tetap";
+    }
   }
 }
 
-function submitDummyIzin() {
-  alert("Form perizinan berhasil dikirim (Dummy)! Backend siap diintegrasikan.");
+function toggleJamKembaliField() {
+  const jenis = document.getElementById("inputJenisIzinKeluar")?.value;
+  const fieldKembali = document.getElementById("fieldJamKembali");
+  if (!fieldKembali) return;
+  fieldKembali.style.display = jenis === "Izin Pulang Awal" ? "none" : "block";
+}
+
+function submitDummyIzinKeluar() {
+  const kategori = document.getElementById("inputJenisIzinKeluar")?.value || "Izin Keluar Sementara";
+  const jamKeluar = document.getElementById("inputJamKeluar")?.value || "-";
+  const jamKembali = kategori === "Izin Pulang Awal"
+    ? "-"
+    : (document.getElementById("inputJamKembali")?.value || "-");
+  const alasan = document.getElementById("inputAlasanIzinKeluar")?.value.trim();
+
+  if (!alasan) {
+    alert("Harap tuliskan alasan izin meninggalkan sekolah terlebih dahulu.");
+    return;
+  }
+
+  const now = new Date();
+  const tglStr = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+
+  window.DummyIzinList.unshift({
+    id: `IZN-${Date.now()}`,
+    tanggal: tglStr,
+    kategori,
+    jamKeluar,
+    jamKembali,
+    alasan,
+    status: "Menunggu Piket"
+  });
+
+  // Reset form & perbarui daftar riwayat
+  const elAlasan = document.getElementById("inputAlasanIzinKeluar");
+  if (elAlasan) elAlasan.value = "";
+
+  renderRiwayatIzinList();
   closeModalQuick(null, "modalIzin");
+  openModalQuick("modalLogIzin");
+}
+
+function renderRiwayatIzinList() {
+  const container = document.getElementById("listRiwayatIzinContainer");
+  const badgeCount = document.getElementById("badgeJumlahIzin");
+
+  if (badgeCount) badgeCount.textContent = window.DummyIzinList.length;
+  if (!container) return;
+
+  if (!window.DummyIzinList.length) {
+    container.innerHTML = `<div style="text-align:center; padding:24px; font-size:12.5px; color:var(--text-muted);">Belum ada riwayat pengajuan izin meninggalkan sekolah.</div>`;
+    return;
+  }
+
+  container.innerHTML = window.DummyIzinList.map(item => {
+    let statusClass = "is-pending";
+    if (item.status.toLowerCase().includes("setuju")) statusClass = "is-approved";
+    else if (item.status.toLowerCase().includes("tolak")) statusClass = "is-rejected";
+
+    const waktuInfo = item.kategori === "Izin Pulang Awal"
+      ? `Pulang pukul ${item.jamKeluar} WIB`
+      : `Keluar ${item.jamKeluar} • Kembali ${item.jamKembali} WIB`;
+
+    return `
+      <div class="izin-history-item">
+        <div class="izin-history-top">
+          <span class="izin-history-type">${item.kategori}</span>
+          <span class="izin-status-pill ${statusClass}">${item.status}</span>
+        </div>
+        <div class="izin-history-meta">${item.tanggal} • ${waktuInfo}</div>
+        <div class="izin-history-reason">${item.alasan}</div>
+      </div>
+    `;
+  }).join("");
 }
 
 // ==========================================================================
-// 7. GREETING, PRESENSI HARI INI, REKAP & RIWAYAT
+// 7. GREETING, PRESENSI HARI INI, RINGKASAN BULAN BERJALAN & TABEL
 // ==========================================================================
 function setGreeting() {
   const nama = localStorage.getItem("namaSiswa") || "Siswa";
   const now = new Date();
   const hour = now.getHours();
 
-  let greeting = "";
+  let greeting = "Selamat Malam 🌙";
   if (hour >= 4 && hour < 11) greeting = "Selamat Pagi ☀️";
   else if (hour >= 11 && hour < 15) greeting = "Selamat Siang 🌤️";
   else if (hour >= 15 && hour < 18) greeting = "Selamat Sore 🌇";
-  else greeting = "Selamat Malam 🌙";
 
   const elGreeting = document.getElementById("greetingText");
   if (elGreeting) elGreeting.textContent = `${greeting}, ${nama}!`;
 }
 
+function updateBulanBerjalanLabel() {
+  const now = new Date();
+  const bulanTahun = now.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  const elLabel = document.getElementById("labelBulanBerjalan");
+  const elSub = document.getElementById("statistikPeriodSubtitle");
+  if (elLabel) elLabel.textContent = `Periode ${bulanTahun}`;
+  if (elSub) elSub.textContent = `Grafik kedisiplinan jam kedatangan periode ${bulanTahun}.`;
+}
+
 async function loadHariIni(idSiswa) {
-  showSpinner("Memuat presensi...");
   try {
     const data = await callBackendApi("getPresensiHariIni", { idSiswa });
     if (data && data.success) {
@@ -420,57 +528,110 @@ async function loadHariIni(idSiswa) {
     }
   } catch (err) {
     console.error("Gagal loadHariIni:", err);
-  } finally {
-    hideSpinner();
   }
 }
 
-async function loadStatistik(idSiswa) {
-  showSpinner("Memuat statistik...");
-  try {
-    const data = await callBackendApi("getRekapTotalByNIS", { idSiswa });
-    tampilkanRekapPresensi(data);
-  } catch (err) {
-    console.error("Gagal loadStatistik:", err);
-  } finally {
-    hideSpinner();
-  }
-}
-
-function tampilkanRekapPresensi(data) {
-  if (!data || !data.sukses) return;
-  const mapping = {
-    s_tepat: data.tepatWaktu,
-    s_terlambat: data.terlambat,
-    s_tidak: data.tidakPresensi,
-    s_daring: data.daring,
-    s_total: data.totalHadir,
-    s_sakit: data.sakit,
-    s_izin: data.izin,
-    s_alpa: data.alpa,
-    s_total_tidak: data.totalTidakHadir
+function summarizePresensiList(list) {
+  const stats = {
+    tepatWaktu: 0,
+    terlambat: 0,
+    tidakPresensi: 0,
+    daring: 0,
+    sakit: 0,
+    izin: 0,
+    alpa: 0,
+    totalHadir: 0,
+    totalTidakHadir: 0,
+    persenHadir: 0
   };
-  Object.entries(mapping).forEach(([id, nilai]) => {
-    const el = document.getElementById(id);
-    if (el) el.innerText = nilai || 0;
+
+  (list || []).forEach(item => {
+    const s = String(item.statusMasuk || "").toLowerCase();
+    if (s.includes("tidak presensi")) {
+      stats.tidakPresensi++;
+      stats.totalHadir++;
+    } else if (s.includes("terlambat")) {
+      stats.terlambat++;
+      stats.totalHadir++;
+    } else if (s.includes("prakerin") || s.includes("daring") || s.includes("dispensasi")) {
+      stats.daring++;
+      stats.totalHadir++;
+    } else if (s.includes("sakit")) {
+      stats.sakit++;
+      stats.totalTidakHadir++;
+    } else if (s.includes("izin")) {
+      stats.izin++;
+      stats.totalTidakHadir++;
+    } else if (s.includes("alpa")) {
+      stats.alpa++;
+      stats.totalTidakHadir++;
+    } else if (s.includes("tepat") || s.includes("hadir")) {
+      stats.tepatWaktu++;
+      stats.totalHadir++;
+    }
   });
+
+  const totalHari = stats.totalHadir + stats.totalTidakHadir;
+  stats.persenHadir = totalHari > 0 ? Math.round((stats.totalHadir / totalHari) * 100) : 100;
+  return stats;
 }
 
-function renderRiwayat(data = window.riwayatData) {
-  const tbody = document.querySelector("#tabelPresensi tbody");
-  const info = document.getElementById("jumlahRiwayat");
+function renderMonthTopKpi() {
+  const monthData = window.AppStore.getCurrentMonthPresensi();
+  const st = summarizePresensiList(monthData);
+
+  const elHadir = document.getElementById("kpiBulanHadir");
+  const elTelat = document.getElementById("kpiBulanTerlambat");
+  const elSakitIzin = document.getElementById("kpiBulanSakitIzin");
+  const elAlpa = document.getElementById("kpiBulanAlpa");
+  const elPersen = document.getElementById("kpiBulanPersen");
+
+  if (elHadir) elHadir.textContent = st.totalHadir;
+  if (elTelat) elTelat.textContent = st.terlambat;
+  if (elSakitIzin) elSakitIzin.textContent = st.sakit + st.izin;
+  if (elAlpa) elAlpa.textContent = st.alpa;
+  if (elPersen) elPersen.textContent = `${st.persenHadir}%`;
+}
+
+function renderMonthSummaryAndTable(data) {
+  const st = summarizePresensiList(data);
+
+  // Update kartu detail khusus tampilan Mobile Tab Rekap
+  const mapping = {
+    s_tepat: st.tepatWaktu,
+    s_terlambat: st.terlambat,
+    s_tidak: st.tidakPresensi,
+    s_daring: st.daring,
+    s_total: st.totalHadir,
+    s_sakit: st.sakit,
+    s_izin: st.izin,
+    s_alpa: st.alpa,
+    s_total_tidak: st.totalTidakHadir
+  };
+  Object.entries(mapping).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  });
+
+  renderPresensiTableRows("#tabelPresensi tbody", "jumlahRiwayat", data, true);
+}
+
+function renderPresensiTableRows(tbodySelector, badgeId, data, reverseLatest = false) {
+  const tbody = document.querySelector(tbodySelector);
+  const info = badgeId ? document.getElementById(badgeId) : null;
   if (!tbody) return;
 
   tbody.innerHTML = "";
 
   if (!data || data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5">Tidak ada data presensi</td></tr>`;
-    if (info) info.textContent = "0 data";
+    tbody.innerHTML = `<tr><td colspan="5">Tidak ada data presensi pada periode ini</td></tr>`;
+    if (info) info.textContent = "0 Hari";
     return;
   }
 
-  data.forEach(item => {
-    const row = `
+  const rows = reverseLatest ? [...data].reverse() : data;
+  rows.forEach(item => {
+    tbody.innerHTML += `
       <tr>
         <td data-label="Tanggal">${item.tanggal}</td>
         <td data-label="Masuk">${item.jamMasuk || "-"}</td>
@@ -479,14 +640,13 @@ function renderRiwayat(data = window.riwayatData) {
         <td data-label="Keterangan">${item.keterangan || "-"}</td>
       </tr>
     `;
-    tbody.innerHTML += row;
   });
 
   if (info) info.textContent = `${data.length} Hari`;
 }
 
 // ==========================================================================
-// 8. KARTU QR PRESENSI GENERATOR (DESKTOP BENTO & MOBILE MODAL)
+// 8. KARTU QR PRESENSI ON-DEMAND (TOMBOL DI PRESENSI HARI INI & MOBILE BAR)
 // ==========================================================================
 function generateQROffline(text) {
   return new Promise((resolve, reject) => {
@@ -532,7 +692,7 @@ function loadImageCORS(src) {
 
 async function generateQRCard() {
   if (window.generatedQrDataUrl) {
-    applyGeneratedQRToDOM(window.generatedQrDataUrl);
+    applyGeneratedQRToModal(window.generatedQrDataUrl);
     return;
   }
 
@@ -568,38 +728,48 @@ async function generateQRCard() {
 
     const resultDataUrl = canvas.toDataURL("image/png");
     window.generatedQrDataUrl = resultDataUrl;
-    window.isLoaded.qr = true;
+    PortalLoader.loaded.qr = true;
 
-    applyGeneratedQRToDOM(resultDataUrl);
+    applyGeneratedQRToModal(resultDataUrl);
   } catch (err) {
     console.error("❌ ERROR GENERATE QR CARD:", err);
-    const skeleton = document.getElementById("qrDesktopSkeleton");
+    const skeleton = document.getElementById("qrModalSkeleton");
     if (skeleton) skeleton.textContent = "Gagal memuat Kartu QR";
   }
 }
 
-function applyGeneratedQRToDOM(dataUrl) {
-  const elDesktopPreview = document.getElementById("qrPreviewDesktop");
-  const elDesktopSkeleton = document.getElementById("qrDesktopSkeleton");
+function applyGeneratedQRToModal(dataUrl) {
   const elModalPreview = document.getElementById("qrPreviewModal");
+  const elModalSkeleton = document.getElementById("qrModalSkeleton");
 
-  if (elDesktopPreview) {
-    elDesktopPreview.src = dataUrl;
-    elDesktopPreview.style.display = "block";
-  }
-  if (elDesktopSkeleton) {
-    elDesktopSkeleton.style.display = "none";
-  }
   if (elModalPreview) {
     elModalPreview.src = dataUrl;
+    elModalPreview.style.display = "block";
+  }
+  if (elModalSkeleton) {
+    elModalSkeleton.style.display = "none";
+  }
+}
+
+async function openQrModal() {
+  const modal = document.getElementById("qrModalOverlay");
+  if (!modal) return;
+  modal.classList.add("active");
+
+  if (!PortalLoader.loaded.qr) {
+    await generateQRCard();
+  }
+}
+
+function closeQrModal(event) {
+  if (!event || event.target.id === "qrModalOverlay") {
+    const modal = document.getElementById("qrModalOverlay");
+    if (modal) modal.classList.remove("active");
   }
 }
 
 function downloadQRCard() {
-  const dataUrl =
-    window.generatedQrDataUrl ||
-    document.getElementById("qrPreviewDesktop")?.src ||
-    document.getElementById("qrPreviewModal")?.src;
+  const dataUrl = window.generatedQrDataUrl || document.getElementById("qrPreviewModal")?.src;
 
   if (!dataUrl || !dataUrl.startsWith("data:image")) {
     alert("Kartu QR sedang disiapkan, coba beberapa saat lagi.");
@@ -613,24 +783,6 @@ function downloadQRCard() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-}
-
-// Alias kompatibilitas jika masih ada pemanggilan lama
-const downloadQRModal = downloadQRCard;
-
-function toggleQRModalMobile() {
-  const modal = document.getElementById("mobileQrOverlay");
-  if (!modal) return;
-  modal.classList.toggle("active");
-  if (modal.classList.contains("active") && !window.isLoaded.qr) {
-    generateQRCard();
-  }
-}
-
-function closeQRModalMobile(e) {
-  if (e && e.target.id === "mobileQrOverlay") {
-    toggleQRModalMobile();
-  }
 }
 
 function fitNamaText(ctx, nama, maxWidth) {
@@ -701,51 +853,33 @@ function getJurusan(kelas) {
 }
 
 // ==========================================================================
-// 9. GRAFIK KURVA TREN PRESENSI (CANVAS)
+// 9. GRAFIK KURVA TREN PRESENSI (ENGINE PORTAL PIKET - REUSABLE)
 // ==========================================================================
-function renderTrendChart(filterRange = "1w", param1 = null, param2 = null) {
-  const canvas = document.getElementById("trendChartCanvas");
-  const wrapper = document.getElementById("chartInnerWrapper");
-  if (!canvas || !wrapper) return;
+function renderMainMonthChart() {
+  const monthData = window.AppStore.getCurrentMonthPresensi();
+  renderTrendChartOnCanvas({
+    canvasId: "trendChartCanvas",
+    wrapperId: "chartInnerWrapper",
+    scrollId: "chartScrollContainer",
+    stateKey: "main",
+    records: monthData,
+    compactFit: false
+  });
+}
+
+function renderTrendChartOnCanvas({ canvasId, wrapperId, scrollId, stateKey, records, compactFit = false }) {
+  const canvas = document.getElementById(canvasId);
+  const wrapper = document.getElementById(wrapperId);
+  const scrollEl = document.getElementById(scrollId);
+  if (!canvas || !wrapper || !scrollEl) return;
 
   const ctx = canvas.getContext("2d");
   const dpr = window.devicePixelRatio || 1;
 
-  let rawData = [];
-  if (window.AppStore.isLoaded && window.AppStore.rawPresensi.length > 0) {
-    const collected = window.AppStore.getPresensiByRange(filterRange, param1, param2);
-    rawData = collected.map(item => ({
-      label: item.tanggal.slice(0, 5),
-      status: item.statusMasuk
-    }));
-  } else {
-    if (filterRange === "1w") {
-      rawData = [
-        { label: "26/10", status: "Tepat Waktu" },
-        { label: "27/10", status: "Tepat Waktu" },
-        { label: "28/10", status: "Terlambat" },
-        { label: "29/10", status: "Sakit" },
-        { label: "30/10", status: "Dispensasi" }
-      ];
-    } else if (filterRange === "1m") {
-      for (let i = 1; i <= 20; i++) {
-        const dayStr = String(i).padStart(2, "0");
-        let st = "Tepat Waktu";
-        if (i === 3) st = "Terlambat";
-        if (i === 7) st = "Sangat Terlambat";
-        if (i === 12) st = "Sakit";
-        if (i === 15) st = "Prakerin";
-        if (i === 18) st = "Alpa";
-        rawData.push({ label: `${dayStr}/10`, status: st });
-      }
-    } else {
-      for (let i = 1; i <= 60; i++) {
-        const month = i <= 30 ? "09" : "10";
-        const day = String((i % 30) || 30).padStart(2, "0");
-        rawData.push({ label: `${day}/${month}`, status: i % 8 === 0 ? "Terlambat" : "Tepat Waktu" });
-      }
-    }
-  }
+  const rawData = (records || []).map(item => ({
+    label: String(item.tanggal || "").slice(0, 5),
+    status: item.statusMasuk
+  }));
 
   const levelColors = {
     8: "#15803d",
@@ -771,17 +905,18 @@ function renderTrendChart(filterRange = "1w", param1 = null, param2 = null) {
     return { level: 8, color: levelColors[8], fullName: "Tepat Waktu" };
   }
 
-  window.currentChartData = rawData.map(item => {
+  const sampleData = rawData.map(item => {
     const st = getStatusInfo(item.status);
     return { label: item.label, val: st.level, color: st.color, fullName: st.fullName };
   });
 
-  const sampleData = window.currentChartData;
-  const parentWidth = document.getElementById("chartScrollContainer").clientWidth;
+  window.chartState[stateKey].data = sampleData;
+
+  const parentWidth = scrollEl.clientWidth || 500;
   let computedWidth = parentWidth;
 
-  if (filterRange !== "1w") {
-    const pointSpacing = 58;
+  if (!compactFit) {
+    const pointSpacing = 56;
     if (sampleData.length * pointSpacing > parentWidth) {
       computedWidth = sampleData.length * pointSpacing;
     }
@@ -805,10 +940,10 @@ function renderTrendChart(filterRange = "1w", param1 = null, param2 = null) {
   }
 
   const axisXPos = 3;
-  const paddingLeft = filterRange === "1w" ? 42 : 46;
-  const paddingRight = filterRange === "1w" ? 36 : 28;
-  const paddingTop = 22;
-  const paddingBottom = 48;
+  const paddingLeft = compactFit ? 40 : 44;
+  const paddingRight = compactFit ? 34 : 28;
+  const paddingTop = 20;
+  const paddingBottom = 46;
 
   const graphWidth = width - paddingLeft - paddingRight;
   const graphHeight = height - paddingTop - paddingBottom;
@@ -891,8 +1026,9 @@ function renderTrendChart(filterRange = "1w", param1 = null, param2 = null) {
     ctx.stroke();
   }
 
-  if (window.selectedDotIndex !== null && sampleData[window.selectedDotIndex]) {
-    const selectedItem = sampleData[window.selectedDotIndex];
+  const selectedIdx = window.chartState[stateKey].selectedIndex;
+  if (selectedIdx !== null && sampleData[selectedIdx]) {
+    const selectedItem = sampleData[selectedIdx];
     ctx.strokeStyle = primaryStroke;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([4, 4]);
@@ -911,12 +1047,12 @@ function renderTrendChart(filterRange = "1w", param1 = null, param2 = null) {
   }
 
   sampleData.forEach((item, index) => {
-    const isSelected = window.selectedDotIndex === index;
+    const isSelected = selectedIdx === index;
 
     if (isSelected) {
       ctx.beginPath();
       ctx.arc(item.x, item.y, 10, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(130, 70, 83, 0.25)";
+      ctx.fillStyle = "rgba(130, 70, 83, 0.22)";
       ctx.fill();
     }
 
@@ -928,7 +1064,7 @@ function renderTrendChart(filterRange = "1w", param1 = null, param2 = null) {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    const maxLabelWidth = 55;
+    const maxLabelWidth = 54;
     const words = item.fullName.split(" ");
     const lines = [];
     let currentLine = words[0];
@@ -965,13 +1101,41 @@ function renderTrendChart(filterRange = "1w", param1 = null, param2 = null) {
   });
 }
 
-function attachChartClickInteraction() {
-  const canvas = document.getElementById("trendChartCanvas");
+function attachChartClickInteraction(canvasId, stateKey) {
+  const canvas = document.getElementById(canvasId);
   if (!canvas || canvas.dataset.hasClickListener) return;
   canvas.dataset.hasClickListener = "true";
 
   let startX = 0;
   let startY = 0;
+
+  const handleSelect = (clientX) => {
+    const rect = canvas.getBoundingClientRect();
+    const clickX = clientX - rect.left;
+    const data = window.chartState[stateKey].data || [];
+
+    let clickedIndex = null;
+    let minDist = Infinity;
+    data.forEach((item, i) => {
+      const dist = Math.abs(item.x - clickX);
+      if (dist < minDist && dist <= 32) {
+        minDist = dist;
+        clickedIndex = i;
+      }
+    });
+
+    window.chartState[stateKey].selectedIndex =
+      clickedIndex !== null && window.chartState[stateKey].selectedIndex !== clickedIndex
+        ? clickedIndex
+        : null;
+
+    if (stateKey === "main") {
+      renderMainMonthChart();
+    } else {
+      const activeRange = document.getElementById("filterTimelineStatistik")?.getAttribute("data-value") || "1m";
+      refreshArchiveFromCurrentFilter(activeRange);
+    }
+  };
 
   canvas.addEventListener("touchstart", e => {
     startX = e.touches[0].clientX;
@@ -982,42 +1146,175 @@ function attachChartClickInteraction() {
     const endX = e.changedTouches[0].clientX;
     const endY = e.changedTouches[0].clientY;
     if (Math.abs(endX - startX) > 8 || Math.abs(endY - startY) > 8) return;
-    processDotClick(endX, endY, canvas);
+    handleSelect(endX);
   });
 
   canvas.addEventListener("click", e => {
-    processDotClick(e.clientX, e.clientY, canvas);
+    handleSelect(e.clientX);
   });
-}
-
-function processDotClick(clientX, clientY, canvas) {
-  const rect = canvas.getBoundingClientRect();
-  const clickX = clientX - rect.left;
-
-  let clickedIndex = null;
-  let minHorizontalDist = Infinity;
-
-  const data = window.currentChartData || [];
-  data.forEach((item, i) => {
-    const xDist = Math.abs(item.x - clickX);
-    if (xDist < minHorizontalDist && xDist <= 32) {
-      minHorizontalDist = xDist;
-      clickedIndex = i;
-    }
-  });
-
-  if (clickedIndex !== null) {
-    window.selectedDotIndex = window.selectedDotIndex === clickedIndex ? null : clickedIndex;
-  } else {
-    window.selectedDotIndex = null;
-  }
-
-  const activeRange = document.getElementById("filterTimelineStatistik")?.getAttribute("data-value") || "1w";
-  renderTrendChart(activeRange);
 }
 
 // ==========================================================================
-// 10. CUSTOM DROPDOWN ENGINE & TIMELINE FILTER HANDLERS
+// 10. MODAL "SELENGKAPNYA" — ARSIP REKAP & GRAFIK LINTAS PERIODE
+// ==========================================================================
+async function openArchiveModal(focusMode = "rekap") {
+  const modal = document.getElementById("modalArsipPresensi");
+  if (!modal) return;
+  modal.classList.add("active");
+
+  if (!window.AppStore.isLoaded) {
+    await PortalLoader.syncMasterPresensi(true);
+  }
+
+  initTimelineDropdown();
+  attachChartClickInteraction("archiveTrendChartCanvas", "archive");
+
+  setTimeout(() => {
+    renderArchiveView("1m");
+    if (focusMode === "rekap") {
+      const tableBox = document.getElementById("tabelArsipPresensi");
+      tableBox?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, 50);
+}
+
+function populateFilterDropdowns() {
+  const taList = window.AppStore.filterOptions.taList || [];
+  const selectTaSem = document.getElementById("selectTaForSemester");
+  const selectTaFull = document.getElementById("selectTahunAjaranFull");
+  if (!selectTaSem || !selectTaFull) return;
+
+  selectTaSem.innerHTML = "";
+  selectTaFull.innerHTML = "";
+
+  if (taList.length === 0) {
+    selectTaSem.innerHTML = `<option value="">Tidak ada data TA</option>`;
+    selectTaFull.innerHTML = `<option value="">Tidak ada data TA</option>`;
+    return;
+  }
+
+  taList.forEach(ta => {
+    selectTaSem.innerHTML += `<option value="${ta}">Tahun Ajaran ${ta}</option>`;
+    selectTaFull.innerHTML += `<option value="${ta}">Tahun Ajaran ${ta}</option>`;
+  });
+
+  updateSemesterDropdownOptions();
+}
+
+function updateSemesterDropdownOptions() {
+  const selectedTA = document.getElementById("selectTaForSemester")?.value;
+  const selectSem = document.getElementById("selectSemesterType");
+  if (!selectSem || !selectedTA) return;
+
+  selectSem.innerHTML = "";
+  const availableSemesters = window.AppStore.filterOptions.semesterMap[selectedTA] || [];
+
+  if (availableSemesters.length === 0) {
+    selectSem.innerHTML = `<option value="">Tidak ada semester</option>`;
+    return;
+  }
+
+  availableSemesters.forEach(sem => {
+    selectSem.innerHTML += `<option value="${sem}">${sem === "Ganjil" ? "Ganjil (Semester 1)" : "Genap (Semester 2)"}</option>`;
+  });
+}
+
+function initTimelineDropdown() {
+  const container = document.getElementById("filterTimelineStatistik");
+  if (!container || container.querySelector(".dropdown-selected")) return;
+
+  const timelineOptions = [
+    { value: "1w", label: "📅 1 Minggu (5 Hari KBM)" },
+    { value: "1m", label: "🗓️ 1 Bulan Terakhir" },
+    { value: "semester_select", label: "🎓 Per Semester..." },
+    { value: "ta_select", label: "🏫 Per Tahun Ajaran..." },
+    { value: "custom", label: "⚙️ Kustom Rentang Tanggal..." }
+  ];
+
+  createCustomDropdown(container, timelineOptions, "1m", function (selectedVal) {
+    const customBox = document.getElementById("customDateRangeBox");
+    const semesterBox = document.getElementById("semesterSelectBox");
+    const taBox = document.getElementById("thnAjaranSelectBox");
+
+    if (customBox) customBox.style.display = "none";
+    if (semesterBox) semesterBox.style.display = "none";
+    if (taBox) taBox.style.display = "none";
+
+    if (selectedVal === "custom") {
+      if (customBox) customBox.style.display = "flex";
+    } else if (selectedVal === "semester_select") {
+      if (semesterBox) semesterBox.style.display = "flex";
+      applySemesterFilter();
+    } else if (selectedVal === "ta_select") {
+      if (taBox) taBox.style.display = "flex";
+      applyTahunAjaranFilter();
+    } else {
+      renderArchiveView(selectedVal);
+    }
+  });
+}
+
+function refreshArchiveFromCurrentFilter(activeRange) {
+  if (activeRange === "semester_select") applySemesterFilter();
+  else if (activeRange === "ta_select") applyTahunAjaranFilter();
+  else if (activeRange === "custom") applyCustomDateRange();
+  else renderArchiveView(activeRange);
+}
+
+function applySemesterFilter() {
+  const ta = document.getElementById("selectTaForSemester")?.value;
+  const sem = document.getElementById("selectSemesterType")?.value;
+  renderArchiveView("semester", ta, sem);
+}
+
+function applyTahunAjaranFilter() {
+  const taFull = document.getElementById("selectTahunAjaranFull")?.value;
+  renderArchiveView("tahun_ajaran", taFull);
+}
+
+function applyCustomDateRange() {
+  const startDate = document.getElementById("inputDateStart")?.value;
+  const endDate = document.getElementById("inputDateEnd")?.value;
+  if (!startDate || !endDate) {
+    alert("Harap isi tanggal Mulai dan Selesai!");
+    return;
+  }
+  renderArchiveView("custom", startDate, endDate);
+}
+
+function renderArchiveView(rangeType, param1 = null, param2 = null) {
+  const records = window.AppStore.getPresensiByRange(rangeType, param1, param2);
+  const st = summarizePresensiList(records);
+
+  const statMap = {
+    arcTepat: st.tepatWaktu,
+    arcTerlambat: st.terlambat,
+    arcHtp: st.tidakPresensi,
+    arcPrakerin: st.daring,
+    arcSakit: st.sakit,
+    arcIzin: st.izin,
+    arcAlpa: st.alpa,
+    arcTotalHadir: st.totalHadir
+  };
+  Object.entries(statMap).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  });
+
+  renderTrendChartOnCanvas({
+    canvasId: "archiveTrendChartCanvas",
+    wrapperId: "archiveChartInnerWrapper",
+    scrollId: "archiveChartScrollContainer",
+    stateKey: "archive",
+    records,
+    compactFit: rangeType === "1w"
+  });
+
+  renderPresensiTableRows("#tabelArsipPresensi tbody", null, records, true);
+}
+
+// ==========================================================================
+// 11. CUSTOM DROPDOWN COMPONENT
 // ==========================================================================
 function createCustomDropdown(containerElement, optionsArray, selectedValue, onSelectCallback) {
   containerElement.className = "custom-dropdown";
@@ -1050,10 +1347,11 @@ function createCustomDropdown(containerElement, optionsArray, selectedValue, onS
   selectedBox.onclick = function (e) {
     e.stopPropagation();
     if (containerElement.classList.contains("open")) {
-      closeCustomDropdown(containerElement);
+      containerElement.classList.remove("open");
       return;
     }
-    openCustomDropdown(containerElement);
+    document.querySelectorAll(".custom-dropdown.open").forEach(el => el.classList.remove("open"));
+    containerElement.classList.add("open");
   };
 
   menu.onclick = function (e) {
@@ -1066,7 +1364,7 @@ function createCustomDropdown(containerElement, optionsArray, selectedValue, onS
 
     textSpan.innerText = label;
     containerElement.setAttribute("data-value", value);
-    closeCustomDropdown(containerElement);
+    containerElement.classList.remove("open");
 
     if (typeof onSelectCallback === "function") {
       onSelectCallback(value, label);
@@ -1074,114 +1372,21 @@ function createCustomDropdown(containerElement, optionsArray, selectedValue, onS
   };
 }
 
-function closeCustomDropdown(dropdown) {
-  if (!dropdown) return;
-  dropdown.classList.remove("open", "drop-up");
-  const menu = dropdown.querySelector(".dropdown-menu");
-  if (!menu) return;
-  menu.style.removeProperty("top");
-  menu.style.removeProperty("bottom");
-  menu.style.removeProperty("margin-top");
-  menu.style.removeProperty("margin-bottom");
-  menu.style.removeProperty("max-height");
-  menu.style.removeProperty("overflow-y");
-}
-
-function openCustomDropdown(dropdown) {
-  if (!dropdown) return;
-  const menu = dropdown.querySelector(".dropdown-menu");
-  if (!menu) return;
-
-  document.querySelectorAll(".custom-dropdown.open").forEach(el => {
-    if (el !== dropdown) closeCustomDropdown(el);
-  });
-
-  dropdown.classList.remove("drop-up");
-  dropdown.classList.add("open");
-
-  menu.style.setProperty("top", "calc(100% + 4px)", "important");
-  menu.style.setProperty("bottom", "auto", "important");
-  menu.style.setProperty("max-height", "250px", "important");
-  menu.style.setProperty("overflow-y", "auto", "important");
-
-  const rect = dropdown.getBoundingClientRect();
-  const viewportHeight = window.innerHeight;
-  const spaceBelow = Math.max(0, viewportHeight - rect.bottom - 8);
-  const spaceAbove = Math.max(0, rect.top - 8);
-  const menuHeight = Math.min(menu.scrollHeight, 250);
-  const openUp = spaceBelow < menuHeight && spaceAbove > spaceBelow;
-
-  if (openUp) {
-    dropdown.classList.add("drop-up");
-    menu.style.setProperty("top", "auto", "important");
-    menu.style.setProperty("bottom", "calc(100% + 4px)", "important");
-  }
-
-  const availableSpace = openUp ? spaceAbove : spaceBelow;
-  if (availableSpace < menuHeight) {
-    menu.style.setProperty("max-height", Math.max(80, availableSpace) + "px", "important");
-  }
-}
-
-function initTimelineDropdown() {
-  const container = document.getElementById("filterTimelineStatistik");
-  if (!container || container.querySelector(".dropdown-selected")) return;
-
-  const timelineOptions = [
-    { value: "1w", label: "📅 1 Minggu (5 Hari KBM)" },
-    { value: "1m", label: "🗓️ 1 Bulan Terakhir" },
-    { value: "semester_select", label: "🎓 Per Semester..." },
-    { value: "ta_select", label: "🏫 Per Tahun Ajaran..." },
-    { value: "custom", label: "⚙️ Kustom Rentang Tanggal..." }
-  ];
-
-  createCustomDropdown(container, timelineOptions, "1w", function (selectedVal) {
-    const customBox = document.getElementById("customDateRangeBox");
-    const semesterBox = document.getElementById("semesterSelectBox");
-    const taBox = document.getElementById("thnAjaranSelectBox");
-
-    if (customBox) customBox.style.display = "none";
-    if (semesterBox) semesterBox.style.display = "none";
-    if (taBox) taBox.style.display = "none";
-
-    if (selectedVal === "custom") {
-      if (customBox) customBox.style.display = "block";
-    } else if (selectedVal === "semester_select") {
-      if (semesterBox) semesterBox.style.display = "block";
-    } else if (selectedVal === "ta_select") {
-      if (taBox) taBox.style.display = "block";
-    } else {
-      renderTrendChart(selectedVal);
-    }
-  });
-}
-
-function applySemesterFilter() {
-  const ta = document.getElementById("selectTaForSemester").value;
-  const sem = document.getElementById("selectSemesterType").value;
-  renderTrendChart("semester", ta, sem);
-}
-
-function applyTahunAjaranFilter() {
-  const taFull = document.getElementById("selectTahunAjaranFull").value;
-  renderTrendChart("tahun_ajaran", taFull);
-}
-
-function applyCustomDateRange() {
-  const startDate = document.getElementById("inputDateStart").value;
-  const endDate = document.getElementById("inputDateEnd").value;
-
-  if (!startDate || !endDate) {
-    alert("Harap isi tanggal Mulai dan Selesai!");
-    return;
-  }
-
-  renderTrendChart("custom", startDate, endDate);
-}
-
 // ==========================================================================
-// 11. SPINNER, SESSION INIT & LOGOUT
+// 12. QUICK MODALS, BIODATA, SPINNER & SESSION INIT
 // ==========================================================================
+function openModalQuick(id) {
+  const modal = document.getElementById(id);
+  if (modal) modal.classList.add("active");
+}
+
+function closeModalQuick(e, id) {
+  if (!e || e.target.id === id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.remove("active");
+  }
+}
+
 function showSpinner(text = "Loading...") {
   const overlay = document.getElementById("loadingOverlay");
   const loadingText = document.getElementById("loadingText");
@@ -1216,6 +1421,48 @@ function updateTanggalSekarang() {
   if (el) el.textContent = hariIni;
 }
 
+function populateBiodataUI(idSiswa, nama, kelas, jurusan) {
+  let userObj = {};
+  try {
+    userObj = JSON.parse(localStorage.getItem("sisensi_siswa_user") || "{}");
+  } catch (e) {}
+
+  const initial = nama.trim().charAt(0).toUpperCase() || "S";
+  const nisn = userObj.nisn || localStorage.getItem("nisnSiswa") || "-";
+  const jk = userObj.jenisKelamin || userObj.jk || "-";
+  const ttl = userObj.ttl || (userObj.tempatLahir && userObj.tanggalLahir ? `${userObj.tempatLahir}, ${userObj.tanggalLahir}` : "-");
+
+  // Header & Greeting
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+
+  setTxt("namaSiswa", nama);
+  setTxt("kelasSiswa", kelas);
+  setTxt("badgeNisSiswa", idSiswa);
+
+  // Mobile Tab Profil
+  setTxt("profilAvatarLarge", initial);
+  setTxt("profilNama", nama);
+  setTxt("profilNamaKelas", kelas);
+  setTxt("profilNis", idSiswa);
+  setTxt("profilNisn", nisn);
+  setTxt("profilJurusan", jurusan);
+  setTxt("profilJk", jk);
+  setTxt("profilTtl", ttl);
+
+  // Modal Biodata (Desktop)
+  setTxt("modalBiodataAvatar", initial);
+  setTxt("modalBiodataNama", nama);
+  setTxt("modalBiodataKelas", kelas);
+  setTxt("modalBiodataNis", idSiswa);
+  setTxt("modalBiodataNisn", nisn);
+  setTxt("modalBiodataJurusan", jurusan);
+  setTxt("modalBiodataJk", jk);
+  setTxt("modalBiodataTtl", ttl);
+}
+
 function initFormSiswa() {
   if (window.__INIT_CALLED) return;
   window.__INIT_CALLED = true;
@@ -1230,49 +1477,27 @@ function initFormSiswa() {
 
   const nama = localStorage.getItem("namaSiswa") || "Siswa";
   const kelas = localStorage.getItem("kelasSiswa") || "-";
-  const initial = nama.trim().charAt(0).toUpperCase() || "S";
   const jurusan = getJurusan(kelas);
 
-  // Header & Greeting
-  const elNama = document.getElementById("namaSiswa");
-  const elKelas = document.getElementById("kelasSiswa");
-  const elHeaderAvatar = document.getElementById("headerAvatarInitial");
-  const elBadgeNis = document.getElementById("badgeNisSiswa");
-
-  if (elNama) elNama.textContent = nama;
-  if (elKelas) elKelas.textContent = kelas;
-  if (elHeaderAvatar) elHeaderAvatar.textContent = initial;
-  if (elBadgeNis) elBadgeNis.textContent = idSiswa;
-
-  // Tab Profil
-  const elProfilAvatar = document.getElementById("profilAvatarLarge");
-  const elProfilNama = document.getElementById("profilNama");
-  const elProfilKelas = document.getElementById("profilNamaKelas");
-  const elProfilNis = document.getElementById("profilNis");
-  const elProfilJurusan = document.getElementById("profilJurusan");
-
-  if (elProfilAvatar) elProfilAvatar.textContent = initial;
-  if (elProfilNama) elProfilNama.textContent = nama;
-  if (elProfilKelas) elProfilKelas.textContent = kelas;
-  if (elProfilNis) elProfilNis.textContent = idSiswa;
-  if (elProfilJurusan) elProfilJurusan.textContent = jurusan;
-
+  populateBiodataUI(idSiswa, nama, kelas, jurusan);
   initThemeUI();
   setGreeting();
-  loadSystemBranding().then(() => {
-    generateQRCard();
-  });
-  loadHariIni(idSiswa);
-  window.isLoaded.hariIni = true;
+  loadSystemBranding();
+
+  // Jalankan Hybrid Loader (Eager di Desktop, Lazy di Mobile)
+  PortalLoader.init();
 }
 
-// Global Click Listener untuk menutup Dropdown & Theme Popover
+// Global Click Listener untuk menutup Dropdown, Theme Popover, & Profile Popover
 document.addEventListener("click", function (e) {
   if (!e.target.closest(".custom-dropdown")) {
-    document.querySelectorAll(".custom-dropdown.open").forEach(el => closeCustomDropdown(el));
+    document.querySelectorAll(".custom-dropdown.open").forEach(el => el.classList.remove("open"));
   }
   if (!e.target.closest(".theme-picker-wrapper")) {
-    document.getElementById("themePopover")?.classList.remove("open");
+    document.getElementById("themePopover")?.classList.remove("open", "is-open");
+  }
+  if (!e.target.closest(".user-profile-wrapper")) {
+    closeProfilePopover();
   }
 });
 
