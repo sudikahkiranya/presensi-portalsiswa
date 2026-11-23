@@ -3146,7 +3146,7 @@ body.student-portal-body .profile-action-btn.btn-logout svg {
 }
 
 /* ==========================================================================
-   WORKSPACE CONTAINER
+   WORKSPACE CONTAINER (GAP ANTAR CARD DIPERKECIL)
    ========================================================================== */
 body.student-portal-body .app-workspace {
   max-width: 1380px;
@@ -3154,7 +3154,7 @@ body.student-portal-body .app-workspace {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 body.student-portal-body .section {
@@ -3187,14 +3187,14 @@ body.student-portal-body .section h3 {
 body.student-portal-body .bento-top-grid {
   display: grid;
   grid-template-columns: 1.45fr 1fr;
-  gap: 16px;
+  gap: 10px;
   align-items: stretch;
 }
 
 body.student-portal-body .bento-col-left {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 body.student-portal-body .bento-col-right {
@@ -3384,7 +3384,7 @@ body.student-portal-body .status-text-sakit { color: #0369a1 !important; }
 body.student-portal-body .status-text-izin { color: #475569 !important; }
 body.student-portal-body .status-text-prakerin { color: #3730a3 !important; }
 
-/* Card 2 (Kanan Baris 1): Menu Layanan — Icon Tanpa Box + Badge Nempel di Pojok Icon */
+/* Card 2 (Kanan Baris 1): Menu Layanan — Kotak Ikon + Label di Luar Bawah */
 body.student-portal-body .bento-actions-card {
   flex: 1;
   display: flex;
@@ -3412,19 +3412,26 @@ body.student-portal-body .quick-actions-grid {
   margin: auto 0;
 }
 
+body.student-portal-body .quick-action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
 body.student-portal-body .tile-action-btn {
-  height: auto !important;
-  min-height: 78px;
-  padding: 10px 6px !important;
-  border-radius: 15px !important;
+  position: relative;
+  width: 58px !important;
+  height: 58px !important;
+  min-width: 58px !important;
+  padding: 0 !important;
+  border-radius: 16px !important;
   background: #f8fafc !important;
   border: 1px solid var(--border-light) !important;
-  color: var(--text-dark) !important;
-  display: flex !important;
-  flex-direction: column !important;
+  color: var(--primary) !important;
+  display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 7px !important;
   cursor: pointer;
   transition: all 0.2s ease !important;
 }
@@ -3432,17 +3439,7 @@ body.student-portal-body .tile-action-btn {
 body.student-portal-body .tile-action-btn:hover {
   background: var(--primary-soft-tint) !important;
   border-color: var(--primary) !important;
-  color: var(--primary) !important;
   transform: translateY(-2px) !important;
-}
-
-body.student-portal-body .tile-icon-bare {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--primary);
-  line-height: 1;
 }
 
 body.student-portal-body .tile-action-btn.is-primary {
@@ -3454,31 +3451,27 @@ body.student-portal-body .tile-action-btn.is-primary {
 
 body.student-portal-body .tile-action-btn.is-primary:hover {
   background: var(--primary-hover) !important;
-  color: #ffffff !important;
-}
-
-body.student-portal-body .tile-action-btn.is-primary .tile-icon-bare {
-  color: #ffffff;
 }
 
 body.student-portal-body .tile-label {
   font-size: 11.5px;
   font-weight: 700;
+  color: var(--text-dark);
   line-height: 1.2;
   text-align: center;
 }
 
 body.student-portal-body .tile-badge-pill {
   position: absolute;
-  top: -6px;
-  right: -9px;
+  top: -5px;
+  right: -5px;
   background: var(--primary);
   color: #ffffff;
-  border: 2px solid #f8fafc;
-  font-size: 9.5px;
+  border: 2px solid #ffffff;
+  font-size: 10px;
   font-weight: 800;
-  min-width: 16px;
-  height: 16px;
+  min-width: 18px;
+  height: 18px;
   padding: 0 4px;
   border-radius: 999px;
   display: inline-flex;
@@ -4159,7 +4152,7 @@ body.student-portal-body .floating-bottom-bar { display: none; }
 
   body.student-portal-body .bento-top-grid {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
   }
 
   body.student-portal-body .bento-greeting-card {
@@ -4170,14 +4163,28 @@ body.student-portal-body .floating-bottom-bar { display: none; }
     font-size: 16px;
   }
 
+  body.student-portal-body .today-timeline-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  body.student-portal-body .today-compact-slots {
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
   body.student-portal-body .quick-actions-grid {
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
   }
 
   body.student-portal-body .tile-action-btn {
-    min-height: 82px;
-    padding: 10px 4px !important;
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
   }
 
   body.student-portal-body .tile-label {
