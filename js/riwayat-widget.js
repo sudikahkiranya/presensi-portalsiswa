@@ -158,13 +158,6 @@
 
       const chartCardHTML = `
         <div class="rw-chart-card">
-          ${this.layoutVariant === "siswa-split" ? `
-            <div class="rw-chart-topbar">
-              <span class="rw-chart-detail-bar">Klik titik pada grafik untuk melihat detail jam masuk &amp; pulang</span>
-              <span class="rw-chart-hint">↔️ Geser atau tarik kurva jika periode panjang</span>
-            </div>
-          ` : ""}
-
           <div class="rw-chart-scroll">
             <div class="rw-chart-inner">
               <canvas class="rw-trend-canvas"></canvas>
@@ -184,37 +177,32 @@
         </div>
       `;
 
+      const modeSwitchHTML = this.layoutVariant === "siswa-split" ? `
+        <div class="rw-mode-switch" role="tablist" aria-label="Mode Tampilan Data">
+          <button type="button" class="rw-mode-btn active" data-view="chart">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <span>Kurva</span>
+          </button>
+          <button type="button" class="rw-mode-btn" data-view="log">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+            <span>Log</span>
+          </button>
+        </div>
+      ` : "";
+
       const bodyHTML = this.layoutVariant === "siswa-split" ? `
         <div class="rw-split-layout">
           <!-- KIRI (3/4): KURVA / LOG -->
           <div class="rw-pane-left">
-            <div class="rw-pane-header">
-              <div class="rw-pane-title-group">
-                <span class="rw-pane-title rw-period-title">Riwayat Presensi 1 Bulan Terakhir</span>
-                <span class="rw-discipline-pill is-good" style="display:none;">-</span>
-              </div>
-
-              <div class="rw-mode-switch" role="tablist" aria-label="Mode Tampilan Data">
-                <button type="button" class="rw-mode-btn active" data-view="chart">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                  </svg>
-                  <span>Kurva</span>
-                </button>
-                <button type="button" class="rw-mode-btn" data-view="log">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="8" y1="6" x2="21" y2="6"></line>
-                    <line x1="8" y1="12" x2="21" y2="12"></line>
-                    <line x1="8" y1="18" x2="21" y2="18"></line>
-                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                  </svg>
-                  <span>Log</span>
-                </button>
-              </div>
-            </div>
-
             <div class="rw-view-chart">${chartCardHTML}</div>
 
             <div class="rw-view-log" style="display:none;">
@@ -357,6 +345,8 @@
 
           <div class="rw-result-wrap" style="display:none;">
             <div class="rw-toolbar-row">
+              ${modeSwitchHTML}
+
               <div class="rw-range-wrap">
                 <div class="rw-range-dropdown" data-value="${this.defaultRange}"></div>
               </div>
@@ -794,14 +784,11 @@
 
       const all = this.store.rawPresensi;
       let filtered = all;
-      let periodTitle = "Riwayat Presensi 1 Minggu Terakhir";
 
       if (rangeType === "1w") {
         filtered = all.slice(-7);
-        periodTitle = "Riwayat Presensi 1 Minggu Terakhir";
       } else if (rangeType === "1m") {
         filtered = all.slice(-30);
-        periodTitle = "Riwayat Presensi 1 Bulan Terakhir";
       } else if (rangeType === "semester") {
         const targetDigit = param2 === "Ganjil" ? "1" : (param2 === "Genap" ? "2" : "");
         filtered = all.filter(p => {
@@ -809,24 +796,13 @@
           if (p.idSemester) return matchTa && p.idSemester.endsWith(targetDigit);
           return matchTa && p.semester === param2;
         });
-        periodTitle = `Riwayat Semester ${param2} (${param1})`;
       } else if (rangeType === "tahun_ajaran") {
         filtered = all.filter(p => p.tahunAjaran === param1);
-        periodTitle = `Riwayat Tahun Ajaran ${param1}`;
       } else if (rangeType === "custom") {
         filtered = all.filter(p => {
           const key = this.normalizeDateKey(p.isoDate || p.tanggal);
           return key >= param1 && key <= param2;
         });
-        periodTitle = `Riwayat Periode ${param1} s.d. ${param2}`;
-      }
-
-      const titleEl = this.q(".rw-period-title");
-      if (titleEl) titleEl.textContent = periodTitle;
-
-      const detailBar = this.q(".rw-chart-detail-bar");
-      if (detailBar) {
-        detailBar.textContent = "Klik titik pada grafik untuk melihat detail jam masuk & pulang";
       }
 
       this.store.currentFiltered = filtered;
@@ -876,31 +852,7 @@
           counts.sangat_terlambat_sekali + counts.htp;
         const totalLainnya = counts.daring + counts.prakerin + counts.dispensasi;
         const totalTidakHadir = counts.sakit + counts.izin + counts.alpa;
-        const totalHadirAll = totalKehadiran + totalLainnya;
-        const totalAll = totalHadirAll + totalTidakHadir;
-        const rate = totalAll > 0 ? Math.round((totalHadirAll / totalAll) * 100) : 0;
-
-        // Update pill peringatan disiplin di sebelah judul kiri
-        const totalTelat = counts.terlambat + counts.sangat_terlambat + counts.sangat_terlambat_sekali;
-        const discPill = this.q(".rw-discipline-pill");
-        if (discPill) {
-          if (totalAll === 0) {
-            discPill.style.display = "none";
-          } else {
-            discPill.style.display = "inline-flex";
-            discPill.classList.remove("is-good", "is-warning", "is-danger");
-            if (counts.alpa > 0 || counts.sangat_terlambat_sekali > 0) {
-              discPill.classList.add("is-danger");
-              discPill.textContent = `${counts.alpa > 0 ? counts.alpa + "x Alpa • " : ""}${totalTelat}x Terlambat • Perlu Perhatian`;
-            } else if (totalTelat > 0) {
-              discPill.classList.add("is-warning");
-              discPill.textContent = `${totalTelat}x Terlambat • Tetap Jaga Disiplin`;
-            } else {
-              discPill.classList.add("is-good");
-              discPill.textContent = `Disiplin Sangat Baik • 0 Terlambat`;
-            }
-          }
-        }
+        const totalAll = totalKehadiran + totalLainnya + totalTidakHadir;
 
         // Update masing-masing kotak status (sembunyikan jika 0)
         Object.entries(counts).forEach(([key, val]) => {
@@ -1244,16 +1196,6 @@
 
             const prevScroll = scrollContainer.scrollLeft;
             this.store.selectedDotIndex = (this.store.selectedDotIndex === nearest) ? null : nearest;
-
-            const detailBar = this.q(".rw-chart-detail-bar");
-            if (detailBar) {
-              if (this.store.selectedDotIndex !== null && this.store.chartData[this.store.selectedDotIndex]) {
-                const pt = this.store.chartData[this.store.selectedDotIndex];
-                detailBar.textContent = `${pt.fullDate} • ${pt.fullName} • Masuk: ${pt.jamMasuk || "-"} • Pulang: ${pt.jamPulang}`;
-              } else {
-                detailBar.textContent = "Klik titik pada grafik untuk melihat detail jam masuk & pulang";
-              }
-            }
 
             this.renderTrendChart(this.store.currentFiltered, this.store.activeRange);
             scrollContainer.scrollLeft = prevScroll;
