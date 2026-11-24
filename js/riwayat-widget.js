@@ -20,7 +20,8 @@
       currentFiltered: [],
       chartData: [],
       selectedDotIndex: null,
-      activeRange: "1w"
+      activeRange: "1w",
+      activeViewMode: "chart" // "chart" | "log"
     },
 
     init(options = {}) {
@@ -30,7 +31,9 @@
       this.layoutVariant = options.layoutVariant || (this.mode === "siswa" ? "siswa-split" : "piket");
       this.defaultRange = options.defaultRange || (this.mode === "siswa" ? "1m" : "1w");
       this.onDataFiltered = typeof options.onDataFiltered === "function" ? options.onDataFiltered : null;
-      
+      this.store.activeRange = this.defaultRange;
+      this.store.activeViewMode = "chart";
+
       const el = typeof options.containerId === "string"
         ? document.getElementById(options.containerId)
         : options.containerEl;
@@ -62,6 +65,10 @@
       return this.container ? this.container.querySelector(selector) : null;
     },
 
+    qa(selector) {
+      return this.container ? Array.from(this.container.querySelectorAll(selector)) : [];
+    },
+
     notify(msg, type = "info") {
       if (this.onNotify) this.onNotify(msg, type);
       else if (typeof showToast === "function") showToast(msg, type);
@@ -76,7 +83,8 @@
         currentFiltered: [],
         chartData: [],
         selectedDotIndex: null,
-        activeRange: "1w"
+        activeRange: this.defaultRange,
+        activeViewMode: "chart"
       });
 
       if (!this.container) return;
@@ -128,6 +136,188 @@
         </div>
       ` : "";
 
+      const chartCardHTML = `
+        <div class="rw-chart-card">
+          ${this.layoutVariant === "siswa-split" ? `
+            <div class="rw-chart-topbar">
+              <span class="rw-chart-detail-bar">Klik titik pada grafik untuk melihat detail jam masuk &amp; pulang</span>
+              <span class="rw-chart-hint">↔️ Geser atau tarik kurva jika periode panjang</span>
+            </div>
+          ` : ""}
+
+          <div class="rw-chart-scroll">
+            <div class="rw-chart-inner">
+              <canvas class="rw-trend-canvas"></canvas>
+            </div>
+          </div>
+
+          <div class="rw-legend-grid">
+            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#15803d;"></span><span>Tepat Waktu / Dispensasi / Prakerin / Daring</span></div>
+            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#d97706;"></span><span>Terlambat</span></div>
+            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#c2410c;"></span><span>Sangat Terlambat</span></div>
+            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#b91c1c;"></span><span>Sangat Terlambat Sekali</span></div>
+            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#7c3aed;"></span><span>Hadir Tidak Presensi</span></div>
+            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#0284c7;"></span><span>Izin</span></div>
+            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#0891b2;"></span><span>Sakit</span></div>
+            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#111827;"></span><span>Alpa</span></div>
+          </div>
+        </div>
+      `;
+
+      const bodyHTML = this.layoutVariant === "siswa-split" ? `
+        <div class="rw-split-layout">
+          <!-- KIRI (3/4): KURVA / LOG -->
+          <div class="rw-pane-left">
+            <div class="rw-pane-header">
+              <div class="rw-pane-title-group">
+                <span class="rw-pane-title rw-period-title">Riwayat Presensi 1 Bulan Terakhir</span>
+                <span class="rw-discipline-pill is-good" style="display:none;">-</span>
+              </div>
+
+              <div class="rw-mode-switch" role="tablist" aria-label="Mode Tampilan Data">
+                <button type="button" class="rw-mode-btn active" data-view="chart">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                  <span>Kurva</span>
+                </button>
+                <button type="button" class="rw-mode-btn" data-view="log">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+                  <span>Log</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="rw-view-chart">${chartCardHTML}</div>
+
+            <div class="rw-view-log" style="display:none;">
+              <div class="rw-log-meta">
+                <span>Catatan jam masuk, pulang, dan status kehadiran</span>
+                <span class="data-count-badge rw-log-count">0 Hari</span>
+              </div>
+              <div class="rw-log-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tanggal</th>
+                      <th>Masuk</th>
+                      <th>Status</th>
+                      <th>Pulang</th>
+                      <th>Keterangan</th>
+                    </tr>
+                  </thead>
+                  <tbody class="rw-log-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- DIVIDER VERTIKAL -->
+          <div class="rw-vertical-divider" aria-hidden="true"></div>
+
+          <!-- KANAN (1/4): REKAP KEHADIRAN -->
+          <div class="rw-pane-right">
+            <div class="rw-pane-header">
+              <span class="rw-pane-title">Rekap Kehadiran</span>
+              <span class="rate-pill-badge rw-rate-pill">0%</span>
+            </div>
+
+            <!-- Kelompok 1: Rincian Status Hadir -->
+            <div class="rw-hadir-section">
+              <div class="rekap-group-label">Rincian Status Hadir</div>
+              <div class="rekap-number-grid rw-grid-hadir-main">
+                <div class="num-box tone-total-hadir" data-stat="total_hadir" style="display:none;">
+                  <span class="num-box-lbl">Total Hadir</span>
+                  <span class="num-box-val">0</span>
+                </div>
+                <div class="num-box tone-hadir" data-stat="tepat" style="display:none;">
+                  <span class="num-box-lbl">Tepat Waktu</span>
+                  <span class="num-box-val">0</span>
+                </div>
+                <div class="num-box tone-late" data-stat="terlambat" style="display:none;">
+                  <span class="num-box-lbl">Terlambat</span>
+                  <span class="num-box-val">0</span>
+                </div>
+                <div class="num-box tone-sangat-late" data-stat="sangat_terlambat" style="display:none;">
+                  <span class="num-box-lbl">Sangat Terlambat</span>
+                  <span class="num-box-val">0</span>
+                </div>
+                <div class="num-box tone-sangat-late-sekali" data-stat="sangat_terlambat_sekali" style="display:none;">
+                  <span class="num-box-lbl">Sangat Terlambat Sekali</span>
+                  <span class="num-box-val">0</span>
+                </div>
+                <div class="num-box tone-htp" data-stat="htp" style="display:none;">
+                  <span class="num-box-lbl">Hadir Tidak Presensi</span>
+                  <span class="num-box-val">0</span>
+                </div>
+              </div>
+
+              <div class="rekap-subgrid-3 rw-grid-hadir-khusus" style="margin-top: 7px;">
+                <div class="num-box tone-daring" data-stat="daring" style="display:none;">
+                  <span class="num-box-lbl">Daring</span>
+                  <span class="num-box-val">0</span>
+                </div>
+                <div class="num-box tone-prakerin" data-stat="prakerin" style="display:none;">
+                  <span class="num-box-lbl">Prakerin</span>
+                  <span class="num-box-val">0</span>
+                </div>
+                <div class="num-box tone-dispensasi" data-stat="dispensasi" style="display:none;">
+                  <span class="num-box-lbl">Dispensasi</span>
+                  <span class="num-box-val">0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Kelompok 2: Rincian Status Tidak Hadir -->
+            <div class="rw-absen-section" style="margin-top: 12px;">
+              <div class="rekap-group-label">Rincian Status Tidak Hadir</div>
+              <div class="rekap-number-grid rw-grid-absen">
+                <div class="num-box tone-total-absen" data-stat="total_tidak_hadir" style="display:none;">
+                  <span class="num-box-lbl">Total Tidak Hadir</span>
+                  <span class="num-box-val">0</span>
+                </div>
+                <div class="num-box tone-sakit" data-stat="sakit" style="display:none;">
+                  <span class="num-box-lbl">Sakit</span>
+                  <span class="num-box-val">0</span>
+                </div>
+                <div class="num-box tone-izin" data-stat="izin" style="display:none;">
+                  <span class="num-box-lbl">Izin</span>
+                  <span class="num-box-val">0</span>
+                </div>
+                <div class="num-box tone-alpa" data-stat="alpa" style="display:none;">
+                  <span class="num-box-lbl">Alpa</span>
+                  <span class="num-box-val">0</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="rw-empty-rekap-note" style="display:none; text-align:center; font-size:12px; color:#64748b; padding:18px 8px;">
+              Belum ada catatan presensi pada periode ini.
+            </div>
+          </div>
+        </div>
+      ` : `
+        <div class="rw-stats-row">
+          <div class="rw-stat-pill rw-tone-green" data-stat="tepat" style="display:none;"><label>Tepat Waktu</label><span>0</span></div>
+          <div class="rw-stat-pill rw-tone-amber" data-stat="terlambat" style="display:none;"><label>Terlambat</label><span>0</span></div>
+          <div class="rw-stat-pill rw-tone-purple" data-stat="htp" style="display:none;"><label>Tidak Presensi</label><span>0</span></div>
+          <div class="rw-stat-pill rw-tone-green" data-stat="prakerin" style="display:none;"><label>Prakerin</label><span>0</span></div>
+          <div class="rw-stat-pill rw-tone-green" data-stat="dispensasi" style="display:none;"><label>Dispensasi</label><span>0</span></div>
+          <div class="rw-stat-pill rw-tone-green" data-stat="daring" style="display:none;"><label>Daring</label><span>0</span></div>
+          <div class="rw-stat-pill rw-tone-cyan" data-stat="sakit" style="display:none;"><label>Sakit</label><span>0</span></div>
+          <div class="rw-stat-pill rw-tone-blue" data-stat="izin" style="display:none;"><label>Izin</label><span>0</span></div>
+          <div class="rw-stat-pill rw-tone-red" data-stat="alpa" style="display:none;"><label>Alpa</label><span>0</span></div>
+        </div>
+        ${chartCardHTML}
+      `;
+
       this.container.innerHTML = `
         <div class="rw-container">
           ${searchHeaderHTML}
@@ -146,7 +336,7 @@
           <div class="rw-result-wrap" style="display:none;">
             <div class="rw-toolbar-row">
               <div class="rw-range-wrap">
-                <div class="rw-range-dropdown" data-value="1w"></div>
+                <div class="rw-range-dropdown" data-value="${this.defaultRange}"></div>
               </div>
 
               <div class="rw-inline-subfilter rw-sub-semester" style="display:none;">
@@ -168,36 +358,7 @@
               </div>
             </div>
 
-            <div class="rw-stats-row">
-              <div class="rw-stat-pill rw-tone-green" data-stat="tepat" style="display:none;"><label>Tepat Waktu</label><span>0</span></div>
-              <div class="rw-stat-pill rw-tone-amber" data-stat="terlambat" style="display:none;"><label>Terlambat</label><span>0</span></div>
-              <div class="rw-stat-pill rw-tone-purple" data-stat="htp" style="display:none;"><label>Tidak Presensi</label><span>0</span></div>
-              <div class="rw-stat-pill rw-tone-green" data-stat="prakerin" style="display:none;"><label>Prakerin</label><span>0</span></div>
-              <div class="rw-stat-pill rw-tone-green" data-stat="dispensasi" style="display:none;"><label>Dispensasi</label><span>0</span></div>
-              <div class="rw-stat-pill rw-tone-green" data-stat="daring" style="display:none;"><label>Daring</label><span>0</span></div>
-              <div class="rw-stat-pill rw-tone-cyan" data-stat="sakit" style="display:none;"><label>Sakit</label><span>0</span></div>
-              <div class="rw-stat-pill rw-tone-blue" data-stat="izin" style="display:none;"><label>Izin</label><span>0</span></div>
-              <div class="rw-stat-pill rw-tone-red" data-stat="alpa" style="display:none;"><label>Alpa</label><span>0</span></div>
-            </div>
-
-            <div class="rw-chart-card">
-              <div class="rw-chart-scroll">
-                <div class="rw-chart-inner">
-                  <canvas class="rw-trend-canvas"></canvas>
-                </div>
-              </div>
-
-              <div class="rw-legend-grid">
-                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#15803d;"></span><span>Tepat Waktu / Dispensasi / Prakerin / Daring</span></div>
-                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#d97706;"></span><span>Terlambat</span></div>
-                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#c2410c;"></span><span>Sangat Terlambat</span></div>
-                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#b91c1c;"></span><span>Sangat Terlambat Sekali</span></div>
-                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#7c3aed;"></span><span>Hadir Tidak Presensi</span></div>
-                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#0284c7;"></span><span>Izin</span></div>
-                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#0891b2;"></span><span>Sakit</span></div>
-                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#111827;"></span><span>Alpa</span></div>
-              </div>
-            </div>
+            ${bodyHTML}
           </div>
         </div>
       `;
@@ -219,9 +380,34 @@
         btnCek?.addEventListener("click", () => this.searchByNis());
       }
 
+      if (this.layoutVariant === "siswa-split") {
+        this.qa(".rw-mode-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const view = btn.getAttribute("data-view");
+            this.switchViewMode(view);
+          });
+        });
+      }
+
       this.q(".rw-apply-sem")?.addEventListener("click", () => this.applySemesterFilter());
       this.q(".rw-apply-ta")?.addEventListener("click", () => this.applyTaFilter());
       this.q(".rw-apply-custom")?.addEventListener("click", () => this.applyCustomDateFilter());
+    },
+
+    switchViewMode(view) {
+      this.store.activeViewMode = view === "log" ? "log" : "chart";
+      this.qa(".rw-mode-btn").forEach(b => {
+        b.classList.toggle("active", b.getAttribute("data-view") === this.store.activeViewMode);
+      });
+
+      const chartView = this.q(".rw-view-chart");
+      const logView = this.q(".rw-view-log");
+      if (chartView) chartView.style.display = this.store.activeViewMode === "chart" ? "block" : "none";
+      if (logView) logView.style.display = this.store.activeViewMode === "log" ? "flex" : "none";
+
+      if (this.store.activeViewMode === "chart") {
+        this.renderTrendChart(this.store.currentFiltered, this.store.activeRange);
+      }
     },
 
     bindGlobalEvents() {
@@ -297,7 +483,7 @@
         { value: "custom", label: "Kustom Rentang Tanggal" }
       ];
 
-      this.createDropdown(rangeDropEl, rangeOptions, "1w", async (val) => {
+      this.createDropdown(rangeDropEl, rangeOptions, this.defaultRange, async (val) => {
         this.q(".rw-sub-semester").style.display = "none";
         this.q(".rw-sub-ta").style.display = "none";
         this.q(".rw-sub-custom").style.display = "none";
@@ -359,8 +545,10 @@
       this.setSearchDisabled(true);
 
       try {
-        const isFull = Boolean(this.store.fullCache[cleanId]);
-        let data = this.store.fullCache[cleanId] || this.store.recentCache[cleanId];
+        const needArchiveImmediately = this.defaultRange !== "1w";
+        const fetchMode = needArchiveImmediately ? "archive" : "recent";
+        const isFull = Boolean(this.store.fullCache[cleanId]) || needArchiveImmediately;
+        let data = this.store.fullCache[cleanId] || (!needArchiveImmediately ? this.store.recentCache[cleanId] : null);
 
         if (!data) {
           const response = await fetch(this.apiUrl, {
@@ -369,7 +557,7 @@
             body: JSON.stringify({
               action: "getHistoryPresensiSiswa",
               idSiswa: cleanId,
-              mode: "recent"
+              mode: fetchMode
             })
           });
 
@@ -378,7 +566,8 @@
           if (!data || data.success === false) {
             throw new Error(data?.message || "Data siswa tidak ditemukan.");
           }
-          this.store.recentCache[cleanId] = data;
+          if (fetchMode === "archive") this.store.fullCache[cleanId] = data;
+          else this.store.recentCache[cleanId] = data;
         }
 
         this.store.hasFullArchive = isFull;
@@ -401,8 +590,8 @@
         const rangeDropEl = this.q(".rw-range-dropdown");
         if (rangeDropEl) {
           const txt = rangeDropEl.querySelector(".rw-dropdown-text");
-          if (txt) txt.innerText = "1 Minggu Terakhir";
-          rangeDropEl.setAttribute("data-value", "1w");
+          if (txt) txt.innerText = this.defaultRange === "1m" ? "1 Bulan Terakhir" : "1 Minggu Terakhir";
+          rangeDropEl.setAttribute("data-value", this.defaultRange);
         }
         this.q(".rw-sub-semester").style.display = "none";
         this.q(".rw-sub-ta").style.display = "none";
@@ -411,7 +600,7 @@
         loadingBox.style.display = "none";
         resultWrap.style.display = "block";
 
-        this.applyFilterRange("1w");
+        this.applyFilterRange(this.defaultRange);
       } catch (err) {
         console.error("[RiwayatWidget] Gagal load history:", err);
         if (dividerEl) dividerEl.style.display = "none";
@@ -566,11 +755,14 @@
 
       const all = this.store.rawPresensi;
       let filtered = all;
+      let periodTitle = "Riwayat Presensi 1 Minggu Terakhir";
 
       if (rangeType === "1w") {
         filtered = all.slice(-7);
+        periodTitle = "Riwayat Presensi 1 Minggu Terakhir";
       } else if (rangeType === "1m") {
         filtered = all.slice(-30);
+        periodTitle = "Riwayat Presensi 1 Bulan Terakhir";
       } else if (rangeType === "semester") {
         const targetDigit = param2 === "Ganjil" ? "1" : (param2 === "Genap" ? "2" : "");
         filtered = all.filter(p => {
@@ -578,21 +770,143 @@
           if (p.idSemester) return matchTa && p.idSemester.endsWith(targetDigit);
           return matchTa && p.semester === param2;
         });
+        periodTitle = `Riwayat Semester ${param2} (${param1})`;
       } else if (rangeType === "tahun_ajaran") {
         filtered = all.filter(p => p.tahunAjaran === param1);
+        periodTitle = `Riwayat Tahun Ajaran ${param1}`;
       } else if (rangeType === "custom") {
         filtered = all.filter(p => {
           const key = this.normalizeDateKey(p.isoDate || p.tanggal);
           return key >= param1 && key <= param2;
         });
+        periodTitle = `Riwayat Periode ${param1} s.d. ${param2}`;
+      }
+
+      const titleEl = this.q(".rw-period-title");
+      if (titleEl) titleEl.textContent = periodTitle;
+
+      const detailBar = this.q(".rw-chart-detail-bar");
+      if (detailBar) {
+        detailBar.textContent = "Klik titik pada grafik untuk melihat detail jam masuk & pulang";
       }
 
       this.store.currentFiltered = filtered;
       this.updateSummaryCards(filtered);
+      if (this.layoutVariant === "siswa-split") {
+        this.renderLogTable(filtered);
+      }
       this.renderTrendChart(filtered, rangeType);
+
+      if (this.onDataFiltered) {
+        this.onDataFiltered(filtered, rangeType);
+      }
     },
 
     updateSummaryCards(data) {
+      if (this.layoutVariant === "siswa-split") {
+        const counts = {
+          tepat: 0,
+          terlambat: 0,
+          sangat_terlambat: 0,
+          sangat_terlambat_sekali: 0,
+          htp: 0,
+          daring: 0,
+          prakerin: 0,
+          dispensasi: 0,
+          sakit: 0,
+          izin: 0,
+          alpa: 0
+        };
+
+        data.forEach(item => {
+          const st = String(item.statusMasuk || "").trim().toLowerCase();
+          if (st.includes("sangat terlambat sekali")) counts.sangat_terlambat_sekali++;
+          else if (st.includes("sangat terlambat")) counts.sangat_terlambat++;
+          else if (st.includes("terlambat")) counts.terlambat++;
+          else if (st.includes("tidak presensi") || st === "htp") counts.htp++;
+          else if (st.includes("prakerin") || st.includes("pkl")) counts.prakerin++;
+          else if (st.includes("dispensasi")) counts.dispensasi++;
+          else if (st.includes("daring")) counts.daring++;
+          else if (st.includes("sakit")) counts.sakit++;
+          else if (st.includes("izin")) counts.izin++;
+          else if (st.includes("alpa")) counts.alpa++;
+          else if (st.includes("tepat") || st.includes("hadir")) counts.tepat++;
+        });
+
+        const totalHadir = counts.tepat + counts.terlambat + counts.sangat_terlambat +
+          counts.sangat_terlambat_sekali + counts.htp + counts.daring + counts.prakerin + counts.dispensasi;
+        const totalTidakHadir = counts.sakit + counts.izin + counts.alpa;
+        const totalAll = totalHadir + totalTidakHadir;
+        const rate = totalAll > 0 ? Math.round((totalHadir / totalAll) * 100) : 0;
+
+        const ratePill = this.q(".rw-rate-pill");
+        if (ratePill) ratePill.textContent = `${rate}%`;
+
+        // Update pill peringatan disiplin di sebelah judul kiri
+        const totalTelat = counts.terlambat + counts.sangat_terlambat + counts.sangat_terlambat_sekali;
+        const discPill = this.q(".rw-discipline-pill");
+        if (discPill) {
+          if (totalAll === 0) {
+            discPill.style.display = "none";
+          } else {
+            discPill.style.display = "inline-flex";
+            discPill.classList.remove("is-good", "is-warning", "is-danger");
+            if (counts.alpa > 0 || counts.sangat_terlambat_sekali > 0) {
+              discPill.classList.add("is-danger");
+              discPill.textContent = `${counts.alpa > 0 ? counts.alpa + "x Alpa • " : ""}${totalTelat}x Terlambat • Perlu Perhatian`;
+            } else if (totalTelat > 0) {
+              discPill.classList.add("is-warning");
+              discPill.textContent = `${totalTelat}x Terlambat • Tetap Jaga Disiplin`;
+            } else {
+              discPill.classList.add("is-good");
+              discPill.textContent = `Disiplin Sangat Baik • 0 Terlambat`;
+            }
+          }
+        }
+
+        const allStatValues = {
+          total_hadir: totalHadir,
+          tepat: counts.tepat,
+          terlambat: counts.terlambat,
+          sangat_terlambat: counts.sangat_terlambat,
+          sangat_terlambat_sekali: counts.sangat_terlambat_sekali,
+          htp: counts.htp,
+          daring: counts.daring,
+          prakerin: counts.prakerin,
+          dispensasi: counts.dispensasi,
+          total_tidak_hadir: totalTidakHadir,
+          sakit: counts.sakit,
+          izin: counts.izin,
+          alpa: counts.alpa
+        };
+
+        Object.entries(allStatValues).forEach(([key, val]) => {
+          const box = this.q(`.num-box[data-stat="${key}"]`);
+          if (!box) return;
+          const valEl = box.querySelector(".num-box-val");
+          if (valEl) valEl.textContent = val;
+          box.style.display = val > 0 ? "" : "none";
+        });
+
+        // Sembunyikan wrapper grup jika semua kartu di dalamnya bernilai 0
+        const hadirMainCount = totalHadir + counts.tepat + counts.terlambat + counts.sangat_terlambat + counts.sangat_terlambat_sekali + counts.htp;
+        const hadirKhususCount = counts.daring + counts.prakerin + counts.dispensasi;
+
+        const gridHadirMain = this.q(".rw-grid-hadir-main");
+        const gridHadirKhusus = this.q(".rw-grid-hadir-khusus");
+        const hadirSection = this.q(".rw-hadir-section");
+        const absenSection = this.q(".rw-absen-section");
+        const emptyNote = this.q(".rw-empty-rekap-note");
+
+        if (gridHadirMain) gridHadirMain.style.display = hadirMainCount > 0 ? "" : "none";
+        if (gridHadirKhusus) gridHadirKhusus.style.display = hadirKhususCount > 0 ? "" : "none";
+        if (hadirSection) hadirSection.style.display = totalHadir > 0 ? "" : "none";
+        if (absenSection) absenSection.style.display = totalTidakHadir > 0 ? "" : "none";
+        if (emptyNote) emptyNote.style.display = totalAll === 0 ? "block" : "none";
+        return;
+      }
+
+      // Mode default: Piket (baris pill horizontal)
       const counts = {
         tepat: 0, terlambat: 0, htp: 0, prakerin: 0,
         dispensasi: 0, daring: 0, sakit: 0, izin: 0, alpa: 0
@@ -623,6 +937,36 @@
 
       const rowEl = this.q(".rw-stats-row");
       if (rowEl) rowEl.style.display = visibleCards > 0 ? "flex" : "none";
+    },
+
+    renderLogTable(data) {
+      const tbody = this.q(".rw-log-tbody");
+      const countBadge = this.q(".rw-log-count");
+      if (countBadge) countBadge.textContent = `${data.length} Hari`;
+      if (!tbody) return;
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="padding:24px; color:#64748b;">Belum ada data presensi pada periode ini.</td></tr>`;
+        return;
+      }
+
+      const sorted = [...data].reverse();
+      tbody.innerHTML = sorted.map(item => {
+        const tgl = item.tanggal || item.isoDate || "-";
+        const jamMasuk = item.jamMasuk || "-";
+        const status = item.statusMasuk || "-";
+        const jamPulang = item.jamPulang || "-";
+        const ket = item.keterangan || item.catatan || "-";
+        return `
+          <tr>
+            <td data-label="Tanggal"><strong>${tgl}</strong></td>
+            <td data-label="Masuk">${jamMasuk}</td>
+            <td data-label="Status">${status}</td>
+            <td data-label="Pulang">${jamPulang}</td>
+            <td data-label="Keterangan">${ket}</td>
+          </tr>
+        `;
+      }).join("");
     },
 
     formatChartAxisDate(item) {
@@ -679,9 +1023,12 @@
       this.store.chartData = (data || []).map(item => {
         const st = getStatusInfo(item.statusMasuk);
         const jamClean = String(item.jamMasuk || "").trim();
+        const pulangClean = String(item.jamPulang || "").trim();
         return {
           label: this.formatChartAxisDate(item),
+          fullDate: item.tanggal || item.isoDate || "-",
           jamMasuk: (jamClean && jamClean !== "-") ? jamClean : "",
+          jamPulang: (pulangClean && pulangClean !== "-") ? pulangClean : "-",
           val: st.level,
           color: st.color,
           fullName: st.fullName
@@ -872,6 +1219,17 @@
 
             const prevScroll = scrollContainer.scrollLeft;
             this.store.selectedDotIndex = (this.store.selectedDotIndex === nearest) ? null : nearest;
+
+            const detailBar = this.q(".rw-chart-detail-bar");
+            if (detailBar) {
+              if (this.store.selectedDotIndex !== null && this.store.chartData[this.store.selectedDotIndex]) {
+                const pt = this.store.chartData[this.store.selectedDotIndex];
+                detailBar.textContent = `${pt.fullDate} • ${pt.fullName} • Masuk: ${pt.jamMasuk || "-"} • Pulang: ${pt.jamPulang}`;
+              } else {
+                detailBar.textContent = "Klik titik pada grafik untuk melihat detail jam masuk & pulang";
+              }
+            }
+
             this.renderTrendChart(this.store.currentFiltered, this.store.activeRange);
             scrollContainer.scrollLeft = prevScroll;
           }
