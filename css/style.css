@@ -3146,7 +3146,7 @@ body.student-portal-body .profile-action-btn.btn-logout svg {
 }
 
 /* ==========================================================================
-   WORKSPACE CONTAINER (GAP ANTAR CARD DIPERKECIL)
+   WORKSPACE CONTAINER
    ========================================================================== */
 body.student-portal-body .app-workspace {
   max-width: 1380px;
@@ -3182,7 +3182,7 @@ body.student-portal-body .section h3 {
 }
 
 /* ==========================================================================
-   BARIS 1: KIRI (SAPAAN + PRESENSI HARI INI) | KANAN (TILE AKSI CEPAT)
+   BARIS 1: KIRI (SAPAAN + PRESENSI HARI INI) | KANAN (MENU LAYANAN 5 IKON)
    ========================================================================== */
 body.student-portal-body .bento-top-grid {
   display: grid;
@@ -3202,7 +3202,7 @@ body.student-portal-body .bento-col-right {
   flex-direction: column;
 }
 
-/* Card 1A: Sapaan Polos (Tanpa Gradasi) + No. Urut Tanpa Card */
+/* Card 1A: Sapaan Polos + No. Urut Tanpa Card */
 body.student-portal-body .bento-greeting-card {
   display: flex;
   justify-content: space-between;
@@ -3237,7 +3237,6 @@ body.student-portal-body .greeting-student-name {
   text-overflow: ellipsis;
 }
 
-/* No. Urut Disiplin Tanpa Card/Border Pembungkus */
 body.student-portal-body .rank-inline-info {
   display: flex;
   flex-direction: column;
@@ -3294,7 +3293,7 @@ body.student-portal-body .rank-num-sub {
   color: var(--text-muted);
 }
 
-/* Card 1B: Presensi Hari Ini (Compact Horizontal Sejajar Card Greeting) */
+/* Card 1B: Presensi Hari Ini */
 body.student-portal-body .today-timeline-section {
   display: flex;
   justify-content: space-between;
@@ -3384,7 +3383,7 @@ body.student-portal-body .status-text-sakit { color: #0369a1 !important; }
 body.student-portal-body .status-text-izin { color: #475569 !important; }
 body.student-portal-body .status-text-prakerin { color: #3730a3 !important; }
 
-/* Card 2 (Kanan Baris 1): Menu Layanan — Kotak Ikon + Label di Luar Bawah */
+/* Card 2 (Kanan Baris 1): Menu Layanan — 5 Tile Sejajar */
 body.student-portal-body .bento-actions-card {
   flex: 1;
   display: flex;
@@ -3407,8 +3406,8 @@ body.student-portal-body .actions-card-header span {
 
 body.student-portal-body .quick-actions-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
   margin: auto 0;
 }
 
@@ -3421,9 +3420,9 @@ body.student-portal-body .quick-action-item {
 
 body.student-portal-body .tile-action-btn {
   position: relative;
-  width: 58px !important;
-  height: 58px !important;
-  min-width: 58px !important;
+  width: 54px !important;
+  height: 54px !important;
+  min-width: 54px !important;
   padding: 0 !important;
   border-radius: 16px !important;
   background: #f8fafc !important;
@@ -3454,7 +3453,7 @@ body.student-portal-body .tile-action-btn.is-primary:hover {
 }
 
 body.student-portal-body .tile-label {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-dark);
   line-height: 1.2;
@@ -3498,40 +3497,41 @@ body.student-portal-body .unified-card-header {
   border-bottom: 1px solid #e2e8f0;
 }
 
-body.student-portal-body .unified-period-subtitle {
-  margin: 3px 0 0 0;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--primary);
+body.student-portal-body .unified-main-title {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--text-dark);
+  white-space: nowrap;
 }
 
 body.student-portal-body .unified-filter-area {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
 }
 
 body.student-portal-body .analytics-filter-wrap {
-  width: 245px;
+  width: 235px;
+  flex-shrink: 0;
 }
 
-/* Inline Sub-Filters */
-body.student-portal-body .inline-subfilter-bar {
+/* Inline Sub-Filters (Berjejer Ke Samping Sebaris dengan Dropdown Utama) */
+body.student-portal-body .inline-subfilter-group {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 10px 12px;
-  background: #f8fafc;
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  margin-bottom: 14px;
 }
 
-body.student-portal-body .inline-subfilter-bar select,
-body.student-portal-body .inline-subfilter-bar input[type="date"] {
-  height: 36px;
-  min-width: 150px;
+body.student-portal-body .inline-subfilter-group select,
+body.student-portal-body .inline-subfilter-group input[type="date"] {
+  height: 38px;
+  min-width: 145px;
+  border-radius: 12px;
 }
 
 body.student-portal-body .date-sep {
@@ -3541,11 +3541,11 @@ body.student-portal-body .date-sep {
 }
 
 body.student-portal-body .btn-apply-inline {
-  height: 36px !important;
+  height: 38px !important;
   padding: 0 16px !important;
   background: var(--primary) !important;
   color: #ffffff !important;
-  border-radius: 10px !important;
+  border-radius: 12px !important;
   font-size: 12.5px !important;
   font-weight: 600 !important;
 }
@@ -3577,9 +3577,17 @@ body.student-portal-body .pane-sub-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   min-height: 36px;
   margin-bottom: 12px;
+}
+
+body.student-portal-body .pane-title-with-pill {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 body.student-portal-body .pane-title-label {
@@ -3662,9 +3670,16 @@ body.student-portal-body #chartScrollContainer {
   width: 100%;
   overflow-x: auto;
   padding-bottom: 6px;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+body.student-portal-body #chartScrollContainer.is-dragging {
+  cursor: grabbing;
 }
 
 body.student-portal-body #chartInnerWrapper {
@@ -3990,10 +4005,10 @@ body.student-portal-body .form-group-modal textarea:focus {
   box-shadow: 0 0 0 3px var(--theme-glow);
 }
 
-/* Riwayat Izin List */
+/* Riwayat Izin & Klasemen List */
 body.student-portal-body .modal-list-scroll {
   overflow-y: auto;
-  max-height: 310px;
+  max-height: 330px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -4044,6 +4059,41 @@ body.student-portal-body .izin-history-reason {
   color: var(--text-muted);
   line-height: 1.4;
 }
+
+/* Klasemen Row Item */
+body.student-portal-body .klasemen-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 13px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+body.student-portal-body .klasemen-row.is-me {
+  background: var(--primary-soft-tint);
+  border-color: var(--primary);
+}
+
+body.student-portal-body .klasemen-rank-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: var(--text-dark);
+  font-size: 11.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+body.student-portal-body .klasemen-rank-badge.top-1 { background: #fef08a; color: #854d0e; }
+body.student-portal-body .klasemen-rank-badge.top-2 { background: #e2e8f0; color: #334155; }
+body.student-portal-body .klasemen-rank-badge.top-3 { background: #fed7aa; color: #9a3412; }
 
 /* Biodata Modal & Tab Profil */
 body.student-portal-body .biodata-modal-hero {
@@ -4177,18 +4227,18 @@ body.student-portal-body .floating-bottom-bar { display: none; }
   }
 
   body.student-portal-body .quick-actions-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
   }
 
   body.student-portal-body .tile-action-btn {
-    width: 52px !important;
-    height: 52px !important;
-    min-width: 52px !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
   }
 
   body.student-portal-body .tile-label {
-    font-size: 10.5px;
+    font-size: 10px;
   }
 
   /* Sembunyikan Card Bawah saat Tab Beranda atau Profil aktif di Mobile */
@@ -4202,8 +4252,23 @@ body.student-portal-body .floating-bottom-bar { display: none; }
     display: none !important;
   }
 
+  body.student-portal-body .unified-filter-area {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   body.student-portal-body .analytics-filter-wrap {
     width: 100%;
+  }
+
+  body.student-portal-body .inline-subfilter-group {
+    width: 100%;
+  }
+
+  body.student-portal-body .inline-subfilter-group select,
+  body.student-portal-body .inline-subfilter-group input[type="date"] {
+    flex: 1;
+    min-width: 120px;
   }
 
   body.student-portal-body .chart-legend-grid {

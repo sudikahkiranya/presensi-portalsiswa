@@ -138,12 +138,12 @@
   <main class="app-workspace">
 
     <!-- ======================================================================
-         BARIS 1 (ATAS): KIRI (SAPAAN + PRESENSI HARI INI) | KANAN (AKSI CEPAT)
+         BARIS 1 (ATAS): KIRI (SAPAAN + PRESENSI HARI INI) | KANAN (MENU LAYANAN)
          ====================================================================== -->
     <section id="hariIni" class="tab-content active bento-row-top">
       <div class="bento-top-grid">
 
-        <!-- KOLOM KIRI: CARD SAPAAN (POLOS + NO URUT TANPA CARD) & PRESENSI HARI INI -->
+        <!-- KOLOM KIRI: CARD SAPAAN & PRESENSI HARI INI -->
         <div class="bento-col-left">
 
           <!-- Card 1A: Sapaan Polos + No Urut Klasemen Tanpa Card -->
@@ -168,7 +168,7 @@
             </div>
           </div>
 
-          <!-- Card 1B: Presensi Hari Ini (Compact Horizontal Sejajar Card Greeting) -->
+          <!-- Card 1B: Presensi Hari Ini -->
           <div class="section today-timeline-section">
             <div class="today-title-stack">
               <h3>Presensi Hari Ini</h3>
@@ -212,7 +212,7 @@
 
         </div>
 
-        <!-- KOLOM KANAN: CARD TOMBOL AKSI CEPAT (ICON TANPA BOX + BADGE DI POJOK ICON) -->
+        <!-- KOLOM KANAN: CARD MENU LAYANAN (5 IKON SEJAJAR) -->
         <aside class="bento-col-right">
           <div class="section bento-actions-card">
             <div class="actions-card-header">
@@ -223,7 +223,7 @@
             <div class="quick-actions-grid">
               <div class="quick-action-item">
                 <button type="button" class="tile-action-btn is-primary" onclick="openQrModal()" aria-label="Kartu QR">
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                  <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="3" width="7" height="7"></rect>
                     <rect x="14" y="3" width="7" height="7"></rect>
                     <rect x="14" y="14" width="7" height="7"></rect>
@@ -235,7 +235,7 @@
 
               <div class="quick-action-item">
                 <button type="button" class="tile-action-btn" onclick="openModalQuick('modalIzin')" aria-label="Izin Keluar">
-                  <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                   </svg>
@@ -246,7 +246,7 @@
               <div class="quick-action-item">
                 <button type="button" class="tile-action-btn" onclick="openModalQuick('modalLogIzin')" aria-label="Riwayat Izin">
                   <span class="tile-badge-pill" id="badgeJumlahIzin">2</span>
-                  <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
                     <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -258,7 +258,7 @@
 
               <div class="quick-action-item">
                 <button type="button" class="tile-action-btn" onclick="openModalQuick('modalBiodata')" aria-label="Biodata">
-                  <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="4" width="18" height="16" rx="2"></rect>
                     <circle cx="9" cy="10" r="2"></circle>
                     <line x1="15" y1="8" x2="17" y2="8"></line>
@@ -267,6 +267,21 @@
                   </svg>
                 </button>
                 <span class="tile-label">Biodata</span>
+              </div>
+
+              <!-- IKON BARU: KLASEMEN DISIPLIN -->
+              <div class="quick-action-item">
+                <button type="button" class="tile-action-btn" onclick="openKlasemenModal()" aria-label="Klasemen Disiplin">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                    <path d="M4 22h16"></path>
+                    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                  </svg>
+                </button>
+                <span class="tile-label">Klasemen</span>
               </div>
             </div>
           </div>
@@ -280,38 +295,37 @@
          ====================================================================== -->
     <section class="section unified-bottom-card" id="unifiedAnalyticsCard">
 
-      <!-- HEADER UTAMA CARD BAWAH: JUDUL + KONTROL RENTANG WAKTU BERSAMA -->
+      <!-- HEADER UTAMA CARD BAWAH: JUDUL + DROPDOWN + SUB-FILTER BERJEJER SEBARIS -->
       <div class="unified-card-header">
-        <div>
-          <h3>Laporan &amp; Statistik Kehadiran</h3>
-          <p class="unified-period-subtitle" id="analyticsPeriodSubtitle">Periode Bulan Berjalan</p>
-        </div>
+        <h3 class="unified-main-title">Laporan &amp; Statistik Kehadiran</h3>
 
-        <!-- Filter Rentang Waktu (Mengontrol Grafik/Log 3/4 & Rekap Angka 1/4 sekaligus) -->
+        <!-- Filter Rentang Waktu & Sub-Filter Inline (Berjejer ke Samping) -->
         <div class="unified-filter-area">
           <div class="analytics-filter-wrap">
-            <div id="filterTimelineStatistik" data-value="month_current"></div>
+            <div id="filterTimelineStatistik" data-value="1w"></div>
+          </div>
+
+          <!-- Inline Sub-Filter: Per Semester -->
+          <div id="semesterSelectBox" class="inline-subfilter-group" style="display:none;">
+            <select id="selectTaForSemester" onchange="updateSemesterDropdownOptions()"></select>
+            <select id="selectSemesterType"></select>
+            <button type="button" class="btn-apply-inline" onclick="applySemesterFilter()">Terapkan</button>
+          </div>
+
+          <!-- Inline Sub-Filter: Per Tahun Ajaran -->
+          <div id="thnAjaranSelectBox" class="inline-subfilter-group" style="display:none;">
+            <select id="selectTahunAjaranFull"></select>
+            <button type="button" class="btn-apply-inline" onclick="applyTahunAjaranFilter()">Terapkan</button>
+          </div>
+
+          <!-- Inline Sub-Filter: Kustom Rentang Tanggal -->
+          <div id="customDateRangeBox" class="inline-subfilter-group" style="display:none;">
+            <input type="date" id="inputDateStart" title="Dari Tanggal">
+            <span class="date-sep">s/d</span>
+            <input type="date" id="inputDateEnd" title="Sampai Tanggal">
+            <button type="button" class="btn-apply-inline" onclick="applyCustomDateRange()">Terapkan</button>
           </div>
         </div>
-      </div>
-
-      <!-- Inline Sub-Filter Dinamis (Semester / Tahun Ajaran / Kustom Tanggal) -->
-      <div id="semesterSelectBox" class="inline-subfilter-bar" style="display:none;">
-        <select id="selectTaForSemester" onchange="updateSemesterDropdownOptions()"></select>
-        <select id="selectSemesterType"></select>
-        <button type="button" class="btn-apply-inline" onclick="applySemesterFilter()">Terapkan</button>
-      </div>
-
-      <div id="thnAjaranSelectBox" class="inline-subfilter-bar" style="display:none;">
-        <select id="selectTahunAjaranFull"></select>
-        <button type="button" class="btn-apply-inline" onclick="applyTahunAjaranFilter()">Terapkan</button>
-      </div>
-
-      <div id="customDateRangeBox" class="inline-subfilter-bar" style="display:none;">
-        <input type="date" id="inputDateStart">
-        <span class="date-sep">s/d</span>
-        <input type="date" id="inputDateEnd">
-        <button type="button" class="btn-apply-inline" onclick="applyCustomDateRange()">Terapkan</button>
       </div>
 
       <!-- BODY TERPADU: SKALA 3/4 (KIRI) + DIVIDER + SKALA 1/4 (KANAN) -->
@@ -320,7 +334,10 @@
         <!-- BAGIAN 3/4 KIRI (MOBILE: TAB STATISTIK) -->
         <div id="statistik" class="tab-content unified-pane-left">
           <div class="pane-sub-header">
-            <span class="pane-title-label" id="leftPaneTitle">Kurva Tren Kehadiran</span>
+            <div class="pane-title-with-pill">
+              <span class="pane-title-label" id="leftPaneTitle">Riwayat Presensi 1 Minggu Terakhir</span>
+              <span id="histLateWarningPill" class="history-alert-pill is-good">-</span>
+            </div>
 
             <!-- Switch Mode Kurva vs Log -->
             <div class="view-mode-switch" role="tablist" aria-label="Mode Tampilan Data">
@@ -348,10 +365,10 @@
           <div id="analyticsChartView" class="chart-box-container">
             <div class="chart-box-header">
               <span class="chart-title" id="selectedDotDetailBar">Klik titik pada grafik untuk melihat detail jam masuk &amp; pulang</span>
-              <span class="chart-hint">↔️ Geser jika periode panjang</span>
+              <span class="chart-hint">↔️ Geser atau tarik kurva jika periode panjang</span>
             </div>
 
-            <div id="chartScrollContainer">
+            <div id="chartScrollContainer" class="history-chart-scroll">
               <div id="chartInnerWrapper">
                 <canvas id="trendChartCanvas"></canvas>
               </div>
@@ -718,6 +735,23 @@
       </div>
 
       <button type="button" class="btn-secondary-modal btn-full" onclick="closeModalQuick(null, 'modalBiodata')">Tutup</button>
+    </div>
+  </div>
+
+  <!-- Modal 5: Klasemen Kedisiplinan -->
+  <div class="qr-modal-overlay" id="modalKlasemen" onclick="closeModalQuick(event, 'modalKlasemen')">
+    <div class="qr-modal-card modal-wide-md" onclick="event.stopPropagation()">
+      <div class="modal-card-top">
+        <div>
+          <h4>Klasemen Kedisiplinan</h4>
+          <p class="modal-sub">Peringkat kedisiplinan siswa berdasarkan ketepatan waktu hadir</p>
+        </div>
+        <button type="button" class="modal-x-btn" onclick="closeModalQuick(null, 'modalKlasemen')">✕</button>
+      </div>
+
+      <div id="listKlasemenContainer" class="modal-list-scroll"></div>
+
+      <button type="button" class="btn-secondary-modal btn-full" onclick="closeModalQuick(null, 'modalKlasemen')">Tutup</button>
     </div>
   </div>
 
