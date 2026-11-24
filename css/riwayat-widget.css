@@ -415,3 +415,92 @@
     min-width: 76px;
   }
 }
+
+/* ==========================================================================
+   COMPACT SINGLE-ROW TOOLBAR & CLEAN OVERRIDES
+   ========================================================================== */
+.rw-loading-box[hidden] {
+  display: none !important;
+}
+
+.rw-toolbar-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.rw-range-wrap {
+  flex: 0 0 180px;
+  width: 180px;
+  min-width: 155px;
+}
+
+.rw-inline-subfilter {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Samakan tinggi & rapikan lebar subfilter agar muat 1 baris */
+.rw-inline-subfilter .rw-dropdown {
+  flex: 1 1 150px;
+  min-width: 120px !important;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.rw-inline-subfilter .rw-dropdown-selected {
+  padding: 0 10px;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.rw-inline-subfilter .rw-dropdown-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rw-inline-subfilter .rw-btn-primary {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 12.5px;
+  flex-shrink: 0;
+}
+
+.rw-inline-subfilter input[type="date"] {
+  height: 36px;
+  min-width: 128px;
+  padding: 0 8px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+
+/* Layar kecil / HP: turun rapi tanpa mepet atau overflow */
+@media (max-width: 768px) {
+  .rw-toolbar-row {
+    flex-wrap: wrap;
+  }
+
+  .rw-range-wrap {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .rw-inline-subfilter {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .rw-inline-subfilter .rw-dropdown {
+    flex: 1 1 130px;
+    min-width: 110px !important;
+  }
+
+  .rw-inline-subfilter .rw-btn-primary {
+    flex: 1 1 100%;
+  }
+}
