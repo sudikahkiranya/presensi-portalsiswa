@@ -24,7 +24,7 @@
     },
 
     init(options = {}) {
-      tthis.apiUrl = options.apiUrl || (typeof API_URL !== "undefined" ? API_URL : "");
+      this.apiUrl = options.apiUrl || (typeof API_URL !== "undefined" ? API_URL : "");
       this.mode = options.mode || "siswa";
       this.onNotify = typeof options.onNotify === "function" ? options.onNotify : null;
       this.layoutVariant = options.layoutVariant || (this.mode === "siswa" ? "siswa-split" : "piket");
