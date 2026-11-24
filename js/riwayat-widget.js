@@ -244,11 +244,6 @@
 
           <!-- KANAN (1/4): REKAP KEHADIRAN PER KELOMPOK CARD -->
           <div class="rw-pane-right">
-            <div class="rw-pane-header">
-              <span class="rw-pane-title">Rekap Kehadiran</span>
-              <span class="rate-pill-badge rw-rate-pill">0%</span>
-            </div>
-
             <div class="rw-rekap-cards-stack">
               <!-- Card 1: Kehadiran -->
               <div class="rw-rekap-group-card rw-card-hadir" style="display:none;">
@@ -884,9 +879,6 @@
         const totalHadirAll = totalKehadiran + totalLainnya;
         const totalAll = totalHadirAll + totalTidakHadir;
         const rate = totalAll > 0 ? Math.round((totalHadirAll / totalAll) * 100) : 0;
-
-        const ratePill = this.q(".rw-rate-pill");
-        if (ratePill) ratePill.textContent = `${rate}%`;
 
         // Update pill peringatan disiplin di sebelah judul kiri
         const totalTelat = counts.terlambat + counts.sangat_terlambat + counts.sangat_terlambat_sekali;
