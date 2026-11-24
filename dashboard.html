@@ -32,6 +32,7 @@
 
   <!-- External Stylesheet -->
   <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/riwayat-widget.css">
 </head>
 
 <body class="student-portal-body">
@@ -291,256 +292,15 @@
     </section>
 
     <!-- ======================================================================
-         BARIS 2 (BAWAH): 1 CARD TERPADU DENGAN DIVIDER (3/4 KIRI & 1/4 KANAN)
+         BARIS 2 (BAWAH): MODULAR RIWAYAT PRESENSI & REKAP WIDGET
          ====================================================================== -->
     <section class="section unified-bottom-card" id="unifiedAnalyticsCard">
-
-      <!-- HEADER UTAMA CARD BAWAH: JUDUL + DROPDOWN + SUB-FILTER BERJEJER SEBARIS -->
       <div class="unified-card-header">
         <h3 class="unified-main-title">Laporan &amp; Statistik Kehadiran</h3>
-
-        <!-- Filter Rentang Waktu & Sub-Filter Inline (Berjejer ke Samping) -->
-        <div class="unified-filter-area">
-          <div class="analytics-filter-wrap">
-            <div id="filterTimelineStatistik" data-value="1w"></div>
-          </div>
-
-          <!-- Inline Sub-Filter: Per Semester -->
-          <div id="semesterSelectBox" class="inline-subfilter-group" style="display:none;">
-            <select id="selectTaForSemester" onchange="updateSemesterDropdownOptions()"></select>
-            <select id="selectSemesterType"></select>
-            <button type="button" class="btn-apply-inline" onclick="applySemesterFilter()">Terapkan</button>
-          </div>
-
-          <!-- Inline Sub-Filter: Per Tahun Ajaran -->
-          <div id="thnAjaranSelectBox" class="inline-subfilter-group" style="display:none;">
-            <select id="selectTahunAjaranFull"></select>
-            <button type="button" class="btn-apply-inline" onclick="applyTahunAjaranFilter()">Terapkan</button>
-          </div>
-
-          <!-- Inline Sub-Filter: Kustom Rentang Tanggal -->
-          <div id="customDateRangeBox" class="inline-subfilter-group" style="display:none;">
-            <input type="date" id="inputDateStart" title="Dari Tanggal">
-            <span class="date-sep">s/d</span>
-            <input type="date" id="inputDateEnd" title="Sampai Tanggal">
-            <button type="button" class="btn-apply-inline" onclick="applyCustomDateRange()">Terapkan</button>
-          </div>
-        </div>
       </div>
 
-      <!-- BODY TERPADU: SKALA 3/4 (KIRI) + DIVIDER + SKALA 1/4 (KANAN) -->
-      <div class="unified-split-body">
-
-        <!-- BAGIAN 3/4 KIRI (MOBILE: TAB STATISTIK) -->
-        <div id="statistik" class="tab-content unified-pane-left">
-          <div class="pane-sub-header">
-            <div class="pane-title-with-pill">
-              <span class="pane-title-label" id="leftPaneTitle">Riwayat Presensi 1 Minggu Terakhir</span>
-              <span id="histLateWarningPill" class="history-alert-pill is-good">-</span>
-            </div>
-
-            <!-- Switch Mode Kurva vs Log -->
-            <div class="view-mode-switch" role="tablist" aria-label="Mode Tampilan Data">
-              <button type="button" class="mode-switch-btn active" data-mode="chart" onclick="switchAnalyticsMode('chart')">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                </svg>
-                <span>Kurva</span>
-              </button>
-              <button type="button" class="mode-switch-btn" data-mode="log" onclick="switchAnalyticsMode('log')">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="8" y1="6" x2="21" y2="6"></line>
-                  <line x1="8" y1="12" x2="21" y2="12"></line>
-                  <line x1="8" y1="18" x2="21" y2="18"></line>
-                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                </svg>
-                <span>Log</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- MODE A: KURVA TREN KEHADIRAN -->
-          <div id="analyticsChartView" class="chart-box-container">
-            <div class="chart-box-header">
-              <span class="chart-title" id="selectedDotDetailBar">Klik titik pada grafik untuk melihat detail jam masuk &amp; pulang</span>
-              <span class="chart-hint">↔️ Geser atau tarik kurva jika periode panjang</span>
-            </div>
-
-            <div id="chartScrollContainer" class="history-chart-scroll">
-              <div id="chartInnerWrapper">
-                <canvas id="trendChartCanvas"></canvas>
-              </div>
-            </div>
-
-            <!-- Legenda 8 Status -->
-            <div class="chart-legend-grid">
-              <div class="legend-item">
-                <span class="legend-dot" style="background:#15803d;"></span>
-                <span>Tepat Waktu / Prakerin / Dispensasi</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot" style="background:#7c3aed;"></span>
-                <span>Hadir Tidak Presensi</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot" style="background:#d97706;"></span>
-                <span>Terlambat</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot" style="background:#0284c7;"></span>
-                <span>Izin</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot" style="background:#c2410c;"></span>
-                <span>Sangat Terlambat</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot" style="background:#0891b2;"></span>
-                <span>Sakit</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot" style="background:#b91c1c;"></span>
-                <span>Sangat Terlambat Sekali</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot" style="background:#111827;"></span>
-                <span>Alpa</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- MODE B: TABEL LOG PRESENSI (DESKTOP SWITCH) -->
-          <div id="analyticsLogView" class="inline-log-view" style="display:none;">
-            <div class="inline-log-meta">
-              <span>Catatan jam masuk, pulang, dan status kehadiran</span>
-              <span class="data-count-badge" id="jumlahRiwayatDesktop">0 Hari</span>
-            </div>
-
-            <div class="table-wrapper">
-              <table id="tabelPresensiDesktop">
-                <thead>
-                  <tr>
-                    <th>Tanggal</th>
-                    <th>Masuk</th>
-                    <th>Status</th>
-                    <th>Pulang</th>
-                    <th>Keterangan</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- GARIS PEMISAH VERTIKAL (DIVIDER) -->
-        <div class="unified-vertical-divider" aria-hidden="true"></div>
-
-        <!-- BAGIAN 1/4 KANAN (MOBILE: TAB REKAP) -->
-        <div id="riwayat" class="tab-content unified-pane-right">
-          <div class="pane-sub-header">
-            <span class="pane-title-label">Rekap Kehadiran</span>
-            <span class="rate-pill-badge" id="boxRatePersen">100%</span>
-          </div>
-
-          <!-- Grid Box Number -->
-          <!-- Rincian Status Hadir -->
-          <div class="rekap-group-label">Rincian Status Hadir</div>
-          <div class="rekap-number-grid">
-            <div class="num-box tone-hadir span-full">
-              <span class="num-box-lbl">Tepat Waktu</span>
-              <span class="num-box-val" id="boxTepat">0</span>
-            </div>
-
-            <div class="num-box tone-late">
-              <span class="num-box-lbl">Terlambat</span>
-              <span class="num-box-val" id="boxTerlambat">0</span>
-            </div>
-
-            <div class="num-box tone-sangat-late">
-              <span class="num-box-lbl">Sangat Terlambat</span>
-              <span class="num-box-val" id="boxSangatTerlambat">0</span>
-            </div>
-
-            <div class="num-box tone-sangat-late-sekali">
-              <span class="num-box-lbl">Sangat Terlambat Sekali</span>
-              <span class="num-box-val" id="boxSangatTerlambatSekali">0</span>
-            </div>
-
-            <div class="num-box tone-htp">
-              <span class="num-box-lbl">Hadir Tidak Presensi</span>
-              <span class="num-box-val" id="boxHtp">0</span>
-            </div>
-
-            <!-- 3 Kolom: Prakerin, Daring, Dispensasi -->
-            <div class="rekap-subgrid-3 span-full">
-              <div class="num-box tone-prakerin">
-                <span class="num-box-lbl">Prakerin</span>
-                <span class="num-box-val" id="boxPrakerin">0</span>
-              </div>
-
-              <div class="num-box tone-daring">
-                <span class="num-box-lbl">Daring</span>
-                <span class="num-box-val" id="boxDaring">0</span>
-              </div>
-
-              <div class="num-box tone-dispensasi">
-                <span class="num-box-lbl">Dispensasi</span>
-                <span class="num-box-val" id="boxDispensasi">0</span>
-              </div>
-            </div>
-
-            <div class="num-box tone-total-hadir span-full">
-              <span class="num-box-lbl">Total Kehadiran</span>
-              <span class="num-box-val" id="boxTotalHadir">0</span>
-            </div>
-          </div>
-
-          <!-- Rincian Status Tidak Hadir (3 Kolom Sejajar) -->
-          <div class="rekap-group-label" style="margin-top: 12px;">Rincian Status Tidak Hadir</div>
-          <div class="rekap-subgrid-3">
-            <div class="num-box tone-sakit">
-              <span class="num-box-lbl">Sakit</span>
-              <span class="num-box-val" id="boxSakit">0</span>
-            </div>
-
-            <div class="num-box tone-izin">
-              <span class="num-box-lbl">Izin</span>
-              <span class="num-box-val" id="boxIzin">0</span>
-            </div>
-
-            <div class="num-box tone-alpa">
-              <span class="num-box-lbl">Alpa</span>
-              <span class="num-box-val" id="boxAlpa">0</span>
-            </div>
-          </div>
-
-          <!-- Tabel Log Harian Khusus Mobile Tab Rekap -->
-          <div class="mobile-only-log-section">
-            <div class="mobile-log-divider">
-              <span>Log Riwayat Harian</span>
-              <span class="data-count-badge" id="jumlahRiwayatMobile">0 Hari</span>
-            </div>
-            <div class="table-wrapper">
-              <table id="tabelPresensiMobile">
-                <thead>
-                  <tr>
-                    <th>Tanggal</th>
-                    <th>Masuk</th>
-                    <th>Status</th>
-                    <th>Pulang</th>
-                    <th>Keterangan</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-      </div>
+      <!-- Mount Point Modular RiwayatWidget (Mode: siswa, Variant: siswa-split) -->
+      <div id="siswaRiwayatWidgetContainer"></div>
     </section>
 
     <!-- ======================================================================
@@ -794,6 +554,7 @@
 
   <!-- External Libraries & App Script -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="./js/riwayat-widget.js"></script>
   <script src="./js/dashboard.js"></script>
 </body>
 </html>

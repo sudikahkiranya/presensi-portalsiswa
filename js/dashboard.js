@@ -158,10 +158,20 @@ document.addEventListener("DOMContentLoaded", () => {
   setAppTheme(currentTheme, false);
   populateIdentityUI();
   initGreetingAndRank();
-  initFilterTimeline();
-  initChartDragScroll();
   renderRiwayatIzinModal();
   loadDashboardData();
+
+  const idSiswa = localStorage.getItem("idSiswa");
+  if (idSiswa && typeof RiwayatWidget !== "undefined") {
+    RiwayatWidget.init({
+      containerId: "siswaRiwayatWidgetContainer",
+      apiUrl: API_URL,
+      mode: "siswa",
+      layoutVariant: "siswa-split",
+      defaultRange: "1m",
+      idSiswa: idSiswa
+    });
+  }
 });
 
 document.addEventListener("click", (e) => {
@@ -1088,12 +1098,25 @@ function switchMobileTab(e, tabId) {
     btn.classList.toggle("active", btn.dataset.tab === tabId);
   });
 
-  document.querySelectorAll(".tab-content").forEach(sec => {
-    sec.classList.toggle("active", sec.id === tabId);
+  // Penanda tab aktif untuk Beranda, Profil, Statistik, dan Rekap
+  ["hariIni", "profil", "statistik", "riwayat"].forEach(id => {
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement("span");
+      el.id = id;
+      el.style.display = "none";
+      document.body.appendChild(el);
+    }
+    el.classList.toggle("active", id === tabId);
   });
 
-  if (tabId === "statistik" && cachedData) {
-    setTimeout(() => renderTrendChart(cachedData.riwayat || []), 60);
+  if (tabId === "statistik" && window.RiwayatWidget?.store?.currentFiltered) {
+    setTimeout(() => {
+      RiwayatWidget.renderTrendChart(
+        RiwayatWidget.store.currentFiltered,
+        RiwayatWidget.store.activeRange
+      );
+    }, 60);
   }
 }
 
