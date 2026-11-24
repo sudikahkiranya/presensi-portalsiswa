@@ -2,7 +2,8 @@
    PORTAL PRESENSI SISWA - SMK MEDIKACOM BANDUNG
    ========================================================================== */
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwyq41g1nO7l_31g9sK_o2J1jZ4z99b6aK_x9R0bO-jX1o5X6qK2yO3G_kM4X-eM9wM/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxR0bwVJCXQY5DQKawqOBQO6vNwU8UMFLJ3AuBytSRgQR3TW9rJZ0r58JGkL2u_HxYMhw/exechttps://script.google.com/macros/s/AKfycbxR0bwVJCXQY5DQKawqOBQO6vNwU8UMFLJ3AuBytSRgQR3TW9rJZ0r58JGkL2u_HxYMhw/exec";
+
 const idSiswa = localStorage.getItem("idSiswa");
 const namaSiswa = localStorage.getItem("namaSiswa") || "Siswa";
 const kelasSiswa = localStorage.getItem("kelasSiswa") || "-";
