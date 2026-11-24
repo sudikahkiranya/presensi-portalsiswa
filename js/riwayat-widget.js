@@ -177,39 +177,35 @@
         </div>
       `;
 
-      const modeSwitchHTML = this.layoutVariant === "siswa-split" ? `
-        <div class="rw-mode-switch" role="tablist" aria-label="Mode Tampilan Data">
-          <button type="button" class="rw-mode-btn active" data-view="chart">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-            </svg>
-            <span>Kurva</span>
-          </button>
-          <button type="button" class="rw-mode-btn" data-view="log">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="8" y1="6" x2="21" y2="6"></line>
-              <line x1="8" y1="12" x2="21" y2="12"></line>
-              <line x1="8" y1="18" x2="21" y2="18"></line>
-              <line x1="3" y1="6" x2="3.01" y2="6"></line>
-              <line x1="3" y1="12" x2="3.01" y2="12"></line>
-              <line x1="3" y1="18" x2="3.01" y2="18"></line>
-            </svg>
-            <span>Log</span>
-          </button>
-        </div>
-      ` : "";
-
       const bodyHTML = this.layoutVariant === "siswa-split" ? `
         <div class="rw-split-layout">
           <!-- KIRI (3/4): KURVA / LOG -->
           <div class="rw-pane-left">
+            <div class="rw-pane-header rw-pane-header-switch-only">
+              <div class="rw-mode-switch" role="tablist" aria-label="Mode Tampilan Data">
+                <button type="button" class="rw-mode-btn active" data-view="chart">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                  <span>Kurva</span>
+                </button>
+                <button type="button" class="rw-mode-btn" data-view="log">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+                  <span>Log</span>
+                </button>
+              </div>
+            </div>
+
             <div class="rw-view-chart">${chartCardHTML}</div>
 
             <div class="rw-view-log" style="display:none;">
-              <div class="rw-log-meta">
-                <span>Catatan jam masuk, pulang, dan status kehadiran</span>
-                <span class="data-count-badge rw-log-count">0 Hari</span>
-              </div>
               <div class="rw-log-table-wrap">
                 <table>
                   <thead>
@@ -345,8 +341,6 @@
 
           <div class="rw-result-wrap" style="display:none;">
             <div class="rw-toolbar-row">
-              ${modeSwitchHTML}
-
               <div class="rw-range-wrap">
                 <div class="rw-range-dropdown" data-value="${this.defaultRange}"></div>
               </div>
@@ -918,8 +912,6 @@
 
     renderLogTable(data) {
       const tbody = this.q(".rw-log-tbody");
-      const countBadge = this.q(".rw-log-count");
-      if (countBadge) countBadge.textContent = `${data.length} Hari`;
       if (!tbody) return;
 
       if (!data || data.length === 0) {
