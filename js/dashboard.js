@@ -482,27 +482,54 @@ function filterAndRenderHistory(mode, range = {}) {
 }
 
 function hitungRekapBox(rows) {
-  let tepat = 0, terlambat = 0, htp = 0, daring = 0, sakit = 0, izin = 0, alpa = 0;
+  let tepat = 0;
+  let terlambat = 0;
+  let sangatTerlambat = 0;
+  let sangatTerlambatSekali = 0;
+  let htp = 0;
+  let prakerin = 0;
+  let daring = 0;
+  let dispensasi = 0;
+  let sakit = 0;
+  let izin = 0;
+  let alpa = 0;
 
   rows.forEach(r => {
-    const st = (r.status || "").toLowerCase();
+    const st = (r.status || "").toLowerCase().trim();
     if (st.includes("tepat")) tepat++;
+    else if (st.includes("sangat terlambat sekali")) sangatTerlambatSekali++;
+    else if (st.includes("sangat terlambat")) sangatTerlambat++;
     else if (st.includes("terlambat")) terlambat++;
     else if (st.includes("tidak presensi") || st === "htp") htp++;
-    else if (st.includes("prakerin") || st.includes("dispensasi")) daring++;
+    else if (st.includes("prakerin")) prakerin++;
+    else if (st.includes("daring")) daring++;
+    else if (st.includes("dispensasi")) dispensasi++;
     else if (st.includes("sakit")) sakit++;
     else if (st.includes("izin")) izin++;
     else if (st.includes("alpa")) alpa++;
   });
 
-  const totalHadir = tepat + terlambat + htp + daring;
+  const totalHadir =
+    tepat +
+    terlambat +
+    sangatTerlambat +
+    sangatTerlambatSekali +
+    htp +
+    prakerin +
+    daring +
+    dispensasi;
+
   const totalHari = totalHadir + sakit + izin + alpa;
   const ratePersen = totalHari > 0 ? Math.round((totalHadir / totalHari) * 100) : 100;
 
   setText("boxTepat", tepat);
   setText("boxTerlambat", terlambat);
+  setText("boxSangatTerlambat", sangatTerlambat);
+  setText("boxSangatTerlambatSekali", sangatTerlambatSekali);
   setText("boxHtp", htp);
+  setText("boxPrakerin", prakerin);
   setText("boxDaring", daring);
+  setText("boxDispensasi", dispensasi);
   setText("boxTotalHadir", totalHadir);
   setText("boxSakit", sakit);
   setText("boxIzin", izin);
@@ -833,7 +860,7 @@ function renderTrendChart(rows) {
       renderTrendChart(rows);
     }
   };
-}
+}   
 
 /* ==========================================================================
    KARTU QR PRESENSI MODAL

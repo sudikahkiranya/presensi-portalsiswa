@@ -446,44 +446,73 @@
           </div>
 
           <!-- Grid Box Number -->
+          <!-- Rincian Status Hadir -->
+          <div class="rekap-group-label">Rincian Status Hadir</div>
           <div class="rekap-number-grid">
-            <div class="num-box tone-hadir">
-              <span class="num-box-val" id="boxTepat">0</span>
+            <div class="num-box tone-hadir span-full">
               <span class="num-box-lbl">Tepat Waktu</span>
+              <span class="num-box-val" id="boxTepat">0</span>
             </div>
 
             <div class="num-box tone-late">
-              <span class="num-box-val" id="boxTerlambat">0</span>
               <span class="num-box-lbl">Terlambat</span>
+              <span class="num-box-val" id="boxTerlambat">0</span>
+            </div>
+
+            <div class="num-box tone-sangat-late">
+              <span class="num-box-lbl">Sangat Terlambat</span>
+              <span class="num-box-val" id="boxSangatTerlambat">0</span>
+            </div>
+
+            <div class="num-box tone-sangat-late-sekali">
+              <span class="num-box-lbl">Sangat Terlambat Sekali</span>
+              <span class="num-box-val" id="boxSangatTerlambatSekali">0</span>
             </div>
 
             <div class="num-box tone-htp">
+              <span class="num-box-lbl">Hadir Tidak Presensi</span>
               <span class="num-box-val" id="boxHtp">0</span>
-              <span class="num-box-lbl">Tidak Presensi</span>
             </div>
 
-            <div class="num-box tone-daring">
-              <span class="num-box-val" id="boxDaring">0</span>
-              <span class="num-box-lbl">Prakerin / Disp</span>
+            <!-- 3 Kolom: Prakerin, Daring, Dispensasi -->
+            <div class="rekap-subgrid-3 span-full">
+              <div class="num-box tone-prakerin">
+                <span class="num-box-lbl">Prakerin</span>
+                <span class="num-box-val" id="boxPrakerin">0</span>
+              </div>
+
+              <div class="num-box tone-daring">
+                <span class="num-box-lbl">Daring</span>
+                <span class="num-box-val" id="boxDaring">0</span>
+              </div>
+
+              <div class="num-box tone-dispensasi">
+                <span class="num-box-lbl">Dispensasi</span>
+                <span class="num-box-val" id="boxDispensasi">0</span>
+              </div>
             </div>
 
-            <div class="num-box tone-total-hadir span-2">
+            <div class="num-box tone-total-hadir span-full">
               <span class="num-box-lbl">Total Kehadiran</span>
               <span class="num-box-val" id="boxTotalHadir">0</span>
             </div>
+          </div>
 
+          <!-- Rincian Status Tidak Hadir (3 Kolom Sejajar) -->
+          <div class="rekap-group-label" style="margin-top: 12px;">Rincian Status Tidak Hadir</div>
+          <div class="rekap-subgrid-3">
             <div class="num-box tone-sakit">
-              <span class="num-box-val" id="boxSakit">0</span>
               <span class="num-box-lbl">Sakit</span>
+              <span class="num-box-val" id="boxSakit">0</span>
             </div>
 
             <div class="num-box tone-izin">
-              <span class="num-box-val" id="boxIzin">0</span>
               <span class="num-box-lbl">Izin</span>
+              <span class="num-box-val" id="boxIzin">0</span>
             </div>
 
-            <div class="num-box tone-alpa span-2">
-              <span class="num-box-lbl">Alpa (Tanpa Keterangan)</span>
+            <div class="num-box tone-alpa">
+              <span class="num-box-lbl">Alpa</span>
               <span class="num-box-val" id="boxAlpa">0</span>
             </div>
           </div>
