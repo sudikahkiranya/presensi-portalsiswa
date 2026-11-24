@@ -4341,8 +4341,20 @@ body.student-portal-body .floating-bottom-bar { display: none; }
 }
 
 /* ==========================================================================
-   VARIANT: SISWA-SPLIT (3/4 KIRI KURVA/LOG + 1/4 KANAN REKAP)
+   VARIANT: SISWA-SPLIT (3/4 KIRI KURVA/LOG + 1/4 KANAN REKAP GROUP CARDS)
    ========================================================================== */
+body.student-portal-body .unified-card-header .rw-toolbar-row {
+  justify-content: flex-end;
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  body.student-portal-body .unified-card-header .rw-toolbar-row {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 .rw-chart-topbar {
   display: flex;
   justify-content: space-between;
@@ -4378,15 +4390,71 @@ body.student-portal-body .floating-bottom-bar { display: none; }
   color: #64748b;
 }
 
-/* Warna Kartu Total Hadir & Total Tidak Hadir (1 Kolom, Tidak Melebar) */
-.num-box.tone-total-hadir {
-  background: var(--primary, #824653);
-  border-color: var(--primary, #824653);
-  color: #ffffff;
+/* Stack 3 Card Kelompok Rekap */
+body.student-portal-body .rw-rekap-cards-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.num-box.tone-total-absen {
-  background: #334155;
-  border-color: #334155;
-  color: #ffffff;
+body.student-portal-body .rw-rekap-group-card {
+  background: #f8fafc;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 11px 12px;
+}
+
+body.student-portal-body .rw-group-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+  padding-bottom: 7px;
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+body.student-portal-body .rw-group-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+/* Badge Total di Pojok Kanan Header Tiap Card */
+body.student-portal-body .rw-group-total-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+body.student-portal-body .rw-group-total-badge.tone-badge-hadir {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+body.student-portal-body .rw-group-total-badge.tone-badge-lainnya {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+body.student-portal-body .rw-group-total-badge.tone-badge-absen {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* Flex Grid Rincian Status di Dalam Card (Anti-Ompong & Proporsional) */
+body.student-portal-body .rw-group-items-flex {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+body.student-portal-body .rw-group-items-flex .num-box {
+  flex: 1 1 calc(50% - 4px);
+  min-width: 96px;
 }
