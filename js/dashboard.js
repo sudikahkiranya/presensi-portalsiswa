@@ -161,6 +161,18 @@ document.addEventListener("DOMContentLoaded", () => {
   initGreetingAndRank();
   renderRiwayatIzinModal();
   loadDashboardData();
+
+  const idSiswa = localStorage.getItem("idSiswa");
+  if (idSiswa && typeof RiwayatWidget !== "undefined") {
+    RiwayatWidget.init({
+      containerId: "siswaRiwayatWidgetContainer",
+      apiUrl: API_URL,
+      mode: "siswa",
+      layoutVariant: "siswa-split",
+      defaultRange: "1m",
+      idSiswa: idSiswa
+    });
+  }
 });
 
 document.addEventListener("click", (e) => {

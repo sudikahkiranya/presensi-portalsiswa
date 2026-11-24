@@ -5,10 +5,10 @@
   const RiwayatWidget = {
     apiUrl: "",
     mode: "siswa", // "siswa" | "piket"
-    layoutVariant: "piket", // "piket" | "siswa-split"
-    defaultRange: "1w",
     container: null,
     onNotify: null,
+    layoutVariant: "piket", // "piket" | "siswa-split"
+    defaultRange: "1w",
     onDataFiltered: null,
     store: {
       recentCache: {},
@@ -20,19 +20,17 @@
       currentFiltered: [],
       chartData: [],
       selectedDotIndex: null,
-      activeRange: "1w",
-      viewMode: "chart" // "chart" | "log"
+      activeRange: "1w"
     },
 
     init(options = {}) {
-      this.apiUrl = options.apiUrl || (typeof API_URL !== "undefined" ? API_URL : "");
+      tthis.apiUrl = options.apiUrl || (typeof API_URL !== "undefined" ? API_URL : "");
       this.mode = options.mode || "siswa";
+      this.onNotify = typeof options.onNotify === "function" ? options.onNotify : null;
       this.layoutVariant = options.layoutVariant || (this.mode === "siswa" ? "siswa-split" : "piket");
       this.defaultRange = options.defaultRange || (this.mode === "siswa" ? "1m" : "1w");
-      this.onNotify = typeof options.onNotify === "function" ? options.onNotify : null;
       this.onDataFiltered = typeof options.onDataFiltered === "function" ? options.onDataFiltered : null;
-      this.store.activeRange = this.defaultRange;
-
+      
       const el = typeof options.containerId === "string"
         ? document.getElementById(options.containerId)
         : options.containerEl;
@@ -70,6 +68,37 @@
       else alert(msg);
     },
 
+    reset() {
+      this.setSearchDisabled(false);
+      Object.assign(this.store, {
+        currentSiswa: null,
+        rawPresensi: [],
+        currentFiltered: [],
+        chartData: [],
+        selectedDotIndex: null,
+        activeRange: "1w"
+      });
+
+      if (!this.container) return;
+      const inp = this.q(".rw-input-nis");
+      const clr = this.q(".rw-clear-nis");
+      if (inp) inp.value = "";
+      if (clr) clr.hidden = true;
+
+      const divEl = this.q(".rw-result-divider");
+      const boxEl = this.q(".rw-student-box");
+      if (divEl) divEl.style.display = "none";
+      if (boxEl) boxEl.style.display = "none";
+
+      this.q(".rw-result-wrap").style.display = "none";
+      this.q(".rw-loading-box").style.display = "none";
+      const ph = this.q(".rw-empty-box");
+      ph.innerHTML = this.mode === "piket"
+        ? `Silakan <strong>scan kartu QR siswa</strong> atau masukkan <strong>NIS</strong> di atas untuk melihat grafik riwayat kehadiran.`
+        : `Data riwayat presensi belum dimuat.`;
+      ph.style.display = "block";
+    },
+
     renderScaffold() {
       const searchHeaderHTML = this.mode === "piket" ? `
         <div class="rw-search-grid">
@@ -99,133 +128,38 @@
         </div>
       ` : "";
 
-      const chartBlockHTML = `
-        <div class="rw-chart-card">
-          <div class="rw-chart-scroll">
-            <div class="rw-chart-inner">
-              <canvas class="rw-trend-canvas"></canvas>
-            </div>
-          </div>
-
-          <div class="rw-legend-grid">
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#15803d;"></span><span>Tepat Waktu / Dispensasi / Prakerin / Daring</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#d97706;"></span><span>Terlambat</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#c2410c;"></span><span>Sangat Terlambat</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#b91c1c;"></span><span>Sangat Terlambat Sekali</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#7c3aed;"></span><span>Hadir Tidak Presensi</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#0284c7;"></span><span>Izin</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#0891b2;"></span><span>Sakit</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#111827;"></span><span>Alpa</span></div>
-          </div>
-        </div>
-      `;
-
-      const bodyContentHTML = this.layoutVariant === "siswa-split" ? `
-        <div class="rw-split-layout">
-          <div class="rw-pane-left">
-            <div class="rw-pane-header">
-              <div class="rw-pane-title-group">
-                <span class="rw-pane-title">Riwayat Presensi</span>
-                <span class="rw-discipline-pill is-good">-</span>
-              </div>
-              <div class="rw-mode-switch">
-                <button type="button" class="rw-mode-btn active" data-view="chart">Kurva</button>
-                <button type="button" class="rw-mode-btn" data-view="log">Log</button>
-              </div>
-            </div>
-
-            <div class="rw-view-chart">${chartBlockHTML}</div>
-
-            <div class="rw-view-log" style="display:none;">
-              <div class="rw-log-table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Tanggal</th>
-                      <th>Masuk</th>
-                      <th>Status</th>
-                      <th>Pulang</th>
-                      <th>Keterangan</th>
-                    </tr>
-                  </thead>
-                  <tbody class="rw-log-tbody"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div class="rw-vertical-divider"></div>
-
-          <div class="rw-pane-right">
-            <div class="rw-pane-header">
-              <span class="rw-pane-title">Rekap Kehadiran</span>
-              <span class="rate-pill-badge rw-rate-badge">100%</span>
-            </div>
-
-            <div class="rekap-group-label">Rincian Status Hadir</div>
-            <div class="rekap-number-grid">
-              <div class="num-box tone-hadir span-full"><span class="num-box-lbl">Tepat Waktu</span><span class="num-box-val" data-rekap="tepat">0</span></div>
-              <div class="num-box tone-late"><span class="num-box-lbl">Terlambat</span><span class="num-box-val" data-rekap="terlambat">0</span></div>
-              <div class="num-box tone-sangat-late"><span class="num-box-lbl">Sangat Terlambat</span><span class="num-box-val" data-rekap="sangatTerlambat">0</span></div>
-              <div class="num-box tone-sangat-late-sekali"><span class="num-box-lbl">Sangat Terlambat Sekali</span><span class="num-box-val" data-rekap="sangatTerlambatSekali">0</span></div>
-              <div class="num-box tone-htp"><span class="num-box-lbl">Hadir Tidak Presensi</span><span class="num-box-val" data-rekap="htp">0</span></div>
-              <div class="rekap-subgrid-3 span-full">
-                <div class="num-box tone-prakerin"><span class="num-box-lbl">Prakerin</span><span class="num-box-val" data-rekap="prakerin">0</span></div>
-                <div class="num-box tone-daring"><span class="num-box-lbl">Daring</span><span class="num-box-val" data-rekap="daring">0</span></div>
-                <div class="num-box tone-dispensasi"><span class="num-box-lbl">Dispensasi</span><span class="num-box-val" data-rekap="dispensasi">0</span></div>
-              </div>
-              <div class="num-box tone-total-hadir span-full"><span class="num-box-lbl">Total Kehadiran</span><span class="num-box-val" data-rekap="totalHadir">0</span></div>
-            </div>
-
-            <div class="rekap-group-label" style="margin-top:12px;">Rincian Status Tidak Hadir</div>
-            <div class="rekap-subgrid-3">
-              <div class="num-box tone-sakit"><span class="num-box-lbl">Sakit</span><span class="num-box-val" data-rekap="sakit">0</span></div>
-              <div class="num-box tone-izin"><span class="num-box-lbl">Izin</span><span class="num-box-val" data-rekap="izin">0</span></div>
-              <div class="num-box tone-alpa"><span class="num-box-lbl">Alpa</span><span class="num-box-val" data-rekap="alpa">0</span></div>
-            </div>
-          </div>
-        </div>
-      ` : `
-        <div class="rw-stats-row">
-          <div class="rw-stat-pill rw-tone-green" data-stat="tepat" style="display:none;"><label>Tepat Waktu</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-amber" data-stat="terlambat" style="display:none;"><label>Terlambat</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-purple" data-stat="htp" style="display:none;"><label>Tidak Presensi</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-green" data-stat="prakerin" style="display:none;"><label>Prakerin</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-green" data-stat="dispensasi" style="display:none;"><label>Dispensasi</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-green" data-stat="daring" style="display:none;"><label>Daring</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-cyan" data-stat="sakit" style="display:none;"><label>Sakit</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-blue" data-stat="izin" style="display:none;"><label>Izin</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-red" data-stat="alpa" style="display:none;"><label>Alpa</label><span>0</span></div>
-        </div>
-        ${chartBlockHTML}
-      `;
-
       this.container.innerHTML = `
         <div class="rw-container">
           ${searchHeaderHTML}
+
           <div class="rw-empty-box">
             ${this.mode === "piket"
               ? `Silakan <strong>scan kartu QR siswa</strong> atau masukkan <strong>NIS</strong> di atas untuk melihat grafik riwayat kehadiran.`
               : `Memuat riwayat presensi...`}
           </div>
+
           <div class="rw-loading-box" style="display:none;">
             <div class="rw-dots"><span></span><span></span><span></span></div>
             <div class="rw-loading-text">Memuat riwayat presensi...</div>
           </div>
+
           <div class="rw-result-wrap" style="display:none;">
             <div class="rw-toolbar-row">
               <div class="rw-range-wrap">
-                <div class="rw-range-dropdown" data-value="${this.defaultRange}"></div>
+                <div class="rw-range-dropdown" data-value="1w"></div>
               </div>
+
               <div class="rw-inline-subfilter rw-sub-semester" style="display:none;">
                 <div class="rw-sel-ta-sem" data-value="" style="flex:1; min-width:140px;"></div>
                 <div class="rw-sel-sem-type" data-value="" style="flex:1.2; min-width:165px;"></div>
                 <button type="button" class="rw-btn-primary rw-apply-sem">Terapkan</button>
               </div>
+
               <div class="rw-inline-subfilter rw-sub-ta" style="display:none;">
                 <div class="rw-sel-ta-full" data-value="" style="flex:1; min-width:155px;"></div>
                 <button type="button" class="rw-btn-primary rw-apply-ta">Terapkan</button>
               </div>
+
               <div class="rw-inline-subfilter rw-sub-custom" style="display:none;">
                 <input type="date" class="rw-date-start" title="Dari Tanggal">
                 <span class="rw-date-sep">s.d.</span>
@@ -233,32 +167,57 @@
                 <button type="button" class="rw-btn-primary rw-apply-custom">Terapkan</button>
               </div>
             </div>
-            ${bodyContentHTML}
+
+            <div class="rw-stats-row">
+              <div class="rw-stat-pill rw-tone-green" data-stat="tepat" style="display:none;"><label>Tepat Waktu</label><span>0</span></div>
+              <div class="rw-stat-pill rw-tone-amber" data-stat="terlambat" style="display:none;"><label>Terlambat</label><span>0</span></div>
+              <div class="rw-stat-pill rw-tone-purple" data-stat="htp" style="display:none;"><label>Tidak Presensi</label><span>0</span></div>
+              <div class="rw-stat-pill rw-tone-green" data-stat="prakerin" style="display:none;"><label>Prakerin</label><span>0</span></div>
+              <div class="rw-stat-pill rw-tone-green" data-stat="dispensasi" style="display:none;"><label>Dispensasi</label><span>0</span></div>
+              <div class="rw-stat-pill rw-tone-green" data-stat="daring" style="display:none;"><label>Daring</label><span>0</span></div>
+              <div class="rw-stat-pill rw-tone-cyan" data-stat="sakit" style="display:none;"><label>Sakit</label><span>0</span></div>
+              <div class="rw-stat-pill rw-tone-blue" data-stat="izin" style="display:none;"><label>Izin</label><span>0</span></div>
+              <div class="rw-stat-pill rw-tone-red" data-stat="alpa" style="display:none;"><label>Alpa</label><span>0</span></div>
+            </div>
+
+            <div class="rw-chart-card">
+              <div class="rw-chart-scroll">
+                <div class="rw-chart-inner">
+                  <canvas class="rw-trend-canvas"></canvas>
+                </div>
+              </div>
+
+              <div class="rw-legend-grid">
+                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#15803d;"></span><span>Tepat Waktu / Dispensasi / Prakerin / Daring</span></div>
+                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#d97706;"></span><span>Terlambat</span></div>
+                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#c2410c;"></span><span>Sangat Terlambat</span></div>
+                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#b91c1c;"></span><span>Sangat Terlambat Sekali</span></div>
+                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#7c3aed;"></span><span>Hadir Tidak Presensi</span></div>
+                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#0284c7;"></span><span>Izin</span></div>
+                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#0891b2;"></span><span>Sakit</span></div>
+                <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#111827;"></span><span>Alpa</span></div>
+              </div>
+            </div>
           </div>
         </div>
       `;
 
+      // Bind event tombol-tombol internal
       if (this.mode === "piket") {
         const inp = this.q(".rw-input-nis");
         const clr = this.q(".rw-clear-nis");
         const btnCek = this.q(".rw-btn-cek");
+
         inp?.addEventListener("input", () => { if (clr) clr.hidden = !inp.value; });
-        inp?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); this.searchByNis(); } });
-        clr?.addEventListener("click", () => { if (inp) { inp.value = ""; inp.focus(); } clr.hidden = true; });
+        inp?.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); this.searchByNis(); }
+        });
+        clr?.addEventListener("click", () => {
+          if (inp) { inp.value = ""; inp.focus(); }
+          clr.hidden = true;
+        });
         btnCek?.addEventListener("click", () => this.searchByNis());
       }
-
-      this.container.querySelectorAll(".rw-mode-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const view = btn.dataset.view;
-          this.container.querySelectorAll(".rw-mode-btn").forEach(b => b.classList.toggle("active", b === btn));
-          const cView = this.q(".rw-view-chart");
-          const lView = this.q(".rw-view-log");
-          if (cView) cView.style.display = view === "chart" ? "block" : "none";
-          if (lView) lView.style.display = view === "log" ? "block" : "none";
-          if (view === "chart") this.renderTrendChart(this.store.currentFiltered, this.store.activeRange);
-        });
-      });
 
       this.q(".rw-apply-sem")?.addEventListener("click", () => this.applySemesterFilter());
       this.q(".rw-apply-ta")?.addEventListener("click", () => this.applyTaFilter());
@@ -268,6 +227,7 @@
     bindGlobalEvents() {
       if (RiwayatWidget._globalBound) return;
       RiwayatWidget._globalBound = true;
+
       document.addEventListener("click", (e) => {
         if (!e.target.closest(".rw-dropdown")) {
           document.querySelectorAll(".rw-dropdown.open").forEach(el => el.classList.remove("open"));
@@ -285,12 +245,16 @@
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </div>
-        <div class="rw-dropdown-menu"><div class="rw-dropdown-menu-inner"></div></div>
+        <div class="rw-dropdown-menu">
+          <div class="rw-dropdown-menu-inner"></div>
+        </div>
       `;
+
       const textSpan = containerEl.querySelector(".rw-dropdown-text");
       const menuOuter = containerEl.querySelector(".rw-dropdown-menu");
       const menuInner = containerEl.querySelector(".rw-dropdown-menu-inner");
       const selectedBox = containerEl.querySelector(".rw-dropdown-selected");
+
       const currentObj = options.find(opt => opt.value === selectedValue) || options[0] || { value: "", label: "-" };
       textSpan.innerText = currentObj.label;
       containerEl.setAttribute("data-value", currentObj.value);
@@ -327,21 +291,24 @@
       const rangeDropEl = this.q(".rw-range-dropdown");
       const rangeOptions = [
         { value: "1w", label: "1 Minggu Terakhir" },
-        { value: "1m", label: "Bulan Berjalan (30 Hari)" },
+        { value: "1m", label: "1 Bulan Terakhir" },
         { value: "semester_select", label: "Per Semester" },
         { value: "ta_select", label: "Per Tahun Ajaran" },
         { value: "custom", label: "Kustom Rentang Tanggal" }
       ];
 
-      this.createDropdown(rangeDropEl, rangeOptions, this.defaultRange, async (val) => {
+      this.createDropdown(rangeDropEl, rangeOptions, "1w", async (val) => {
         this.q(".rw-sub-semester").style.display = "none";
         this.q(".rw-sub-ta").style.display = "none";
         this.q(".rw-sub-custom").style.display = "none";
 
-        if (val === "semester_select") this.q(".rw-sub-semester").style.display = "flex";
-        else if (val === "ta_select") this.q(".rw-sub-ta").style.display = "flex";
-        else if (val === "custom") this.q(".rw-sub-custom").style.display = "flex";
-        else if (val === "1m") {
+        if (val === "semester_select") {
+          this.q(".rw-sub-semester").style.display = "flex";
+        } else if (val === "ta_select") {
+          this.q(".rw-sub-ta").style.display = "flex";
+        } else if (val === "custom") {
+          this.q(".rw-sub-custom").style.display = "flex";
+        } else if (val === "1m") {
           if (await this.ensureFullArchive()) this.applyFilterRange("1m");
         } else {
           this.applyFilterRange(val);
@@ -353,6 +320,7 @@
       const nis = this.q(".rw-input-nis")?.value.trim() || "";
       if (!nis) {
         this.notify("Masukkan NIS atau scan barcode kartu siswa terlebih dahulu.", "info");
+        this.q(".rw-input-nis")?.focus();
         return;
       }
       this.loadStudentHistory(nis);
@@ -362,10 +330,12 @@
       const grid = this.q(".rw-search-grid");
       if (!grid) return;
       grid.classList.toggle("is-loading", isDisabled);
-      ["rw-input-nis", "rw-clear-nis", "rw-btn-cek"].forEach(cls => {
-        const el = this.q(`.${cls}`);
-        if (el) el.disabled = isDisabled;
-      });
+      const inp = this.q(".rw-input-nis");
+      const clr = this.q(".rw-clear-nis");
+      const btn = this.q(".rw-btn-cek");
+      if (inp) inp.disabled = isDisabled;
+      if (clr) clr.disabled = isDisabled;
+      if (btn) btn.disabled = isDisabled;
     },
 
     async loadStudentHistory(idSiswa) {
@@ -374,16 +344,23 @@
 
       const placeholderBox = this.q(".rw-empty-box");
       const loadingBox = this.q(".rw-loading-box");
+      const loadingText = this.q(".rw-loading-text");
       const resultWrap = this.q(".rw-result-wrap");
-      const fetchMode = this.defaultRange === "1m" ? "archive" : "recent";
+      const dividerEl = this.q(".rw-result-divider");
+      const studentBoxEl = this.q(".rw-student-box");
 
       placeholderBox.style.display = "none";
       resultWrap.style.display = "none";
+      if (loadingText) loadingText.textContent = "Memuat riwayat presensi terkini...";
       loadingBox.style.display = "flex";
+      if (dividerEl) dividerEl.style.display = "none";
+      if (studentBoxEl) studentBoxEl.style.display = "none";
+
       this.setSearchDisabled(true);
 
       try {
-        let data = this.store.fullCache[cleanId] || (fetchMode === "recent" ? this.store.recentCache[cleanId] : null);
+        const isFull = Boolean(this.store.fullCache[cleanId]);
+        let data = this.store.fullCache[cleanId] || this.store.recentCache[cleanId];
 
         if (!data) {
           const response = await fetch(this.apiUrl, {
@@ -392,18 +369,19 @@
             body: JSON.stringify({
               action: "getHistoryPresensiSiswa",
               idSiswa: cleanId,
-              mode: fetchMode
+              mode: "recent"
             })
           });
+
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           data = await response.json();
-          if (!data || data.success === false) throw new Error(data?.message || "Data siswa tidak ditemukan.");
-
-          if (fetchMode === "archive") this.store.fullCache[cleanId] = data;
-          else this.store.recentCache[cleanId] = data;
+          if (!data || data.success === false) {
+            throw new Error(data?.message || "Data siswa tidak ditemukan.");
+          }
+          this.store.recentCache[cleanId] = data;
         }
 
-        this.store.hasFullArchive = Boolean(this.store.fullCache[cleanId]);
+        this.store.hasFullArchive = isFull;
         this.store.currentSiswa = data.siswa || { id_siswa: cleanId, nama: "Siswa", kelas: "-" };
         this.store.rawPresensi = Array.isArray(data.rawPresensi) ? data.rawPresensi : [];
         this.store.filterOptions = data.filterOptions || { taList: [], semesterMap: {} };
@@ -414,16 +392,30 @@
           const kelasEl = this.q(".rw-res-kelas");
           if (namaEl) namaEl.textContent = this.store.currentSiswa.nama || "-";
           if (kelasEl) kelasEl.textContent = this.store.currentSiswa.kelas || "-";
-          this.q(".rw-result-divider").style.display = "block";
-          this.q(".rw-student-box").style.display = "flex";
+          if (dividerEl) dividerEl.style.display = "block";
+          if (studentBoxEl) studentBoxEl.style.display = "flex";
         }
 
         this.populateSubFilters();
+
+        const rangeDropEl = this.q(".rw-range-dropdown");
+        if (rangeDropEl) {
+          const txt = rangeDropEl.querySelector(".rw-dropdown-text");
+          if (txt) txt.innerText = "1 Minggu Terakhir";
+          rangeDropEl.setAttribute("data-value", "1w");
+        }
+        this.q(".rw-sub-semester").style.display = "none";
+        this.q(".rw-sub-ta").style.display = "none";
+        this.q(".rw-sub-custom").style.display = "none";
+
         loadingBox.style.display = "none";
         resultWrap.style.display = "block";
-        this.applyFilterRange(this.defaultRange);
+
+        this.applyFilterRange("1w");
       } catch (err) {
         console.error("[RiwayatWidget] Gagal load history:", err);
+        if (dividerEl) dividerEl.style.display = "none";
+        if (studentBoxEl) studentBoxEl.style.display = "none";
         loadingBox.style.display = "none";
         placeholderBox.innerHTML = `<span style="color:#b91c1c; font-weight:600;">⚠️ ${err.message}</span>`;
         placeholderBox.style.display = "block";
@@ -457,8 +449,12 @@
       const selSem = this.q(".rw-sel-sem-type");
       const sems = this.store.filterOptions.semesterMap[selectedTa] || [];
       const semOptions = sems.length > 0
-        ? sems.map(sem => ({ value: sem, label: sem === "Ganjil" ? "Ganjil (Semester 1)" : (sem === "Genap" ? "Genap (Semester 2)" : sem) }))
+        ? sems.map(sem => ({
+            value: sem,
+            label: sem === "Ganjil" ? "Ganjil (Semester 1)" : (sem === "Genap" ? "Genap (Semester 2)" : sem)
+          }))
         : [{ value: "", label: "Tidak ada semester" }];
+
       this.createDropdown(selSem, semOptions, semOptions[0].value, null);
     },
 
@@ -467,9 +463,20 @@
       if (!cleanId) return false;
       if (this.store.hasFullArchive) return true;
 
+      if (this.store.fullCache[cleanId]) {
+        const cached = this.store.fullCache[cleanId];
+        this.store.rawPresensi = Array.isArray(cached.rawPresensi) ? cached.rawPresensi : [];
+        this.store.filterOptions = cached.filterOptions || this.store.filterOptions;
+        this.store.hasFullArchive = true;
+        return true;
+      }
+
       const loadingBox = this.q(".rw-loading-box");
+      const loadingText = this.q(".rw-loading-text");
       const resultWrap = this.q(".rw-result-wrap");
+
       resultWrap.style.display = "none";
+      if (loadingText) loadingText.textContent = "Memuat arsip presensi lintas semester...";
       loadingBox.style.display = "flex";
       this.setSearchDisabled(true);
 
@@ -477,24 +484,33 @@
         const response = await fetch(this.apiUrl, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "getHistoryPresensiSiswa", idSiswa: cleanId, mode: "archive" })
+          body: JSON.stringify({
+            action: "getHistoryPresensiSiswa",
+            idSiswa: cleanId,
+            mode: "archive"
+          })
         });
+
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-        if (!data || data.success === false) throw new Error(data?.message || "Gagal memuat arsip.");
+        if (!data || data.success === false) {
+          throw new Error(data?.message || "Gagal memuat arsip presensi.");
+        }
 
         this.store.fullCache[cleanId] = data;
         this.store.rawPresensi = Array.isArray(data.rawPresensi) ? data.rawPresensi : [];
         this.store.filterOptions = data.filterOptions || this.store.filterOptions;
         this.store.hasFullArchive = true;
         this.populateSubFilters();
+
         loadingBox.style.display = "none";
         resultWrap.style.display = "block";
         return true;
       } catch (err) {
+        console.error("[RiwayatWidget] Gagal load arsip penuh:", err);
         loadingBox.style.display = "none";
         resultWrap.style.display = "block";
-        this.notify(err.message || "Gagal memuat arsip.", "error");
+        this.notify(err.message || "Gagal memuat arsip lintas semester.", "error");
         return false;
       } finally {
         this.setSearchDisabled(false);
@@ -504,20 +520,34 @@
     async applySemesterFilter() {
       const ta = this.q(".rw-sel-ta-sem")?.getAttribute("data-value") || "";
       const sem = this.q(".rw-sel-sem-type")?.getAttribute("data-value") || "";
-      if (ta && sem && await this.ensureFullArchive()) this.applyFilterRange("semester", ta, sem);
+      if (!ta || !sem) return;
+      if (await this.ensureFullArchive()) {
+        this.applyFilterRange("semester", ta, sem);
+      }
     },
 
     async applyTaFilter() {
       const ta = this.q(".rw-sel-ta-full")?.getAttribute("data-value") || "";
-      if (ta && await this.ensureFullArchive()) this.applyFilterRange("tahun_ajaran", ta);
+      if (!ta) return;
+      if (await this.ensureFullArchive()) {
+        this.applyFilterRange("tahun_ajaran", ta);
+      }
     },
 
     async applyCustomDateFilter() {
       const start = this.q(".rw-date-start")?.value || "";
       const end = this.q(".rw-date-end")?.value || "";
-      if (!start || !end) return this.notify("Pilih tanggal mulai dan akhir.", "info");
-      if (start > end) return this.notify("Tanggal mulai melebihi tanggal akhir.", "error");
-      if (await this.ensureFullArchive()) this.applyFilterRange("custom", start, end);
+      if (!start || !end) {
+        this.notify("Pilih tanggal mulai dan tanggal akhir terlebih dahulu.", "info");
+        return;
+      }
+      if (start > end) {
+        this.notify("Tanggal mulai tidak boleh melebihi tanggal akhir.", "error");
+        return;
+      }
+      if (await this.ensureFullArchive()) {
+        this.applyFilterRange("custom", start, end);
+      }
     },
 
     normalizeDateKey(value) {
@@ -537,11 +567,17 @@
       const all = this.store.rawPresensi;
       let filtered = all;
 
-      if (rangeType === "1w") filtered = all.slice(-7);
-      else if (rangeType === "1m") filtered = all.slice(-30);
-      else if (rangeType === "semester") {
+      if (rangeType === "1w") {
+        filtered = all.slice(-7);
+      } else if (rangeType === "1m") {
+        filtered = all.slice(-30);
+      } else if (rangeType === "semester") {
         const targetDigit = param2 === "Ganjil" ? "1" : (param2 === "Genap" ? "2" : "");
-        filtered = all.filter(p => p.tahunAjaran === param1 && (p.idSemester ? p.idSemester.endsWith(targetDigit) : p.semester === param2));
+        filtered = all.filter(p => {
+          const matchTa = p.tahunAjaran === param1;
+          if (p.idSemester) return matchTa && p.idSemester.endsWith(targetDigit);
+          return matchTa && p.semester === param2;
+        });
       } else if (rangeType === "tahun_ajaran") {
         filtered = all.filter(p => p.tahunAjaran === param1);
       } else if (rangeType === "custom") {
@@ -553,107 +589,60 @@
 
       this.store.currentFiltered = filtered;
       this.updateSummaryCards(filtered);
-      this.renderLogTable(filtered);
       this.renderTrendChart(filtered, rangeType);
-      if (this.onDataFiltered) this.onDataFiltered(filtered, rangeType);
     },
 
     updateSummaryCards(data) {
-      const c = {
-        tepat: 0, terlambat: 0, sangatTerlambat: 0, sangatTerlambatSekali: 0,
-        htp: 0, prakerin: 0, daring: 0, dispensasi: 0, sakit: 0, izin: 0, alpa: 0
+      const counts = {
+        tepat: 0, terlambat: 0, htp: 0, prakerin: 0,
+        dispensasi: 0, daring: 0, sakit: 0, izin: 0, alpa: 0
       };
 
       data.forEach(item => {
         const st = String(item.statusMasuk || "").trim().toLowerCase();
-        if (st.includes("tepat")) c.tepat++;
-        else if (st.includes("sangat terlambat sekali")) c.sangatTerlambatSekali++;
-        else if (st.includes("sangat terlambat")) c.sangatTerlambat++;
-        else if (st.includes("terlambat")) c.terlambat++;
-        else if (st.includes("tidak presensi") || st === "htp") c.htp++;
-        else if (st.includes("prakerin") || st.includes("pkl")) c.prakerin++;
-        else if (st.includes("daring")) c.daring++;
-        else if (st.includes("dispensasi")) c.dispensasi++;
-        else if (st.includes("sakit")) c.sakit++;
-        else if (st.includes("izin")) c.izin++;
-        else if (st.includes("alpa")) c.alpa++;
+        if (st.includes("tepat")) counts.tepat++;
+        else if (st.includes("terlambat")) counts.terlambat++;
+        else if (st.includes("tidak presensi") || st === "htp") counts.htp++;
+        else if (st.includes("prakerin") || st.includes("pkl")) counts.prakerin++;
+        else if (st.includes("dispensasi")) counts.dispensasi++;
+        else if (st.includes("daring")) counts.daring++;
+        else if (st.includes("sakit")) counts.sakit++;
+        else if (st.includes("izin")) counts.izin++;
+        else if (st.includes("alpa")) counts.alpa++;
       });
 
-      if (this.layoutVariant === "siswa-split") {
-        const totalHadir = c.tepat + c.terlambat + c.sangatTerlambat + c.sangatTerlambatSekali + c.htp + c.prakerin + c.daring + c.dispensasi;
-        const totalAll = totalHadir + c.sakit + c.izin + c.alpa;
-        const rate = totalAll > 0 ? Math.round((totalHadir / totalAll) * 100) : 100;
-
-        const map = { ...c, totalHadir };
-        Object.entries(map).forEach(([k, v]) => {
-          const el = this.q(`[data-rekap="${k}"]`);
-          if (el) el.textContent = v;
-        });
-
-        const rateEl = this.q(".rw-rate-badge");
-        if (rateEl) rateEl.textContent = `${rate}%`;
-
-        const pill = this.q(".rw-discipline-pill");
-        if (pill) {
-          const totalLate = c.terlambat + c.sangatTerlambat + c.sangatTerlambatSekali;
-          pill.classList.remove("is-good", "is-warning", "is-danger");
-          if (c.alpa >= 2 || totalLate >= 4) {
-            pill.classList.add("is-danger");
-            pill.textContent = `Perlu Perhatian (${totalLate} Terlambat, ${c.alpa} Alpa)`;
-          } else if (totalLate >= 1 || c.alpa === 1) {
-            pill.classList.add("is-warning");
-            pill.textContent = `${totalLate}x Terlambat • Tetap Jaga Disiplin`;
-          } else {
-            pill.classList.add("is-good");
-            pill.textContent = "Disiplin Sangat Baik";
-          }
-        }
-        return;
-      }
-
-      // Mode Piket (Horizontal Pill)
-      const piketCounts = {
-        tepat: c.tepat,
-        terlambat: c.terlambat + c.sangatTerlambat + c.sangatTerlambatSekali,
-        htp: c.htp, prakerin: c.prakerin, dispensasi: c.dispensasi,
-        daring: c.daring, sakit: c.sakit, izin: c.izin, alpa: c.alpa
-      };
-      let visible = 0;
-      Object.entries(piketCounts).forEach(([key, count]) => {
+      let visibleCards = 0;
+      Object.entries(counts).forEach(([key, count]) => {
         const boxEl = this.q(`.rw-stat-pill[data-stat="${key}"]`);
         if (!boxEl) return;
-        boxEl.querySelector("span").textContent = count;
+        const valEl = boxEl.querySelector("span");
+        if (valEl) valEl.textContent = count;
         boxEl.style.display = count > 0 ? "" : "none";
-        if (count > 0) visible++;
+        if (count > 0) visibleCards++;
       });
-      const rowEl = this.q(".rw-stats-row");
-      if (rowEl) rowEl.style.display = visible > 0 ? "flex" : "none";
-    },
 
-    renderLogTable(data) {
-      const tbody = this.q(".rw-log-tbody");
-      if (!tbody) return;
-      const reversed = [...data].reverse();
-      tbody.innerHTML = reversed.length === 0
-        ? `<tr><td colspan="5" style="padding:20px; color:#64748b;">Belum ada catatan presensi pada periode ini.</td></tr>`
-        : reversed.map(r => `
-          <tr>
-            <td data-label="Tanggal"><strong>${r.tanggal || "-"}</strong></td>
-            <td data-label="Masuk">${r.jamMasuk || "-"}</td>
-            <td data-label="Status">${r.statusMasuk || "-"}</td>
-            <td data-label="Pulang">${r.jamPulang || "-"}</td>
-            <td data-label="Keterangan">${r.keterangan || "-"}</td>
-          </tr>
-        `).join("");
+      const rowEl = this.q(".rw-stats-row");
+      if (rowEl) rowEl.style.display = visibleCards > 0 ? "flex" : "none";
     },
 
     formatChartAxisDate(item) {
       const iso = String(item.isoDate || item.date || "").trim();
       const ymd = iso.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
       if (ymd) return `${ymd[3].padStart(2, "0")}/${ymd[2].padStart(2, "0")}/${ymd[1].slice(-2)}`;
+
       const str = String(item.tanggal || "").trim();
       const dmy = str.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
       if (dmy) return `${dmy[1].padStart(2, "0")}/${dmy[2].padStart(2, "0")}/${dmy[3].slice(-2)}`;
+
+      const dmOnly = str.match(/^(\d{1,2})\/(\d{1,2})$/);
+      if (dmOnly && item.tahunAjaran) {
+        const taParts = String(item.tahunAjaran).match(/(\d{4})\D+(\d{4})/);
+        if (taParts) {
+          const monthNum = parseInt(dmOnly[2], 10);
+          const fullYear = monthNum >= 7 ? taParts[1] : taParts[2];
+          return `${dmOnly[1].padStart(2, "0")}/${dmOnly[2].padStart(2, "0")}/${fullYear.slice(-2)}`;
+        }
+      }
       return str.slice(0, 8);
     },
 
@@ -666,11 +655,17 @@
       const ctx = canvas.getContext("2d");
       const dpr = window.devicePixelRatio || 1;
       const primaryColor = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() || "#824653";
-      const levelColors = { 8: "#15803d", 7: "#d97706", 6: "#c2410c", 5: "#b91c1c", 4: "#7c3aed", 3: "#0284c7", 2: "#0891b2", 1: "#111827" };
+
+      const levelColors = {
+        8: "#15803d", 7: "#d97706", 6: "#c2410c", 5: "#b91c1c",
+        4: "#7c3aed", 3: "#0284c7", 2: "#0891b2", 1: "#111827"
+      };
 
       const getStatusInfo = (statusStr) => {
         const s = String(statusStr || "").toLowerCase();
-        if (s.includes("prakerin") || s.includes("dispensasi") || s.includes("daring") || s.includes("tepat")) return { level: 8, color: levelColors[8], fullName: statusStr || "Tepat Waktu" };
+        if (s.includes("prakerin") || s.includes("dispensasi") || s.includes("daring") || s.includes("tepat")) {
+          return { level: 8, color: levelColors[8], fullName: statusStr || "Tepat Waktu" };
+        }
         if (s.includes("sangat terlambat sekali")) return { level: 5, color: levelColors[5], fullName: "Sangat Terlambat Sekali" };
         if (s.includes("sangat terlambat")) return { level: 6, color: levelColors[6], fullName: "Sangat Terlambat" };
         if (s.includes("terlambat")) return { level: 7, color: levelColors[7], fullName: "Terlambat" };
@@ -684,13 +679,22 @@
       this.store.chartData = (data || []).map(item => {
         const st = getStatusInfo(item.statusMasuk);
         const jamClean = String(item.jamMasuk || "").trim();
-        return { label: this.formatChartAxisDate(item), jamMasuk: (jamClean && jamClean !== "-") ? jamClean : "", val: st.level, color: st.color, fullName: st.fullName };
+        return {
+          label: this.formatChartAxisDate(item),
+          jamMasuk: (jamClean && jamClean !== "-") ? jamClean : "",
+          val: st.level,
+          color: st.color,
+          fullName: st.fullName
+        };
       });
 
       const points = this.store.chartData;
       const parentWidth = scrollContainer.clientWidth || 680;
       let computedWidth = parentWidth;
-      if (filterRange !== "1w" && points.length * 82 > parentWidth) computedWidth = points.length * 82 + 24;
+
+      if (filterRange !== "1w" && points.length * 82 > parentWidth) {
+        computedWidth = points.length * 82 + 24;
+      }
 
       wrapper.style.width = computedWidth + "px";
       canvas.width = computedWidth * dpr;
@@ -709,7 +713,11 @@
         return;
       }
 
-      const axisXPos = 6, paddingLeft = 52, paddingRight = 46, paddingTop = 24, paddingBottom = 56;
+      const axisXPos = 6;
+      const paddingLeft = 52;
+      const paddingRight = 46;
+      const paddingTop = 24;
+      const paddingBottom = 56;
       const graphWidth = width - paddingLeft - paddingRight;
       const graphHeight = height - paddingTop - paddingBottom;
       const bottomAxisY = height - 20;
@@ -719,6 +727,7 @@
         item.y = paddingTop + graphHeight - ((item.val - 1) / 7) * graphHeight;
       });
 
+      // Sumbu Y & X
       ctx.beginPath();
       ctx.strokeStyle = "#cbd5e1";
       ctx.lineWidth = 1;
@@ -735,6 +744,7 @@
         ctx.moveTo(axisXPos + 5, yPos);
         ctx.lineTo(width - 20, yPos);
         ctx.stroke();
+
         ctx.setLineDash([]);
         ctx.beginPath();
         ctx.arc(axisXPos, yPos, 2.8, 0, Math.PI * 2);
@@ -742,6 +752,7 @@
         ctx.fill();
       }
 
+      // Garis Kurva Bezier
       if (points.length > 1) {
         ctx.beginPath();
         ctx.strokeStyle = primaryColor;
@@ -758,8 +769,29 @@
         ctx.stroke();
       }
 
+      // Crosshair jika dot diklik
+      if (this.store.selectedDotIndex !== null && points[this.store.selectedDotIndex]) {
+        const sel = points[this.store.selectedDotIndex];
+        ctx.strokeStyle = primaryColor;
+        ctx.lineWidth = 1.4;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(sel.x, paddingTop);
+        ctx.lineTo(sel.x, bottomAxisY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Titik & Label Status + Jam
       points.forEach((item, idx) => {
         const isSelected = this.store.selectedDotIndex === idx;
+        if (isSelected) {
+          ctx.beginPath();
+          ctx.arc(item.x, item.y, 10, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(130, 70, 83, 0.22)";
+          ctx.fill();
+        }
+
         ctx.beginPath();
         ctx.arc(item.x, item.y, isSelected ? 6.5 : 5, 0, Math.PI * 2);
         ctx.fillStyle = item.color;
@@ -790,7 +822,61 @@
         ctx.fillText(item.label, item.x, height - 6);
       });
 
-      scrollContainer.scrollLeft = scrollContainer.scrollWidth;
+      // Drag-to-Scroll (Desktop) & Klik Titik
+      if (!scrollContainer.dataset.hasDragScroll) {
+        scrollContainer.dataset.hasDragScroll = "true";
+        canvas.ondragstart = () => false;
+
+        let isPointerDown = false;
+        let hasDragged = false;
+        let startClientX = 0;
+        let scrollLeftStart = 0;
+
+        scrollContainer.addEventListener("mousedown", (e) => {
+          if (e.button !== 0) return;
+          isPointerDown = true;
+          hasDragged = false;
+          startClientX = e.clientX;
+          scrollLeftStart = scrollContainer.scrollLeft;
+          scrollContainer.classList.add("is-dragging");
+        });
+
+        window.addEventListener("mousemove", (e) => {
+          if (!isPointerDown) return;
+          const dx = e.clientX - startClientX;
+          if (Math.abs(dx) > 4) hasDragged = true;
+          if (hasDragged) {
+            e.preventDefault();
+            scrollContainer.scrollLeft = scrollLeftStart - dx;
+          }
+        });
+
+        window.addEventListener("mouseup", (e) => {
+          if (!isPointerDown) return;
+          isPointerDown = false;
+          scrollContainer.classList.remove("is-dragging");
+
+          if (!hasDragged && e.target === canvas) {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            let nearest = null;
+            let minDist = Infinity;
+
+            (this.store.chartData || []).forEach((pt, idx) => {
+              const d = Math.abs(pt.x - clickX);
+              if (d < minDist && d <= 32) {
+                minDist = d;
+                nearest = idx;
+              }
+            });
+
+            const prevScroll = scrollContainer.scrollLeft;
+            this.store.selectedDotIndex = (this.store.selectedDotIndex === nearest) ? null : nearest;
+            this.renderTrendChart(this.store.currentFiltered, this.store.activeRange);
+            scrollContainer.scrollLeft = prevScroll;
+          }
+        });
+      }
     }
   };
 
