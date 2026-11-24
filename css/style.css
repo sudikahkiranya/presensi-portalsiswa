@@ -3729,17 +3729,46 @@ body.student-portal-body .num-box-val {
   line-height: 1.15;
 }
 
+/* Toolbar Filter di dalam Header Card Utama */
+body.student-portal-body .unified-card-header .rw-toolbar-row {
+  justify-content: flex-end;
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  body.student-portal-body .unified-card-header .rw-toolbar-row {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* Seragamkan Layout Vertikal & Warna Tegas Total Hadir / Total Tidak Hadir */
 body.student-portal-body .num-box.tone-total-hadir {
-  flex-direction: row;
-  justify-content: space-between;
-  padding: 9px 13px;
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #ffffff;
+  flex-direction: column !important;
+  justify-content: center !important;
+  padding: 8px 6px !important;
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #ffffff !important;
 }
 
 body.student-portal-body .num-box.tone-total-hadir .num-box-lbl {
-  font-size: 11px;
+  font-size: 10px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+body.student-portal-body .num-box.tone-total-absen {
+  flex-direction: column !important;
+  justify-content: center !important;
+  padding: 8px 6px !important;
+  background: #334155 !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+body.student-portal-body .num-box.tone-total-absen .num-box-lbl {
+  font-size: 10px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
 body.student-portal-body .num-box.tone-hadir { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }

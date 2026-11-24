@@ -6,6 +6,7 @@
     apiUrl: "",
     mode: "siswa", // "siswa" | "piket"
     container: null,
+    toolbarEl: null,
     onNotify: null,
     layoutVariant: "piket", // "piket" | "siswa-split"
     defaultRange: "1w",
@@ -62,11 +63,27 @@
     },
 
     q(selector) {
-      return this.container ? this.container.querySelector(selector) : null;
+      if (this.container) {
+        const found = this.container.querySelector(selector);
+        if (found) return found;
+      }
+      if (this.toolbarEl) {
+        if (this.toolbarEl.matches(selector)) return this.toolbarEl;
+        return this.toolbarEl.querySelector(selector);
+      }
+      return null;
     },
 
     qa(selector) {
-      return this.container ? Array.from(this.container.querySelectorAll(selector)) : [];
+      const results = [];
+      if (this.container) {
+        results.push(...this.container.querySelectorAll(selector));
+      }
+      if (this.toolbarEl && !this.container?.contains(this.toolbarEl)) {
+        if (this.toolbarEl.matches(selector)) results.push(this.toolbarEl);
+        results.push(...this.toolbarEl.querySelectorAll(selector));
+      }
+      return results;
     },
 
     notify(msg, type = "info") {
@@ -98,6 +115,9 @@
       if (divEl) divEl.style.display = "none";
       if (boxEl) boxEl.style.display = "none";
 
+      if (this.toolbarEl && !this.container.contains(this.toolbarEl)) {
+        this.toolbarEl.style.display = "none";
+      }
       this.q(".rw-result-wrap").style.display = "none";
       this.q(".rw-loading-box").style.display = "none";
       const ph = this.q(".rw-empty-box");
@@ -363,6 +383,17 @@
         </div>
       `;
 
+      this.toolbarEl = this.q(".rw-toolbar-row");
+
+      // Pindahkan toolbar ke header card utama jika tersedia (Portal Siswa)
+      const externalHeader = document.querySelector("#unifiedAnalyticsCard .unified-card-header");
+      if (this.layoutVariant === "siswa-split" && externalHeader && this.toolbarEl) {
+        externalHeader.querySelectorAll(".rw-toolbar-row").forEach(old => old.remove());
+        this.toolbarEl.style.marginBottom = "0";
+        this.toolbarEl.style.display = "none";
+        externalHeader.appendChild(this.toolbarEl);
+      }
+
       // Bind event tombol-tombol internal
       if (this.mode === "piket") {
         const inp = this.q(".rw-input-nis");
@@ -537,6 +568,9 @@
 
       placeholderBox.style.display = "none";
       resultWrap.style.display = "none";
+      if (this.toolbarEl && !this.container.contains(this.toolbarEl)) {
+        this.toolbarEl.style.display = "none";
+      }
       if (loadingText) loadingText.textContent = "Memuat riwayat presensi terkini...";
       loadingBox.style.display = "flex";
       if (dividerEl) dividerEl.style.display = "none";
@@ -599,6 +633,9 @@
 
         loadingBox.style.display = "none";
         resultWrap.style.display = "block";
+        if (this.toolbarEl && !this.container.contains(this.toolbarEl)) {
+          this.toolbarEl.style.display = "flex";
+        }
 
         this.applyFilterRange(this.defaultRange);
       } catch (err) {
