@@ -622,28 +622,37 @@ function initChartDragScroll() {
 
 function getStatusPointConfig(status) {
   const s = (status || "").toLowerCase();
+  // Urutan 8 Level Sumbu Y (0 = paling atas, 7 = paling bawah) persis seperti Portal Piket
   if (s.includes("tepat") || s.includes("prakerin") || s.includes("dispensasi")) {
-    return { level: 1, color: "#15803d" };
-  }
-  if (s.includes("tidak presensi") || s === "htp") {
-    return { level: 2, color: "#7c3aed" };
+    return { level: 0, color: "#15803d", shortLabel: status || "Tepat Waktu", showTime: true };
   }
   if (s.includes("sangat terlambat sekali")) {
-    return { level: 6, color: "#b91c1c" };
+    return { level: 3, color: "#b91c1c", shortLabel: "Sangat Terlambat Sekali", showTime: true };
   }
   if (s.includes("sangat terlambat")) {
-    return { level: 5, color: "#c2410c" };
+    return { level: 2, color: "#c2410c", shortLabel: "Sangat Terlambat", showTime: true };
   }
   if (s.includes("terlambat")) {
-    return { level: 3, color: "#d97706" };
+    return { level: 1, color: "#d97706", shortLabel: "Terlambat", showTime: true };
+  }
+  if (s.includes("tidak presensi") || s === "htp") {
+    return { level: 4, color: "#7c3aed", shortLabel: "Hadir Tidak Presensi", showTime: false };
   }
   if (s.includes("izin")) {
-    return { level: 4, color: "#0284c7" };
+    return { level: 5, color: "#0284c7", shortLabel: "Izin", showTime: false };
   }
   if (s.includes("sakit")) {
-    return { level: 5, color: "#0891b2" };
+    return { level: 6, color: "#0891b2", shortLabel: "Sakit", showTime: false };
   }
-  return { level: 7, color: "#111827" }; // Alpa
+  return { level: 7, color: "#111827", shortLabel: "Alpa", showTime: false };
+}
+
+function formatShortSlashDate(row) {
+  if (row.isoDate && /^\d{4}-\d{2}-\d{2}/.test(row.isoDate)) {
+    const [yyyy, mm, dd] = row.isoDate.slice(0, 10).split("-");
+    return `${dd}/${mm}/${yyyy.slice(-2)}`;
+  }
+  return row.tanggal || "-";
 }
 
 function renderTrendChart(rows) {
@@ -653,12 +662,12 @@ function renderTrendChart(rows) {
   if (!canvas || !wrapper || !scroller) return;
 
   const palette = THEME_PALETTES[currentTheme] || THEME_PALETTES.burgundy;
-  const pointSpacing = 62;
-  const minWidth = scroller.clientWidth || 620;
-  const calculatedWidth = Math.max(minWidth, rows.length * pointSpacing + 80);
+  const pointSpacing = 105; // Jarak antar titik lega agar label status & jam tidak bertumpuk
+  const minWidth = scroller.clientWidth || 680;
+  const calculatedWidth = Math.max(minWidth, rows.length * pointSpacing + 90);
 
   wrapper.style.width = `${calculatedWidth}px`;
-  const height = 245;
+  const height = 250;
 
   const dpr = window.devicePixelRatio || 1;
   canvas.width = calculatedWidth * dpr;
@@ -670,22 +679,53 @@ function renderTrendChart(rows) {
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, calculatedWidth, height);
 
-  const padLeft = 40;
-  const padRight = 36;
-  const padTop = 26;
-  const padBottom = 42;
+  const padLeft = 34;
+  const padRight = 48;
+  const padTop = 22;
+  const padBottom = 46;
   const plotW = calculatedWidth - padLeft - padRight;
   const plotH = height - padTop - padBottom;
 
-  // Grid horizontal
-  ctx.strokeStyle = "#e2e8f0";
+  // 8 Tingkat Sumbu Y + Garis Putus-putus + Titik Warna Indikator di Kiri
+  const yLevelColors = [
+    "#15803d", // 0: Tepat Waktu
+    "#d97706", // 1: Terlambat
+    "#c2410c", // 2: Sangat Terlambat
+    "#b91c1c", // 3: Sangat Terlambat Sekali
+    "#7c3aed", // 4: Hadir Tidak Presensi
+    "#0284c7", // 5: Izin
+    "#0891b2", // 6: Sakit
+    "#111827"  // 7: Alpa
+  ];
+
+  // Garis Sumbu Y (kiri) & Sumbu X (bawah)
+  ctx.strokeStyle = "#cbd5e1";
   ctx.lineWidth = 1;
-  for (let i = 0; i <= 6; i++) {
-    const y = padTop + (plotH / 6) * i;
+  ctx.beginPath();
+  ctx.moveTo(padLeft, padTop - 6);
+  ctx.lineTo(padLeft, height - padBottom + 12);
+  ctx.lineTo(calculatedWidth - 16, height - padBottom + 12);
+  ctx.stroke();
+
+  for (let i = 0; i < 8; i++) {
+    const y = padTop + (plotH / 7) * i;
+
+    // Garis horizontal putus-putus
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(padLeft, y);
-    ctx.lineTo(calculatedWidth - padRight, y);
+    ctx.moveTo(padLeft + 6, y);
+    ctx.lineTo(calculatedWidth - 16, y);
     ctx.stroke();
+    ctx.restore();
+
+    // Titik indikator warna di garis sumbu kiri
+    ctx.beginPath();
+    ctx.arc(padLeft, y, 3.6, 0, Math.PI * 2);
+    ctx.fillStyle = yLevelColors[i];
+    ctx.fill();
   }
 
   if (!rows.length) return;
@@ -694,37 +734,36 @@ function renderTrendChart(rows) {
     const cfg = getStatusPointConfig(r.status);
     const x = rows.length === 1
       ? padLeft + plotW / 2
-      : padLeft + (plotW / (rows.length - 1)) * idx;
-    const y = padTop + ((cfg.level - 1) / 6) * plotH;
-    return { x, y, color: cfg.color, data: r, index: idx };
+      : padLeft + 52 + ((plotW - 52) / (rows.length - 1)) * idx;
+    const y = padTop + (cfg.level / 7) * plotH;
+    return {
+      x,
+      y,
+      color: cfg.color,
+      shortLabel: cfg.shortLabel,
+      showTime: cfg.showTime,
+      data: r,
+      index: idx
+    };
   });
 
-  // Area gradient bawah kurva
-  const grad = ctx.createLinearGradient(0, padTop, 0, height - padBottom);
-  grad.addColorStop(0, palette.glow);
-  grad.addColorStop(1, "rgba(255,255,255,0)");
-
-  ctx.beginPath();
-  ctx.moveTo(chartDotPoints[0].x, height - padBottom);
-  chartDotPoints.forEach(p => ctx.lineTo(p.x, p.y));
-  ctx.lineTo(chartDotPoints[chartDotPoints.length - 1].x, height - padBottom);
-  ctx.closePath();
-  ctx.fillStyle = grad;
-  ctx.fill();
-
-  // Garis kurva penghubung
+  // Garis Kurva Halus (Smooth Cubic Bezier)
   ctx.beginPath();
   chartDotPoints.forEach((p, idx) => {
-    if (idx === 0) ctx.moveTo(p.x, p.y);
-    else ctx.lineTo(p.x, p.y);
+    if (idx === 0) {
+      ctx.moveTo(p.x, p.y);
+    } else {
+      const prev = chartDotPoints[idx - 1];
+      const cpX = (prev.x + p.x) / 2;
+      ctx.bezierCurveTo(cpX, prev.y, cpX, p.y, p.x, p.y);
+    }
   });
   ctx.strokeStyle = palette.primary;
-  ctx.lineWidth = 2.5;
-  ctx.lineJoin = "round";
+  ctx.lineWidth = 2.6;
+  ctx.lineCap = "round";
   ctx.stroke();
 
-  // Titik status & label tanggal sumbu X
-  ctx.font = "600 10.5px Roboto, sans-serif";
+  // Titik Data, Label Status + Jam Masuk di Bawah Titik, dan Tanggal Sumbu X
   ctx.textAlign = "center";
 
   chartDotPoints.forEach((p) => {
@@ -737,20 +776,35 @@ function renderTrendChart(rows) {
       ctx.fill();
     }
 
+    // Lingkaran Titik Status
     ctx.beginPath();
-    ctx.arc(p.x, p.y, isSelected ? 6.5 : 5, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, isSelected ? 6.2 : 5, 0, Math.PI * 2);
     ctx.fillStyle = p.color;
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = "#ffffff";
     ctx.stroke();
 
-    const shortDate = (p.data.tanggal || "").split(" ").slice(0, 2).join(" ");
+    // Teks Status langsung di bawah titik
+    ctx.font = "700 10.5px Roboto, sans-serif";
+    ctx.fillStyle = p.color;
+    ctx.fillText(p.shortLabel, p.x, p.y + 16);
+
+    // Teks Jam Masuk langsung di bawah status (jika hadir/terlambat)
+    if (p.showTime && p.data.jamMasuk && p.data.jamMasuk !== "-") {
+      ctx.font = "700 10.5px Roboto, sans-serif";
+      ctx.fillStyle = "#475569";
+      ctx.fillText(p.data.jamMasuk, p.x, p.y + 28);
+    }
+
+    // Label Tanggal Sumbu X (format 14/10/26)
+    const dateLabel = formatShortSlashDate(p.data);
+    ctx.font = "700 11px Roboto, sans-serif";
     ctx.fillStyle = isSelected ? palette.primary : "#64748b";
-    ctx.fillText(shortDate, p.x, height - 16);
+    ctx.fillText(dateLabel, p.x, height - 12);
   });
 
-  // Auto-scroll ke ujung kanan terbaru
+  // Auto-scroll ke data terbaru
   scroller.scrollLeft = scroller.scrollWidth;
 
   canvas.onclick = (e) => {
@@ -760,7 +814,7 @@ function renderTrendChart(rows) {
     const clickY = e.clientY - rect.top;
 
     let nearest = null;
-    let minDist = 24;
+    let minDist = 26;
     chartDotPoints.forEach(p => {
       const dist = Math.hypot(p.x - clickX, p.y - clickY);
       if (dist <= minDist) {
