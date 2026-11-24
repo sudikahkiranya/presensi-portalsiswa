@@ -160,18 +160,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initGreetingAndRank();
   renderRiwayatIzinModal();
   loadDashboardData();
-
-  const idSiswa = localStorage.getItem("idSiswa");
-  if (idSiswa && typeof RiwayatWidget !== "undefined") {
-    RiwayatWidget.init({
-      containerId: "siswaRiwayatWidgetContainer",
-      apiUrl: API_URL,
-      mode: "siswa",
-      layoutVariant: "siswa-split",
-      defaultRange: "1m",
-      idSiswa: idSiswa
-    });
-  }
 });
 
 document.addEventListener("click", (e) => {
@@ -230,8 +218,11 @@ function setAppTheme(themeKey, regenerateQr = true) {
     }
   }
 
-  if (cachedData) {
-    renderTrendChart(cachedData.riwayat || []);
+  if (window.RiwayatWidget?.store?.currentFiltered) {
+    RiwayatWidget.renderTrendChart(
+      RiwayatWidget.store.currentFiltered,
+      RiwayatWidget.store.activeRange
+    );
   }
 }
 
@@ -302,7 +293,6 @@ async function loadDashboardData() {
       cachedData = json;
       renderTodaySection(json.hariIni || {});
       if (json.biodata) updateBiodataFromApi(json.biodata);
-      handleTimelineChange("1w");
     } else {
       throw new Error(json?.message || "Gagal memuat data");
     }
@@ -310,9 +300,18 @@ async function loadDashboardData() {
     console.warn("Menggunakan fallback data lokal:", err);
     cachedData = buildFallbackData();
     renderTodaySection(cachedData.hariIni);
-    handleTimelineChange("1w");
   } finally {
     showLoading(false);
+    if (idSiswa && typeof RiwayatWidget !== "undefined") {
+      RiwayatWidget.init({
+        containerId: "siswaRiwayatWidgetContainer",
+        apiUrl: API_URL,
+        mode: "siswa",
+        layoutVariant: "siswa-split",
+        defaultRange: "1m",
+        idSiswa: idSiswa
+      });
+    }
   }
 }
 
