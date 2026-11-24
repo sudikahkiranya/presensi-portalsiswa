@@ -1,1275 +1,1195 @@
 /* ==========================================================================
-   RIWAYAT PRESENSI WIDGET ENGINE (PORTAL SISWA & PORTAL PIKET)
+   PORTAL PRESENSI SISWA - SMK MEDIKACOM BANDUNG
    ========================================================================== */
-(function (global) {
-  const RiwayatWidget = {
-    apiUrl: "",
-    mode: "siswa", // "siswa" | "piket"
-    container: null,
-    toolbarEl: null,
-    onNotify: null,
-    layoutVariant: "piket", // "piket" | "siswa-split"
-    defaultRange: "1w",
-    onDataFiltered: null,
-    store: {
-      recentCache: {},
-      fullCache: {},
-      hasFullArchive: false,
-      currentSiswa: null,
-      rawPresensi: [],
-      filterOptions: { taList: [], semesterMap: {} },
-      currentFiltered: [],
-      chartData: [],
-      selectedDotIndex: null,
-      activeRange: "1w",
-      activeViewMode: "chart" // "chart" | "log"
-    },
 
-    init(options = {}) {
-      this.apiUrl = options.apiUrl || (typeof API_URL !== "undefined" ? API_URL : "");
-      this.mode = options.mode || "siswa";
-      this.onNotify = typeof options.onNotify === "function" ? options.onNotify : null;
-      this.layoutVariant = options.layoutVariant || (this.mode === "siswa" ? "siswa-split" : "piket");
-      this.defaultRange = options.defaultRange || (this.mode === "siswa" ? "1m" : "1w");
-      this.onDataFiltered = typeof options.onDataFiltered === "function" ? options.onDataFiltered : null;
-      this.store.activeRange = this.defaultRange;
-      this.store.activeViewMode = "chart";
+const API_URL = "https://script.google.com/macros/s/AKfycbxR0bwVJCXQY5DQKawqOBQO6vNwU8UMFLJ3AuBytSRgQR3TW9rJZ0r58JGkL2u_HxYMhw/exec";
 
-      const el = typeof options.containerId === "string"
-        ? document.getElementById(options.containerId)
-        : options.containerEl;
+const idSiswa = localStorage.getItem("idSiswa");
+const namaSiswa = localStorage.getItem("namaSiswa") || "Siswa";
+const kelasSiswa = localStorage.getItem("kelasSiswa") || "-";
 
-      if (!el) {
-        console.error("[RiwayatWidget] Container tidak ditemukan.");
-        return;
-      }
+if (!idSiswa) {
+  window.location.replace("/");
+}
 
-      this.container = el;
-      this.renderScaffold();
-      this.bindGlobalEvents();
-      this.initRangeDropdown();
+const THEME_PALETTES = {
+  burgundy: { primary: "#824653", soft: "#9b5c69", glow: "rgba(130, 70, 83, 0.25)", bg: "#fdf2f4" },
+  ocean:    { primary: "#2563eb", soft: "#60a5fa", glow: "rgba(37, 99, 235, 0.25)", bg: "#eff6ff" },
+  emerald:  { primary: "#059669", soft: "#34d399", glow: "rgba(5, 150, 105, 0.25)", bg: "#ecfdf5" },
+  royal:    { primary: "#7c3aed", soft: "#a78bfa", glow: "rgba(124, 58, 237, 0.25)", bg: "#f5f3ff" },
+  sunset:   { primary: "#ea580c", soft: "#fb923c", glow: "rgba(234, 88, 12, 0.25)", bg: "#fff7ed" },
+  teal:     { primary: "#0d9488", soft: "#2dd4bf", glow: "rgba(13, 148, 136, 0.25)", bg: "#f0fdfa" },
+  indigo:   { primary: "#4f46e5", soft: "#818cf8", glow: "rgba(79, 70, 229, 0.25)", bg: "#eef2ff" },
+  slate:    { primary: "#475569", soft: "#94a3b8", glow: "rgba(71, 85, 105, 0.25)", bg: "#f1f5f9" }
+};
 
-      if (options.idSiswa) {
-        if (this.mode === "piket") {
-          const inp = this.q(".rw-input-nis");
-          const clr = this.q(".rw-clear-nis");
-          if (inp) inp.value = options.idSiswa;
-          if (clr) clr.hidden = false;
-        }
-        this.loadStudentHistory(options.idSiswa);
-      } else if (this.mode === "piket") {
-        setTimeout(() => this.q(".rw-input-nis")?.focus(), 60);
-      }
-    },
+let currentTheme = localStorage.getItem("sisensi_active_theme") || "burgundy";
+let cachedData = null;
+let cachedQrDataUrl = "";
+let currentAnalyticsMode = "chart";
+let chartDotPoints = [];
+let selectedDotIndex = -1;
+let isDraggingChart = false;
 
-    q(selector) {
-      if (this.container) {
-        const found = this.container.querySelector(selector);
-        if (found) return found;
-      }
-      if (this.toolbarEl) {
-        if (this.toolbarEl.matches(selector)) return this.toolbarEl;
-        return this.toolbarEl.querySelector(selector);
-      }
-      return null;
-    },
+/* Dummy Riwayat Izin Meninggalkan Sekolah */
+let dummyIzinHistoryList = [
+  {
+    id: "IZN-001",
+    tanggal: "18 Nov 2026",
+    jenis: "Izin Keluar Sementara",
+    jamKeluar: "10:15",
+    jamKembali: "11:20",
+    alasan: "Mengurus administrasi KTP / Kartu Pelajar di kelurahan.",
+    status: "Disetujui Piket"
+  },
+  {
+    id: "IZN-002",
+    tanggal: "04 Nov 2026",
+    jenis: "Izin Pulang Awal",
+    jamKeluar: "12:30",
+    jamKembali: "-",
+    alasan: "Kontrol rutin dokter gigi (surat rujukan terlampir).",
+    status: "Disetujui Piket"
+  }
+];
 
-    qa(selector) {
-      const results = [];
-      if (this.container) {
-        results.push(...this.container.querySelectorAll(selector));
-      }
-      if (this.toolbarEl && !this.container?.contains(this.toolbarEl)) {
-        if (this.toolbarEl.matches(selector)) results.push(this.toolbarEl);
-        results.push(...this.toolbarEl.querySelectorAll(selector));
-      }
-      return results;
-    },
+/* Data Klasemen Kedisiplinan */
+function getKlasemenDataList() {
+  const baseList = [
+    { rank: 1, nama: "Alya Putri Rahmadani", kelas: "XII Farmasi 1", tepatWaktu: "100%", poin: 995, isMe: false },
+    { rank: 2, nama: "Muhammad Rizky Pratama", kelas: "XI TKJ 2", tepatWaktu: "100%", poin: 990, isMe: false },
+    { rank: 3, nama: "Nadia Khairunnisa", kelas: "XII Keperawatan 1", tepatWaktu: "99.4%", poin: 984, isMe: false },
+    { rank: 4, nama: "Fajar Nugraha", kelas: "XI RPL 1", tepatWaktu: "99.1%", poin: 978, isMe: false },
+    { rank: 5, nama: "Siti Nurhaliza", kelas: "X Farmasi 2", tepatWaktu: "98.8%", poin: 972, isMe: false },
+    { rank: 14, nama: namaSiswa, kelas: kelasSiswa, tepatWaktu: "96.5%", poin: 942, isMe: true }
+  ];
 
-    notify(msg, type = "info") {
-      if (this.onNotify) this.onNotify(msg, type);
-      else if (typeof showToast === "function") showToast(msg, type);
-      else alert(msg);
-    },
+  // Jika nama siswa kebetulan sama dengan salah satu top 5, tandai isMe
+  const exactMatch = baseList.find((item, idx) => idx < 5 && item.nama.toLowerCase() === namaSiswa.toLowerCase());
+  if (exactMatch) {
+    exactMatch.isMe = true;
+    return baseList.slice(0, 5);
+  }
+  return baseList;
+}
 
-    reset() {
-      this.setSearchDisabled(false);
-      Object.assign(this.store, {
-        currentSiswa: null,
-        rawPresensi: [],
-        currentFiltered: [],
-        chartData: [],
-        selectedDotIndex: null,
-        activeRange: this.defaultRange,
-        activeViewMode: "chart"
-      });
+/* ==========================================================================
+   CUSTOM DROPDOWN ENGINE
+   ========================================================================== */
+const CUSTOM_SELECT_INSTANCES = {};
 
-      if (!this.container) return;
-      const inp = this.q(".rw-input-nis");
-      const clr = this.q(".rw-clear-nis");
-      if (inp) inp.value = "";
-      if (clr) clr.hidden = true;
+function initCustomSelect(containerId, options, defaultValue, onChangeCallback) {
+  const container = document.getElementById(containerId);
+  if (!container) return null;
 
-      const divEl = this.q(".rw-result-divider");
-      const boxEl = this.q(".rw-student-box");
-      if (divEl) divEl.style.display = "none";
-      if (boxEl) boxEl.style.display = "none";
+  container.classList.add("custom-select-container");
+  container.dataset.value = defaultValue;
 
-      if (this.toolbarEl && !this.container.contains(this.toolbarEl)) {
-        this.toolbarEl.style.display = "none";
-      }
-      this.q(".rw-result-wrap").style.display = "none";
-      this.q(".rw-loading-box").style.display = "none";
-      const ph = this.q(".rw-empty-box");
-      ph.innerHTML = this.mode === "piket"
-        ? `Silakan <strong>scan kartu QR siswa</strong> atau masukkan <strong>NIS</strong> di atas untuk melihat grafik riwayat kehadiran.`
-        : `Data riwayat presensi belum dimuat.`;
-      ph.style.display = "block";
-    },
+  const initialOpt = options.find(o => o.value === defaultValue) || options[0] || { label: "Pilih...", value: "" };
 
-    renderScaffold() {
-      const searchHeaderHTML = this.mode === "piket" ? `
-        <div class="rw-search-grid">
-          <div class="rw-filter-item" style="flex: 0 0 auto;">
-            <label>Input ID / NIS Siswa:</label>
-            <div class="rw-scan-row">
-              <div class="rw-input-wrap">
-                <input type="text" class="rw-input-text rw-input-nis" placeholder="Scan QR / ketik NIS...">
-                <button type="button" class="rw-clear-btn rw-clear-nis" title="Hapus" hidden>✕</button>
-              </div>
-              <button type="button" class="rw-btn-primary rw-btn-cek">Cek</button>
-            </div>
-          </div>
-          <div class="rw-result-divider" style="display:none; width:1px; align-self:stretch; background:#e2e8f0;"></div>
-          <div class="rw-student-box" style="display:none; flex:1; flex-direction:column; justify-content:center; gap:6px; font-size:14px;">
-            <div style="display:flex; align-items:baseline;">
-              <span style="width:105px; font-weight:600; color:#64748b;">Nama Siswa</span>
-              <span style="margin-right:8px; color:#64748b;">:</span>
-              <span class="rw-res-nama" style="font-weight:700; color:#0f172a;">-</span>
-            </div>
-            <div style="display:flex; align-items:baseline;">
-              <span style="width:105px; font-weight:600; color:#64748b;">Kelas</span>
-              <span style="margin-right:8px; color:#64748b;">:</span>
-              <span class="rw-res-kelas" style="font-weight:700; color:#0f172a;">-</span>
-            </div>
-          </div>
+  container.innerHTML = `
+    <div class="custom-select-trigger" tabindex="0" role="button" aria-haspopup="listbox" aria-expanded="false">
+      <span class="custom-select-label">${initialOpt.label}</span>
+      <svg class="custom-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </div>
+    <div class="custom-select-menu" role="listbox">
+      ${options.map(opt => `
+        <div class="custom-select-option ${opt.value === initialOpt.value ? "selected" : ""}" data-value="${opt.value}" role="option">
+          ${opt.label}
         </div>
-      ` : "";
+      `).join("")}
+    </div>
+  `;
 
-      const chartCardHTML = `
-        <div class="rw-chart-card">
-          ${this.layoutVariant === "siswa-split" ? `
-            <div class="rw-chart-topbar">
-              <span class="rw-chart-detail-bar">Klik titik pada grafik untuk melihat detail jam masuk &amp; pulang</span>
-              <span class="rw-chart-hint">↔️ Geser atau tarik kurva jika periode panjang</span>
-            </div>
-          ` : ""}
+  const trigger = container.querySelector(".custom-select-trigger");
+  const labelEl = container.querySelector(".custom-select-label");
+  const menu = container.querySelector(".custom-select-menu");
 
-          <div class="rw-chart-scroll">
-            <div class="rw-chart-inner">
-              <canvas class="rw-trend-canvas"></canvas>
-            </div>
-          </div>
+  function closeMenu() {
+    container.classList.remove("open");
+    trigger.setAttribute("aria-expanded", "false");
+  }
 
-          <div class="rw-legend-grid">
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#15803d;"></span><span>Tepat Waktu / Dispensasi / Prakerin / Daring</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#d97706;"></span><span>Terlambat</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#c2410c;"></span><span>Sangat Terlambat</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#b91c1c;"></span><span>Sangat Terlambat Sekali</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#7c3aed;"></span><span>Hadir Tidak Presensi</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#0284c7;"></span><span>Izin</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#0891b2;"></span><span>Sakit</span></div>
-            <div class="rw-legend-item"><span class="rw-dot-legend" style="background:#111827;"></span><span>Alpa</span></div>
-          </div>
-        </div>
-      `;
+  function openMenu() {
+    Object.values(CUSTOM_SELECT_INSTANCES).forEach(inst => {
+      if (inst && inst.container !== container) inst.close();
+    });
+    container.classList.add("open");
+    trigger.setAttribute("aria-expanded", "true");
+  }
 
-      const bodyHTML = this.layoutVariant === "siswa-split" ? `
-        <div class="rw-split-layout">
-          <!-- KIRI (3/4): KURVA / LOG -->
-          <div class="rw-pane-left">
-            <div class="rw-pane-header">
-              <div class="rw-pane-title-group">
-                <span class="rw-pane-title rw-period-title">Riwayat Presensi 1 Bulan Terakhir</span>
-                <span class="rw-discipline-pill is-good" style="display:none;">-</span>
-              </div>
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    container.classList.contains("open") ? closeMenu() : openMenu();
+  });
 
-              <div class="rw-mode-switch" role="tablist" aria-label="Mode Tampilan Data">
-                <button type="button" class="rw-mode-btn active" data-view="chart">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                  </svg>
-                  <span>Kurva</span>
-                </button>
-                <button type="button" class="rw-mode-btn" data-view="log">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="8" y1="6" x2="21" y2="6"></line>
-                    <line x1="8" y1="12" x2="21" y2="12"></line>
-                    <line x1="8" y1="18" x2="21" y2="18"></line>
-                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                  </svg>
-                  <span>Log</span>
-                </button>
-              </div>
-            </div>
+  menu.addEventListener("click", (e) => {
+    const optEl = e.target.closest(".custom-select-option");
+    if (!optEl) return;
+    e.stopPropagation();
 
-            <div class="rw-view-chart">${chartCardHTML}</div>
+    const val = optEl.dataset.value;
+    const text = optEl.textContent.trim();
 
-            <div class="rw-view-log" style="display:none;">
-              <div class="rw-log-meta">
-                <span>Catatan jam masuk, pulang, dan status kehadiran</span>
-                <span class="data-count-badge rw-log-count">0 Hari</span>
-              </div>
-              <div class="rw-log-table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Tanggal</th>
-                      <th>Masuk</th>
-                      <th>Status</th>
-                      <th>Pulang</th>
-                      <th>Keterangan</th>
-                    </tr>
-                  </thead>
-                  <tbody class="rw-log-tbody"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+    container.dataset.value = val;
+    labelEl.textContent = text;
+    menu.querySelectorAll(".custom-select-option").forEach(el => el.classList.remove("selected"));
+    optEl.classList.add("selected");
 
-          <!-- DIVIDER VERTIKAL -->
-          <div class="rw-vertical-divider" aria-hidden="true"></div>
+    closeMenu();
+    if (typeof onChangeCallback === "function") onChangeCallback(val, text);
+  });
 
-          <!-- KANAN (1/4): REKAP KEHADIRAN PER KELOMPOK CARD -->
-          <div class="rw-pane-right">
-            <div class="rw-pane-header">
-              <span class="rw-pane-title">Rekap Kehadiran</span>
-              <span class="rate-pill-badge rw-rate-pill">0%</span>
-            </div>
+  const instance = {
+    container,
+    getValue: () => container.dataset.value,
+    getLabel: () => labelEl.textContent.trim(),
+    close: closeMenu
+  };
+  CUSTOM_SELECT_INSTANCES[containerId] = instance;
+  return instance;
+}
 
-            <div class="rw-rekap-cards-stack">
-              <!-- Card 1: Kehadiran -->
-              <div class="rw-rekap-group-card rw-card-hadir" style="display:none;">
-                <div class="rw-group-card-header">
-                  <span class="rw-group-card-title">Kehadiran</span>
-                  <span class="rw-group-total-badge tone-badge-hadir rw-badge-total-hadir">0</span>
-                </div>
-                <div class="rw-group-items-flex">
-                  <div class="num-box tone-hadir" data-stat="tepat" style="display:none;">
-                    <span class="num-box-lbl">Tepat Waktu</span>
-                    <span class="num-box-val">0</span>
-                  </div>
-                  <div class="num-box tone-late" data-stat="terlambat" style="display:none;">
-                    <span class="num-box-lbl">Terlambat</span>
-                    <span class="num-box-val">0</span>
-                  </div>
-                  <div class="num-box tone-sangat-late" data-stat="sangat_terlambat" style="display:none;">
-                    <span class="num-box-lbl">Sangat Terlambat</span>
-                    <span class="num-box-val">0</span>
-                  </div>
-                  <div class="num-box tone-sangat-late-sekali" data-stat="sangat_terlambat_sekali" style="display:none;">
-                    <span class="num-box-lbl">Sangat Terlambat Sekali</span>
-                    <span class="num-box-val">0</span>
-                  </div>
-                  <div class="num-box tone-htp" data-stat="htp" style="display:none;">
-                    <span class="num-box-lbl">Hadir Tidak Presensi</span>
-                    <span class="num-box-val">0</span>
-                  </div>
-                </div>
-              </div>
+/* ==========================================================================
+   INITIALIZATION & THEME SYNC
+   ========================================================================== */
+document.addEventListener("DOMContentLoaded", () => {
+  setAppTheme(currentTheme, false);
+  populateIdentityUI();
+  initGreetingAndRank();
+  renderRiwayatIzinModal();
+  loadDashboardData();
 
-              <!-- Card 2: Lainnya / Aktivitas Khusus -->
-              <div class="rw-rekap-group-card rw-card-lainnya" style="display:none;">
-                <div class="rw-group-card-header">
-                  <span class="rw-group-card-title">Lainnya</span>
-                  <span class="rw-group-total-badge tone-badge-lainnya rw-badge-total-lainnya">0</span>
-                </div>
-                <div class="rw-group-items-flex">
-                  <div class="num-box tone-daring" data-stat="daring" style="display:none;">
-                    <span class="num-box-lbl">Daring</span>
-                    <span class="num-box-val">0</span>
-                  </div>
-                  <div class="num-box tone-prakerin" data-stat="prakerin" style="display:none;">
-                    <span class="num-box-lbl">Prakerin</span>
-                    <span class="num-box-val">0</span>
-                  </div>
-                  <div class="num-box tone-dispensasi" data-stat="dispensasi" style="display:none;">
-                    <span class="num-box-lbl">Dispensasi</span>
-                    <span class="num-box-val">0</span>
-                  </div>
-                </div>
-              </div>
+  const idSiswa = localStorage.getItem("idSiswa");
+  if (idSiswa && typeof RiwayatWidget !== "undefined") {
+    RiwayatWidget.init({
+      containerId: "siswaRiwayatWidgetContainer",
+      apiUrl: API_URL,
+      mode: "siswa",
+      layoutVariant: "siswa-split",
+      defaultRange: "1m",
+      idSiswa: idSiswa
+    });
+  }
+});
 
-              <!-- Card 3: Tidak Hadir -->
-              <div class="rw-rekap-group-card rw-card-absen" style="display:none;">
-                <div class="rw-group-card-header">
-                  <span class="rw-group-card-title">Tidak Hadir</span>
-                  <span class="rw-group-total-badge tone-badge-absen rw-badge-total-absen">0</span>
-                </div>
-                <div class="rw-group-items-flex">
-                  <div class="num-box tone-sakit" data-stat="sakit" style="display:none;">
-                    <span class="num-box-lbl">Sakit</span>
-                    <span class="num-box-val">0</span>
-                  </div>
-                  <div class="num-box tone-izin" data-stat="izin" style="display:none;">
-                    <span class="num-box-lbl">Izin</span>
-                    <span class="num-box-val">0</span>
-                  </div>
-                  <div class="num-box tone-alpa" data-stat="alpa" style="display:none;">
-                    <span class="num-box-lbl">Alpa</span>
-                    <span class="num-box-val">0</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+document.addEventListener("click", (e) => {
+  const themeWrap = document.querySelector(".theme-picker-wrapper");
+  const themePop = document.getElementById("themePopover");
+  if (themeWrap && themePop && !themeWrap.contains(e.target)) {
+    themePop.classList.remove("open", "is-open");
+  }
 
-            <div class="rw-empty-rekap-note" style="display:none; text-align:center; font-size:12px; color:#64748b; padding:18px 8px;">
-              Belum ada catatan presensi pada periode ini.
-            </div>
-          </div>
-        </div>
-      ` : `
-        <div class="rw-stats-row">
-          <div class="rw-stat-pill rw-tone-green" data-stat="tepat" style="display:none;"><label>Tepat Waktu</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-amber" data-stat="terlambat" style="display:none;"><label>Terlambat</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-purple" data-stat="htp" style="display:none;"><label>Tidak Presensi</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-green" data-stat="prakerin" style="display:none;"><label>Prakerin</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-green" data-stat="dispensasi" style="display:none;"><label>Dispensasi</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-green" data-stat="daring" style="display:none;"><label>Daring</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-cyan" data-stat="sakit" style="display:none;"><label>Sakit</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-blue" data-stat="izin" style="display:none;"><label>Izin</label><span>0</span></div>
-          <div class="rw-stat-pill rw-tone-red" data-stat="alpa" style="display:none;"><label>Alpa</label><span>0</span></div>
-        </div>
-        ${chartCardHTML}
-      `;
+  const profWrap = document.querySelector(".user-profile-wrapper");
+  const profPop = document.getElementById("profilePopover");
+  if (profWrap && profPop && !profWrap.contains(e.target)) {
+    profPop.classList.remove("open", "is-open");
+  }
 
-      this.container.innerHTML = `
-        <div class="rw-container">
-          ${searchHeaderHTML}
+  if (!e.target.closest(".custom-select-container")) {
+    Object.values(CUSTOM_SELECT_INSTANCES).forEach(inst => inst && inst.close());
+  }
+});
 
-          <div class="rw-empty-box">
-            ${this.mode === "piket"
-              ? `Silakan <strong>scan kartu QR siswa</strong> atau masukkan <strong>NIS</strong> di atas untuk melihat grafik riwayat kehadiran.`
-              : `Memuat riwayat presensi...`}
-          </div>
+function toggleThemePopover(e) {
+  if (e) e.stopPropagation();
+  const pop = document.getElementById("themePopover");
+  const profPop = document.getElementById("profilePopover");
+  if (profPop) profPop.classList.remove("open", "is-open");
+  if (pop) pop.classList.toggle("open");
+}
 
-          <div class="rw-loading-box" style="display:none;">
-            <div class="rw-dots"><span></span><span></span><span></span></div>
-            <div class="rw-loading-text">Memuat riwayat presensi...</div>
-          </div>
+function toggleProfilePopover(e) {
+  if (e) e.stopPropagation();
+  const pop = document.getElementById("profilePopover");
+  const themePop = document.getElementById("themePopover");
+  if (themePop) themePop.classList.remove("open", "is-open");
+  if (pop) pop.classList.toggle("is-open");
+}
 
-          <div class="rw-result-wrap" style="display:none;">
-            <div class="rw-toolbar-row">
-              <div class="rw-range-wrap">
-                <div class="rw-range-dropdown" data-value="${this.defaultRange}"></div>
-              </div>
+function setAppTheme(themeKey, regenerateQr = true) {
+  if (!THEME_PALETTES[themeKey]) themeKey = "burgundy";
+  currentTheme = themeKey;
+  localStorage.setItem("sisensi_active_theme", themeKey);
 
-              <div class="rw-inline-subfilter rw-sub-semester" style="display:none;">
-                <div class="rw-sel-ta-sem" data-value="" style="flex:1; min-width:140px;"></div>
-                <div class="rw-sel-sem-type" data-value="" style="flex:1.2; min-width:165px;"></div>
-                <button type="button" class="rw-btn-primary rw-apply-sem">Terapkan</button>
-              </div>
+  document.documentElement.setAttribute("data-theme", themeKey);
+  document.body.setAttribute("data-theme", themeKey);
 
-              <div class="rw-inline-subfilter rw-sub-ta" style="display:none;">
-                <div class="rw-sel-ta-full" data-value="" style="flex:1; min-width:155px;"></div>
-                <button type="button" class="rw-btn-primary rw-apply-ta">Terapkan</button>
-              </div>
+  document.querySelectorAll(".theme-swatch-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.themeVal === themeKey);
+  });
 
-              <div class="rw-inline-subfilter rw-sub-custom" style="display:none;">
-                <input type="date" class="rw-date-start" title="Dari Tanggal">
-                <span class="rw-date-sep">s.d.</span>
-                <input type="date" class="rw-date-end" title="Sampai Tanggal">
-                <button type="button" class="rw-btn-primary rw-apply-custom">Terapkan</button>
-              </div>
-            </div>
+  const themePop = document.getElementById("themePopover");
+  if (themePop) themePop.classList.remove("open", "is-open");
 
-            ${bodyHTML}
-          </div>
-        </div>
-      `;
+  if (regenerateQr) {
+    cachedQrDataUrl = "";
+    if (document.getElementById("qrModalOverlay")?.classList.contains("active")) {
+      generateAndCacheQRCard();
+    }
+  }
 
-      this.toolbarEl = this.q(".rw-toolbar-row");
+  if (window.RiwayatWidget?.store?.currentFiltered) {
+    RiwayatWidget.renderTrendChart(
+      RiwayatWidget.store.currentFiltered,
+      RiwayatWidget.store.activeRange
+    );
+  }
+}
 
-      // Pindahkan toolbar ke header card utama jika tersedia (Portal Siswa)
-      const externalHeader = document.querySelector("#unifiedAnalyticsCard .unified-card-header");
-      if (this.layoutVariant === "siswa-split" && externalHeader && this.toolbarEl) {
-        externalHeader.querySelectorAll(".rw-toolbar-row").forEach(old => old.remove());
-        this.toolbarEl.style.marginBottom = "0";
-        this.toolbarEl.style.display = "none";
-        externalHeader.appendChild(this.toolbarEl);
-      }
+/* ==========================================================================
+   IDENTITAS, SAPAAN & PERINGKAT KEDISIPLINAN
+   ========================================================================== */
+function populateIdentityUI() {
+  const initial = (namaSiswa.trim()[0] || "S").toUpperCase();
 
-      // Bind event tombol-tombol internal
-      if (this.mode === "piket") {
-        const inp = this.q(".rw-input-nis");
-        const clr = this.q(".rw-clear-nis");
-        const btnCek = this.q(".rw-btn-cek");
+  setText("namaSiswa", namaSiswa);
+  setText("kelasSiswa", kelasSiswa);
+  setText("greetingStudentName", namaSiswa);
 
-        inp?.addEventListener("input", () => { if (clr) clr.hidden = !inp.value; });
-        inp?.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") { e.preventDefault(); this.searchByNis(); }
-        });
-        clr?.addEventListener("click", () => {
-          if (inp) { inp.value = ""; inp.focus(); }
-          clr.hidden = true;
-        });
-        btnCek?.addEventListener("click", () => this.searchByNis());
-      }
+  setText("profilAvatarLarge", initial);
+  setText("profilNama", namaSiswa);
+  setText("profilNamaKelas", kelasSiswa);
+  setText("profilNis", idSiswa);
 
-      if (this.layoutVariant === "siswa-split") {
-        this.qa(".rw-mode-btn").forEach(btn => {
-          btn.addEventListener("click", () => {
-            const view = btn.getAttribute("data-view");
-            this.switchViewMode(view);
-          });
-        });
-      }
+  setText("modalBiodataAvatar", initial);
+  setText("modalBiodataNama", namaSiswa);
+  setText("modalBiodataKelas", kelasSiswa);
+  setText("modalBiodataNis", idSiswa);
 
-      this.q(".rw-apply-sem")?.addEventListener("click", () => this.applySemesterFilter());
-      this.q(".rw-apply-ta")?.addEventListener("click", () => this.applyTaFilter());
-      this.q(".rw-apply-custom")?.addEventListener("click", () => this.applyCustomDateFilter());
-    },
+  // Extract jurusan dari nama kelas jika tersedia
+  let jurusan = "Kompetensi Keahlian Terdaftar";
+  const upperKelas = kelasSiswa.toUpperCase();
+  if (upperKelas.includes("FARMASI")) jurusan = "Farmasi Klinis dan Komunitas";
+  else if (upperKelas.includes("PERAWAT") || upperKelas.includes("KEPERAWATAN")) jurusan = "Asisten Keperawatan";
+  else if (upperKelas.includes("RPL")) jurusan = "Rekayasa Perangkat Lunak";
+  else if (upperKelas.includes("TKJ")) jurusan = "Teknik Komputer dan Jaringan";
+  else if (upperKelas.includes("TLM") || upperKelas.includes("ANALIS")) jurusan = "Teknologi Laboratorium Medik";
 
-    switchViewMode(view) {
-      this.store.activeViewMode = view === "log" ? "log" : "chart";
-      this.qa(".rw-mode-btn").forEach(b => {
-        b.classList.toggle("active", b.getAttribute("data-view") === this.store.activeViewMode);
+  setText("profilJurusan", jurusan);
+  setText("modalBiodataJurusan", jurusan);
+  setText("profilNisn", localStorage.getItem("nisnSiswa") || "-");
+  setText("modalBiodataNisn", localStorage.getItem("nisnSiswa") || "-");
+  setText("profilJk", localStorage.getItem("jkSiswa") || "-");
+  setText("modalBiodataJk", localStorage.getItem("jkSiswa") || "-");
+  setText("profilTtl", localStorage.getItem("ttlSiswa") || "-");
+  setText("modalBiodataTtl", localStorage.getItem("ttlSiswa") || "-");
+}
+
+function initGreetingAndRank() {
+  const hour = new Date().getHours();
+  let salutation = "Selamat Malam 🌙";
+  if (hour >= 4 && hour < 11) salutation = "Selamat Pagi ☀️";
+  else if (hour >= 11 && hour < 15) salutation = "Selamat Siang 🌤️";
+  else if (hour >= 15 && hour < 18) salutation = "Selamat Sore 🌇";
+
+  setText("greetingSalutation", salutation);
+
+  const myRow = getKlasemenDataList().find(item => item.isMe);
+  if (myRow) {
+    setText("rankNumber", `#${myRow.rank}`);
+  }
+}
+
+/* ==========================================================================
+   FETCH DATA UTAMA & PRESENSI HARI INI
+   ========================================================================== */
+async function loadDashboardData() {
+  showLoading(true, "Memuat data presensi...");
+  try {
+    const res = await fetch(`${API_URL}?action=getDashboardSiswa&idSiswa=${encodeURIComponent(idSiswa)}`);
+    const json = await res.json();
+
+    if (json && json.status === "success") {
+      cachedData = json;
+      renderTodaySection(json.hariIni || {});
+      if (json.biodata) updateBiodataFromApi(json.biodata);
+    } else {
+      throw new Error(json?.message || "Gagal memuat data");
+    }
+  } catch (err) {
+    console.warn("Menggunakan fallback data lokal:", err);
+    cachedData = buildFallbackData();
+    renderTodaySection(cachedData.hariIni);
+  } finally {
+    showLoading(false);
+    if (idSiswa && typeof RiwayatWidget !== "undefined") {
+      RiwayatWidget.init({
+        containerId: "siswaRiwayatWidgetContainer",
+        apiUrl: API_URL,
+        mode: "siswa",
+        layoutVariant: "siswa-split",
+        defaultRange: "1m",
+        idSiswa: idSiswa
       });
-
-      const chartView = this.q(".rw-view-chart");
-      const logView = this.q(".rw-view-log");
-      if (chartView) chartView.style.display = this.store.activeViewMode === "chart" ? "block" : "none";
-      if (logView) logView.style.display = this.store.activeViewMode === "log" ? "flex" : "none";
-
-      if (this.store.activeViewMode === "chart") {
-        this.renderTrendChart(this.store.currentFiltered, this.store.activeRange);
-      }
-    },
-
-    bindGlobalEvents() {
-      if (RiwayatWidget._globalBound) return;
-      RiwayatWidget._globalBound = true;
-
-      document.addEventListener("click", (e) => {
-        if (!e.target.closest(".rw-dropdown")) {
-          document.querySelectorAll(".rw-dropdown.open").forEach(el => el.classList.remove("open"));
-        }
-      });
-    },
-
-    createDropdown(containerEl, options, selectedValue, onSelect) {
-      if (!containerEl) return;
-      containerEl.classList.add("rw-dropdown");
-      containerEl.innerHTML = `
-        <div class="rw-dropdown-selected">
-          <span class="rw-dropdown-text"></span>
-          <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </div>
-        <div class="rw-dropdown-menu">
-          <div class="rw-dropdown-menu-inner"></div>
-        </div>
-      `;
-
-      const textSpan = containerEl.querySelector(".rw-dropdown-text");
-      const menuOuter = containerEl.querySelector(".rw-dropdown-menu");
-      const menuInner = containerEl.querySelector(".rw-dropdown-menu-inner");
-      const selectedBox = containerEl.querySelector(".rw-dropdown-selected");
-
-      const currentObj = options.find(opt => opt.value === selectedValue) || options[0] || { value: "", label: "-" };
-      textSpan.innerText = currentObj.label;
-      containerEl.setAttribute("data-value", currentObj.value);
-
-      options.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "rw-dropdown-item";
-        div.setAttribute("data-value", item.value);
-        div.innerText = item.label;
-        menuInner.appendChild(div);
-      });
-
-      selectedBox.onclick = (e) => {
-        e.stopPropagation();
-        const isOpen = containerEl.classList.contains("open");
-        document.querySelectorAll(".rw-dropdown.open").forEach(el => el.classList.remove("open"));
-        if (!isOpen) containerEl.classList.add("open");
-      };
-
-      menuOuter.onclick = (e) => {
-        e.stopPropagation();
-        const item = e.target.closest(".rw-dropdown-item");
-        if (!item) return;
-        const val = item.getAttribute("data-value");
-        const lbl = item.innerText;
-        textSpan.innerText = lbl;
-        containerEl.setAttribute("data-value", val);
-        containerEl.classList.remove("open");
-        if (typeof onSelect === "function") onSelect(val, lbl);
-      };
-    },
-
-    initRangeDropdown() {
-      const rangeDropEl = this.q(".rw-range-dropdown");
-      const rangeOptions = [
-        { value: "1w", label: "1 Minggu Terakhir" },
-        { value: "1m", label: "1 Bulan Terakhir" },
-        { value: "semester_select", label: "Per Semester" },
-        { value: "ta_select", label: "Per Tahun Ajaran" },
-        { value: "custom", label: "Kustom Rentang Tanggal" }
-      ];
-
-      this.createDropdown(rangeDropEl, rangeOptions, this.defaultRange, async (val) => {
-        this.q(".rw-sub-semester").style.display = "none";
-        this.q(".rw-sub-ta").style.display = "none";
-        this.q(".rw-sub-custom").style.display = "none";
-
-        if (val === "semester_select") {
-          this.q(".rw-sub-semester").style.display = "flex";
-        } else if (val === "ta_select") {
-          this.q(".rw-sub-ta").style.display = "flex";
-        } else if (val === "custom") {
-          this.q(".rw-sub-custom").style.display = "flex";
-        } else if (val === "1m") {
-          if (await this.ensureFullArchive()) this.applyFilterRange("1m");
-        } else {
-          this.applyFilterRange(val);
-        }
-      });
-    },
-
-    searchByNis() {
-      const nis = this.q(".rw-input-nis")?.value.trim() || "";
-      if (!nis) {
-        this.notify("Masukkan NIS atau scan barcode kartu siswa terlebih dahulu.", "info");
-        this.q(".rw-input-nis")?.focus();
-        return;
-      }
-      this.loadStudentHistory(nis);
-    },
-
-    setSearchDisabled(isDisabled) {
-      const grid = this.q(".rw-search-grid");
-      if (!grid) return;
-      grid.classList.toggle("is-loading", isDisabled);
-      const inp = this.q(".rw-input-nis");
-      const clr = this.q(".rw-clear-nis");
-      const btn = this.q(".rw-btn-cek");
-      if (inp) inp.disabled = isDisabled;
-      if (clr) clr.disabled = isDisabled;
-      if (btn) btn.disabled = isDisabled;
-    },
-
-    async loadStudentHistory(idSiswa) {
-      const cleanId = String(idSiswa || "").trim();
-      if (!cleanId) return;
-
-      const placeholderBox = this.q(".rw-empty-box");
-      const loadingBox = this.q(".rw-loading-box");
-      const loadingText = this.q(".rw-loading-text");
-      const resultWrap = this.q(".rw-result-wrap");
-      const dividerEl = this.q(".rw-result-divider");
-      const studentBoxEl = this.q(".rw-student-box");
-
-      placeholderBox.style.display = "none";
-      resultWrap.style.display = "none";
-      if (this.toolbarEl && !this.container.contains(this.toolbarEl)) {
-        this.toolbarEl.style.display = "none";
-      }
-      if (loadingText) loadingText.textContent = "Memuat riwayat presensi terkini...";
-      loadingBox.style.display = "flex";
-      if (dividerEl) dividerEl.style.display = "none";
-      if (studentBoxEl) studentBoxEl.style.display = "none";
-
-      this.setSearchDisabled(true);
-
-      try {
-        const needArchiveImmediately = this.defaultRange !== "1w";
-        const fetchMode = needArchiveImmediately ? "archive" : "recent";
-        const isFull = Boolean(this.store.fullCache[cleanId]) || needArchiveImmediately;
-        let data = this.store.fullCache[cleanId] || (!needArchiveImmediately ? this.store.recentCache[cleanId] : null);
-
-        if (!data) {
-          const response = await fetch(this.apiUrl, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({
-              action: "getHistoryPresensiSiswa",
-              idSiswa: cleanId,
-              mode: fetchMode
-            })
-          });
-
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          data = await response.json();
-          if (!data || data.success === false) {
-            throw new Error(data?.message || "Data siswa tidak ditemukan.");
-          }
-          if (fetchMode === "archive") this.store.fullCache[cleanId] = data;
-          else this.store.recentCache[cleanId] = data;
-        }
-
-        this.store.hasFullArchive = isFull;
-        this.store.currentSiswa = data.siswa || { id_siswa: cleanId, nama: "Siswa", kelas: "-" };
-        this.store.rawPresensi = Array.isArray(data.rawPresensi) ? data.rawPresensi : [];
-        this.store.filterOptions = data.filterOptions || { taList: [], semesterMap: {} };
-        this.store.selectedDotIndex = null;
-
-        if (this.mode === "piket") {
-          const namaEl = this.q(".rw-res-nama");
-          const kelasEl = this.q(".rw-res-kelas");
-          if (namaEl) namaEl.textContent = this.store.currentSiswa.nama || "-";
-          if (kelasEl) kelasEl.textContent = this.store.currentSiswa.kelas || "-";
-          if (dividerEl) dividerEl.style.display = "block";
-          if (studentBoxEl) studentBoxEl.style.display = "flex";
-        }
-
-        this.populateSubFilters();
-
-        const rangeDropEl = this.q(".rw-range-dropdown");
-        if (rangeDropEl) {
-          const txt = rangeDropEl.querySelector(".rw-dropdown-text");
-          if (txt) txt.innerText = this.defaultRange === "1m" ? "1 Bulan Terakhir" : "1 Minggu Terakhir";
-          rangeDropEl.setAttribute("data-value", this.defaultRange);
-        }
-        this.q(".rw-sub-semester").style.display = "none";
-        this.q(".rw-sub-ta").style.display = "none";
-        this.q(".rw-sub-custom").style.display = "none";
-
-        loadingBox.style.display = "none";
-        resultWrap.style.display = "block";
-        if (this.toolbarEl && !this.container.contains(this.toolbarEl)) {
-          this.toolbarEl.style.display = "flex";
-        }
-
-        this.applyFilterRange(this.defaultRange);
-      } catch (err) {
-        console.error("[RiwayatWidget] Gagal load history:", err);
-        if (dividerEl) dividerEl.style.display = "none";
-        if (studentBoxEl) studentBoxEl.style.display = "none";
-        loadingBox.style.display = "none";
-        placeholderBox.innerHTML = `<span style="color:#b91c1c; font-weight:600;">⚠️ ${err.message}</span>`;
-        placeholderBox.style.display = "block";
-      } finally {
-        this.setSearchDisabled(false);
-      }
-    },
-
-    populateSubFilters() {
-      const taList = this.store.filterOptions.taList || [];
-      const selTaSem = this.q(".rw-sel-ta-sem");
-      const selTaFull = this.q(".rw-sel-ta-full");
-      const selSem = this.q(".rw-sel-sem-type");
-
-      if (taList.length === 0) {
-        const emptyOpt = [{ value: "", label: "Tidak ada data TA" }];
-        this.createDropdown(selTaSem, emptyOpt, "", null);
-        this.createDropdown(selTaFull, emptyOpt, "", null);
-        this.createDropdown(selSem, [{ value: "", label: "-" }], "", null);
-        return;
-      }
-
-      const taOptions = taList.map(ta => ({ value: ta, label: `TA ${ta}` }));
-      this.createDropdown(selTaSem, taOptions, taList[0], () => this.updateSemesterOptions());
-      this.createDropdown(selTaFull, taOptions, taList[0], null);
-      this.updateSemesterOptions();
-    },
-
-    updateSemesterOptions() {
-      const selectedTa = this.q(".rw-sel-ta-sem")?.getAttribute("data-value") || "";
-      const selSem = this.q(".rw-sel-sem-type");
-      const sems = this.store.filterOptions.semesterMap[selectedTa] || [];
-      const semOptions = sems.length > 0
-        ? sems.map(sem => ({
-            value: sem,
-            label: sem === "Ganjil" ? "Ganjil (Semester 1)" : (sem === "Genap" ? "Genap (Semester 2)" : sem)
-          }))
-        : [{ value: "", label: "Tidak ada semester" }];
-
-      this.createDropdown(selSem, semOptions, semOptions[0].value, null);
-    },
-
-    async ensureFullArchive() {
-      const cleanId = String(this.store.currentSiswa?.id_siswa || "").trim();
-      if (!cleanId) return false;
-      if (this.store.hasFullArchive) return true;
-
-      if (this.store.fullCache[cleanId]) {
-        const cached = this.store.fullCache[cleanId];
-        this.store.rawPresensi = Array.isArray(cached.rawPresensi) ? cached.rawPresensi : [];
-        this.store.filterOptions = cached.filterOptions || this.store.filterOptions;
-        this.store.hasFullArchive = true;
-        return true;
-      }
-
-      const loadingBox = this.q(".rw-loading-box");
-      const loadingText = this.q(".rw-loading-text");
-      const resultWrap = this.q(".rw-result-wrap");
-
-      resultWrap.style.display = "none";
-      if (loadingText) loadingText.textContent = "Memuat arsip presensi lintas semester...";
-      loadingBox.style.display = "flex";
-      this.setSearchDisabled(true);
-
-      try {
-        const response = await fetch(this.apiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({
-            action: "getHistoryPresensiSiswa",
-            idSiswa: cleanId,
-            mode: "archive"
-          })
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        if (!data || data.success === false) {
-          throw new Error(data?.message || "Gagal memuat arsip presensi.");
-        }
-
-        this.store.fullCache[cleanId] = data;
-        this.store.rawPresensi = Array.isArray(data.rawPresensi) ? data.rawPresensi : [];
-        this.store.filterOptions = data.filterOptions || this.store.filterOptions;
-        this.store.hasFullArchive = true;
-        this.populateSubFilters();
-
-        loadingBox.style.display = "none";
-        resultWrap.style.display = "block";
-        return true;
-      } catch (err) {
-        console.error("[RiwayatWidget] Gagal load arsip penuh:", err);
-        loadingBox.style.display = "none";
-        resultWrap.style.display = "block";
-        this.notify(err.message || "Gagal memuat arsip lintas semester.", "error");
-        return false;
-      } finally {
-        this.setSearchDisabled(false);
-      }
-    },
-
-    async applySemesterFilter() {
-      const ta = this.q(".rw-sel-ta-sem")?.getAttribute("data-value") || "";
-      const sem = this.q(".rw-sel-sem-type")?.getAttribute("data-value") || "";
-      if (!ta || !sem) return;
-      if (await this.ensureFullArchive()) {
-        this.applyFilterRange("semester", ta, sem);
-      }
-    },
-
-    async applyTaFilter() {
-      const ta = this.q(".rw-sel-ta-full")?.getAttribute("data-value") || "";
-      if (!ta) return;
-      if (await this.ensureFullArchive()) {
-        this.applyFilterRange("tahun_ajaran", ta);
-      }
-    },
-
-    async applyCustomDateFilter() {
-      const start = this.q(".rw-date-start")?.value || "";
-      const end = this.q(".rw-date-end")?.value || "";
-      if (!start || !end) {
-        this.notify("Pilih tanggal mulai dan tanggal akhir terlebih dahulu.", "info");
-        return;
-      }
-      if (start > end) {
-        this.notify("Tanggal mulai tidak boleh melebihi tanggal akhir.", "error");
-        return;
-      }
-      if (await this.ensureFullArchive()) {
-        this.applyFilterRange("custom", start, end);
-      }
-    },
-
-    normalizeDateKey(value) {
-      if (!value) return "";
-      const raw = String(value).trim();
-      let m = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-      if (m) return `${m[1]}-${String(m[2]).padStart(2, "0")}-${String(m[3]).padStart(2, "0")}`;
-      m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-      if (m) return `${m[3]}-${String(m[2]).padStart(2, "0")}-${String(m[1]).padStart(2, "0")}`;
-      return raw;
-    },
-
-    applyFilterRange(rangeType, param1 = null, param2 = null) {
-      this.store.activeRange = rangeType;
-      this.store.selectedDotIndex = null;
-
-      const all = this.store.rawPresensi;
-      let filtered = all;
-      let periodTitle = "Riwayat Presensi 1 Minggu Terakhir";
-
-      if (rangeType === "1w") {
-        filtered = all.slice(-7);
-        periodTitle = "Riwayat Presensi 1 Minggu Terakhir";
-      } else if (rangeType === "1m") {
-        filtered = all.slice(-30);
-        periodTitle = "Riwayat Presensi 1 Bulan Terakhir";
-      } else if (rangeType === "semester") {
-        const targetDigit = param2 === "Ganjil" ? "1" : (param2 === "Genap" ? "2" : "");
-        filtered = all.filter(p => {
-          const matchTa = p.tahunAjaran === param1;
-          if (p.idSemester) return matchTa && p.idSemester.endsWith(targetDigit);
-          return matchTa && p.semester === param2;
-        });
-        periodTitle = `Riwayat Semester ${param2} (${param1})`;
-      } else if (rangeType === "tahun_ajaran") {
-        filtered = all.filter(p => p.tahunAjaran === param1);
-        periodTitle = `Riwayat Tahun Ajaran ${param1}`;
-      } else if (rangeType === "custom") {
-        filtered = all.filter(p => {
-          const key = this.normalizeDateKey(p.isoDate || p.tanggal);
-          return key >= param1 && key <= param2;
-        });
-        periodTitle = `Riwayat Periode ${param1} s.d. ${param2}`;
-      }
-
-      const titleEl = this.q(".rw-period-title");
-      if (titleEl) titleEl.textContent = periodTitle;
-
-      const detailBar = this.q(".rw-chart-detail-bar");
-      if (detailBar) {
-        detailBar.textContent = "Klik titik pada grafik untuk melihat detail jam masuk & pulang";
-      }
-
-      this.store.currentFiltered = filtered;
-      this.updateSummaryCards(filtered);
-      if (this.layoutVariant === "siswa-split") {
-        this.renderLogTable(filtered);
-      }
-      this.renderTrendChart(filtered, rangeType);
-
-      if (this.onDataFiltered) {
-        this.onDataFiltered(filtered, rangeType);
-      }
-    },
-
-    updateSummaryCards(data) {
-      if (this.layoutVariant === "siswa-split") {
-        const counts = {
-          tepat: 0,
-          terlambat: 0,
-          sangat_terlambat: 0,
-          sangat_terlambat_sekali: 0,
-          htp: 0,
-          daring: 0,
-          prakerin: 0,
-          dispensasi: 0,
-          sakit: 0,
-          izin: 0,
-          alpa: 0
-        };
-
-        data.forEach(item => {
-          const st = String(item.statusMasuk || "").trim().toLowerCase();
-          if (st.includes("sangat terlambat sekali")) counts.sangat_terlambat_sekali++;
-          else if (st.includes("sangat terlambat")) counts.sangat_terlambat++;
-          else if (st.includes("terlambat")) counts.terlambat++;
-          else if (st.includes("tidak presensi") || st === "htp") counts.htp++;
-          else if (st.includes("prakerin") || st.includes("pkl")) counts.prakerin++;
-          else if (st.includes("dispensasi")) counts.dispensasi++;
-          else if (st.includes("daring")) counts.daring++;
-          else if (st.includes("sakit")) counts.sakit++;
-          else if (st.includes("izin")) counts.izin++;
-          else if (st.includes("alpa")) counts.alpa++;
-          else if (st.includes("tepat") || st.includes("hadir")) counts.tepat++;
-        });
-
-        const totalKehadiran = counts.tepat + counts.terlambat + counts.sangat_terlambat +
-          counts.sangat_terlambat_sekali + counts.htp;
-        const totalLainnya = counts.daring + counts.prakerin + counts.dispensasi;
-        const totalTidakHadir = counts.sakit + counts.izin + counts.alpa;
-        const totalHadirAll = totalKehadiran + totalLainnya;
-        const totalAll = totalHadirAll + totalTidakHadir;
-        const rate = totalAll > 0 ? Math.round((totalHadirAll / totalAll) * 100) : 0;
-
-        const ratePill = this.q(".rw-rate-pill");
-        if (ratePill) ratePill.textContent = `${rate}%`;
-
-        // Update pill peringatan disiplin di sebelah judul kiri
-        const totalTelat = counts.terlambat + counts.sangat_terlambat + counts.sangat_terlambat_sekali;
-        const discPill = this.q(".rw-discipline-pill");
-        if (discPill) {
-          if (totalAll === 0) {
-            discPill.style.display = "none";
-          } else {
-            discPill.style.display = "inline-flex";
-            discPill.classList.remove("is-good", "is-warning", "is-danger");
-            if (counts.alpa > 0 || counts.sangat_terlambat_sekali > 0) {
-              discPill.classList.add("is-danger");
-              discPill.textContent = `${counts.alpa > 0 ? counts.alpa + "x Alpa • " : ""}${totalTelat}x Terlambat • Perlu Perhatian`;
-            } else if (totalTelat > 0) {
-              discPill.classList.add("is-warning");
-              discPill.textContent = `${totalTelat}x Terlambat • Tetap Jaga Disiplin`;
-            } else {
-              discPill.classList.add("is-good");
-              discPill.textContent = `Disiplin Sangat Baik • 0 Terlambat`;
-            }
-          }
-        }
-
-        // Update masing-masing kotak status (sembunyikan jika 0)
-        Object.entries(counts).forEach(([key, val]) => {
-          const box = this.q(`.num-box[data-stat="${key}"]`);
-          if (!box) return;
-          const valEl = box.querySelector(".num-box-val");
-          if (valEl) valEl.textContent = val;
-          box.style.display = val > 0 ? "" : "none";
-        });
-
-        // Update total badge & visibilitas per card kelompok
-        const cardHadir = this.q(".rw-card-hadir");
-        const cardLainnya = this.q(".rw-card-lainnya");
-        const cardAbsen = this.q(".rw-card-absen");
-        const badgeHadir = this.q(".rw-badge-total-hadir");
-        const badgeLainnya = this.q(".rw-badge-total-lainnya");
-        const badgeAbsen = this.q(".rw-badge-total-absen");
-        const emptyNote = this.q(".rw-empty-rekap-note");
-
-        if (badgeHadir) badgeHadir.textContent = `${totalKehadiran} Hari`;
-        if (badgeLainnya) badgeLainnya.textContent = `${totalLainnya} Hari`;
-        if (badgeAbsen) badgeAbsen.textContent = `${totalTidakHadir} Hari`;
-
-        if (cardHadir) cardHadir.style.display = totalKehadiran > 0 ? "block" : "none";
-        if (cardLainnya) cardLainnya.style.display = totalLainnya > 0 ? "block" : "none";
-        if (cardAbsen) cardAbsen.style.display = totalTidakHadir > 0 ? "block" : "none";
-        if (emptyNote) emptyNote.style.display = totalAll === 0 ? "block" : "none";
-        return;
-      }
-
-      // Mode default: Piket (baris pill horizontal)
-      const counts = {
-        tepat: 0, terlambat: 0, htp: 0, prakerin: 0,
-        dispensasi: 0, daring: 0, sakit: 0, izin: 0, alpa: 0
-      };
-
-      data.forEach(item => {
-        const st = String(item.statusMasuk || "").trim().toLowerCase();
-        if (st.includes("tepat")) counts.tepat++;
-        else if (st.includes("terlambat")) counts.terlambat++;
-        else if (st.includes("tidak presensi") || st === "htp") counts.htp++;
-        else if (st.includes("prakerin") || st.includes("pkl")) counts.prakerin++;
-        else if (st.includes("dispensasi")) counts.dispensasi++;
-        else if (st.includes("daring")) counts.daring++;
-        else if (st.includes("sakit")) counts.sakit++;
-        else if (st.includes("izin")) counts.izin++;
-        else if (st.includes("alpa")) counts.alpa++;
-      });
-
-      let visibleCards = 0;
-      Object.entries(counts).forEach(([key, count]) => {
-        const boxEl = this.q(`.rw-stat-pill[data-stat="${key}"]`);
-        if (!boxEl) return;
-        const valEl = boxEl.querySelector("span");
-        if (valEl) valEl.textContent = count;
-        boxEl.style.display = count > 0 ? "" : "none";
-        if (count > 0) visibleCards++;
-      });
-
-      const rowEl = this.q(".rw-stats-row");
-      if (rowEl) rowEl.style.display = visibleCards > 0 ? "flex" : "none";
-    },
-
-    renderLogTable(data) {
-      const tbody = this.q(".rw-log-tbody");
-      const countBadge = this.q(".rw-log-count");
-      if (countBadge) countBadge.textContent = `${data.length} Hari`;
-      if (!tbody) return;
-
-      if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="padding:24px; color:#64748b;">Belum ada data presensi pada periode ini.</td></tr>`;
-        return;
-      }
-
-      const sorted = [...data].reverse();
-      tbody.innerHTML = sorted.map(item => {
-        const tgl = item.tanggal || item.isoDate || "-";
-        const jamMasuk = item.jamMasuk || "-";
-        const status = item.statusMasuk || "-";
-        const jamPulang = item.jamPulang || "-";
-        const ket = item.keterangan || item.catatan || "-";
-        return `
-          <tr>
-            <td data-label="Tanggal"><strong>${tgl}</strong></td>
-            <td data-label="Masuk">${jamMasuk}</td>
-            <td data-label="Status">${status}</td>
-            <td data-label="Pulang">${jamPulang}</td>
-            <td data-label="Keterangan">${ket}</td>
-          </tr>
-        `;
-      }).join("");
-    },
-
-    formatChartAxisDate(item) {
-      const iso = String(item.isoDate || item.date || "").trim();
-      const ymd = iso.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
-      if (ymd) return `${ymd[3].padStart(2, "0")}/${ymd[2].padStart(2, "0")}/${ymd[1].slice(-2)}`;
-
-      const str = String(item.tanggal || "").trim();
-      const dmy = str.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-      if (dmy) return `${dmy[1].padStart(2, "0")}/${dmy[2].padStart(2, "0")}/${dmy[3].slice(-2)}`;
-
-      const dmOnly = str.match(/^(\d{1,2})\/(\d{1,2})$/);
-      if (dmOnly && item.tahunAjaran) {
-        const taParts = String(item.tahunAjaran).match(/(\d{4})\D+(\d{4})/);
-        if (taParts) {
-          const monthNum = parseInt(dmOnly[2], 10);
-          const fullYear = monthNum >= 7 ? taParts[1] : taParts[2];
-          return `${dmOnly[1].padStart(2, "0")}/${dmOnly[2].padStart(2, "0")}/${fullYear.slice(-2)}`;
-        }
-      }
-      return str.slice(0, 8);
-    },
-
-    renderTrendChart(data, filterRange = "1w") {
-      const canvas = this.q(".rw-trend-canvas");
-      const wrapper = this.q(".rw-chart-inner");
-      const scrollContainer = this.q(".rw-chart-scroll");
-      if (!canvas || !wrapper || !scrollContainer) return;
-
-      const ctx = canvas.getContext("2d");
-      const dpr = window.devicePixelRatio || 1;
-      const primaryColor = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() || "#824653";
-
-      const levelColors = {
-        8: "#15803d", 7: "#d97706", 6: "#c2410c", 5: "#b91c1c",
-        4: "#7c3aed", 3: "#0284c7", 2: "#0891b2", 1: "#111827"
-      };
-
-      const getStatusInfo = (statusStr) => {
-        const s = String(statusStr || "").toLowerCase();
-        if (s.includes("prakerin") || s.includes("dispensasi") || s.includes("daring") || s.includes("tepat")) {
-          return { level: 8, color: levelColors[8], fullName: statusStr || "Tepat Waktu" };
-        }
-        if (s.includes("sangat terlambat sekali")) return { level: 5, color: levelColors[5], fullName: "Sangat Terlambat Sekali" };
-        if (s.includes("sangat terlambat")) return { level: 6, color: levelColors[6], fullName: "Sangat Terlambat" };
-        if (s.includes("terlambat")) return { level: 7, color: levelColors[7], fullName: "Terlambat" };
-        if (s.includes("tidak presensi")) return { level: 4, color: levelColors[4], fullName: "Hadir Tidak Presensi" };
-        if (s.includes("izin")) return { level: 3, color: levelColors[3], fullName: "Izin" };
-        if (s.includes("sakit")) return { level: 2, color: levelColors[2], fullName: "Sakit" };
-        if (s.includes("alpa")) return { level: 1, color: levelColors[1], fullName: "Alpa" };
-        return { level: 8, color: levelColors[8], fullName: statusStr || "Tepat Waktu" };
-      };
-
-      this.store.chartData = (data || []).map(item => {
-        const st = getStatusInfo(item.statusMasuk);
-        const jamClean = String(item.jamMasuk || "").trim();
-        const pulangClean = String(item.jamPulang || "").trim();
-        return {
-          label: this.formatChartAxisDate(item),
-          fullDate: item.tanggal || item.isoDate || "-",
-          jamMasuk: (jamClean && jamClean !== "-") ? jamClean : "",
-          jamPulang: (pulangClean && pulangClean !== "-") ? pulangClean : "-",
-          val: st.level,
-          color: st.color,
-          fullName: st.fullName
-        };
-      });
-
-      const points = this.store.chartData;
-      const parentWidth = scrollContainer.clientWidth || 680;
-      let computedWidth = parentWidth;
-
-      if (filterRange !== "1w" && points.length * 82 > parentWidth) {
-        computedWidth = points.length * 82 + 24;
-      }
-
-      wrapper.style.width = computedWidth + "px";
-      canvas.width = computedWidth * dpr;
-      canvas.height = wrapper.clientHeight * dpr;
-      ctx.scale(dpr, dpr);
-
-      const width = computedWidth;
-      const height = wrapper.clientHeight;
-      ctx.clearRect(0, 0, width, height);
-
-      if (points.length === 0) {
-        ctx.font = "500 12px Roboto";
-        ctx.fillStyle = "#64748b";
-        ctx.textAlign = "center";
-        ctx.fillText("Belum ada data presensi pada periode ini", width / 2, height / 2);
-        return;
-      }
-
-      const axisXPos = 6;
-      const paddingLeft = 52;
-      const paddingRight = 46;
-      const paddingTop = 24;
-      const paddingBottom = 56;
-      const graphWidth = width - paddingLeft - paddingRight;
-      const graphHeight = height - paddingTop - paddingBottom;
-      const bottomAxisY = height - 20;
-
-      points.forEach((item, i) => {
-        item.x = points.length === 1 ? paddingLeft + graphWidth / 2 : paddingLeft + (i / (points.length - 1)) * graphWidth;
-        item.y = paddingTop + graphHeight - ((item.val - 1) / 7) * graphHeight;
-      });
-
-      // Sumbu Y & X
+    }
+  }
+}
+
+function updateBiodataFromApi(bio) {
+  if (bio.nisn) {
+    setText("profilNisn", bio.nisn);
+    setText("modalBiodataNisn", bio.nisn);
+  }
+  if (bio.jurusan) {
+    setText("profilJurusan", bio.jurusan);
+    setText("modalBiodataJurusan", bio.jurusan);
+  }
+  if (bio.jenisKelamin) {
+    setText("profilJk", bio.jenisKelamin);
+    setText("modalBiodataJk", bio.jenisKelamin);
+  }
+  if (bio.ttl) {
+    setText("profilTtl", bio.ttl);
+    setText("modalBiodataTtl", bio.ttl);
+  }
+}
+
+function renderTodaySection(today) {
+  const nowStr = today.tanggal || new Date().toLocaleDateString("id-ID", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric"
+  });
+  setText("tanggalHariIni", nowStr);
+
+  const jamMasuk = today.jamMasuk || "-";
+  const statusMasuk = today.statusMasuk || "Belum Presensi";
+  const jamPulang = today.jamPulang || "-";
+  const statusPulang = today.statusPulang || "Belum Presensi";
+
+  setText("jamMasuk", jamMasuk);
+  setText("jamPulang", jamPulang);
+
+  const elStatusMasuk = document.getElementById("statusMasuk");
+  if (elStatusMasuk) {
+    elStatusMasuk.textContent = statusMasuk;
+    elStatusMasuk.className = "status-text " + getStatusTextClass(statusMasuk);
+  }
+
+  const elStatusPulang = document.getElementById("statusPulang");
+  if (elStatusPulang) {
+    elStatusPulang.textContent = statusPulang;
+    elStatusPulang.className = "status-text " + getStatusTextClass(statusPulang);
+  }
+}
+
+function getStatusTextClass(status) {
+  const s = (status || "").toLowerCase();
+  if (s.includes("tepat") || s.includes("hadir") || s.includes("pulang")) return "status-text-hadir";
+  if (s.includes("terlambat")) return "status-text-terlambat";
+  if (s.includes("alpa")) return "status-text-alpa";
+  if (s.includes("sakit")) return "status-text-sakit";
+  if (s.includes("izin")) return "status-text-izin";
+  if (s.includes("prakerin") || s.includes("dispensasi")) return "status-text-prakerin";
+  return "";
+}
+
+/* ==========================================================================
+   FILTER TIMELINE, REKAP BOX & PILL KEDISIPLINAN
+   ========================================================================== */
+function initFilterTimeline() {
+  const options = [
+    { value: "1w", label: "1 Minggu Terakhir" },
+    { value: "1m", label: "1 Bulan Terakhir" },
+    { value: "semester", label: "Per Semester" },
+    { value: "ta", label: "Per Tahun Ajaran" },
+    { value: "custom", label: "Kustom Rentang Tanggal" }
+  ];
+
+  initCustomSelect("filterTimelineStatistik", options, "1w", (val) => {
+    handleTimelineChange(val);
+  });
+
+  populateSemesterAndTaDropdowns();
+}
+
+function populateSemesterAndTaDropdowns() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const taList = [`${y - 1}/${y}`, `${y}/${y + 1}`];
+
+  const selTaSem = document.getElementById("selectTaForSemester");
+  const selTaFull = document.getElementById("selectTahunAjaranFull");
+
+  if (selTaSem) {
+    selTaSem.innerHTML = taList.map(ta => `<option value="${ta}">TA ${ta}</option>`).join("");
+    selTaSem.value = taList[1];
+  }
+  if (selTaFull) {
+    selTaFull.innerHTML = taList.map(ta => `<option value="${ta}">TA ${ta}</option>`).join("");
+    selTaFull.value = taList[1];
+  }
+  updateSemesterDropdownOptions();
+}
+
+function updateSemesterDropdownOptions() {
+  const selSem = document.getElementById("selectSemesterType");
+  if (!selSem) return;
+  selSem.innerHTML = `
+    <option value="ganjil">Semester Ganjil (Jul - Des)</option>
+    <option value="genap">Semester Genap (Jan - Jun)</option>
+  `;
+}
+
+function handleTimelineChange(val) {
+  const semBox = document.getElementById("semesterSelectBox");
+  const taBox = document.getElementById("thnAjaranSelectBox");
+  const custBox = document.getElementById("customDateRangeBox");
+
+  if (semBox) semBox.style.display = val === "semester" ? "flex" : "none";
+  if (taBox) taBox.style.display = val === "ta" ? "flex" : "none";
+  if (custBox) custBox.style.display = val === "custom" ? "flex" : "none";
+
+  const titleMap = {
+    "1w": "Riwayat Presensi 1 Minggu Terakhir",
+    "1m": "Riwayat Presensi 1 Bulan Terakhir",
+    "semester": "Riwayat Presensi Per Semester",
+    "ta": "Riwayat Presensi Per Tahun Ajaran",
+    "custom": "Riwayat Presensi Rentang Kustom"
+  };
+  setText("leftPaneTitle", titleMap[val] || "Riwayat Presensi Siswa");
+
+  if (val === "1w" || val === "1m") {
+    filterAndRenderHistory(val);
+  }
+}
+
+function applySemesterFilter() {
+  const ta = document.getElementById("selectTaForSemester")?.value || "";
+  const sem = document.getElementById("selectSemesterType")?.value || "ganjil";
+  setText("leftPaneTitle", `Riwayat Presensi Semester ${sem === "ganjil" ? "Ganjil" : "Genap"} (${ta})`);
+  filterAndRenderHistory("semester");
+}
+
+function applyTahunAjaranFilter() {
+  const ta = document.getElementById("selectTahunAjaranFull")?.value || "";
+  setText("leftPaneTitle", `Riwayat Presensi Tahun Ajaran ${ta}`);
+  filterAndRenderHistory("ta");
+}
+
+function applyCustomDateRange() {
+  const start = document.getElementById("inputDateStart")?.value;
+  const end = document.getElementById("inputDateEnd")?.value;
+  if (!start || !end) {
+    alert("Pilih tanggal mulai dan tanggal akhir terlebih dahulu.");
+    return;
+  }
+  setText("leftPaneTitle", `Riwayat Presensi (${start} s/d ${end})`);
+  filterAndRenderHistory("custom", { start, end });
+}
+
+function filterAndRenderHistory(mode, range = {}) {
+  const allRows = (cachedData && Array.isArray(cachedData.riwayat)) ? cachedData.riwayat : [];
+  let filtered = [...allRows];
+
+  if (mode === "1w") {
+    filtered = allRows.slice(-7);
+  } else if (mode === "1m") {
+    filtered = allRows.slice(-22);
+  } else if (mode === "custom" && range.start && range.end) {
+    const sTime = new Date(range.start).getTime();
+    const eTime = new Date(range.end).getTime();
+    filtered = allRows.filter(r => {
+      if (!r.isoDate) return true;
+      const t = new Date(r.isoDate).getTime();
+      return t >= sTime && t <= eTime;
+    });
+  }
+
+  hitungRekapBox(filtered);
+  updateHistoryWarningPill(filtered);
+  renderTabelPresensi(filtered);
+  renderTrendChart(filtered);
+}
+
+function hitungRekapBox(rows) {
+  let tepat = 0;
+  let terlambat = 0;
+  let sangatTerlambat = 0;
+  let sangatTerlambatSekali = 0;
+  let htp = 0;
+  let prakerin = 0;
+  let daring = 0;
+  let dispensasi = 0;
+  let sakit = 0;
+  let izin = 0;
+  let alpa = 0;
+
+  rows.forEach(r => {
+    const st = (r.status || "").toLowerCase().trim();
+    if (st.includes("tepat")) tepat++;
+    else if (st.includes("sangat terlambat sekali")) sangatTerlambatSekali++;
+    else if (st.includes("sangat terlambat")) sangatTerlambat++;
+    else if (st.includes("terlambat")) terlambat++;
+    else if (st.includes("tidak presensi") || st === "htp") htp++;
+    else if (st.includes("prakerin")) prakerin++;
+    else if (st.includes("daring")) daring++;
+    else if (st.includes("dispensasi")) dispensasi++;
+    else if (st.includes("sakit")) sakit++;
+    else if (st.includes("izin")) izin++;
+    else if (st.includes("alpa")) alpa++;
+  });
+
+  const totalHadir =
+    tepat +
+    terlambat +
+    sangatTerlambat +
+    sangatTerlambatSekali +
+    htp +
+    prakerin +
+    daring +
+    dispensasi;
+
+  const totalHari = totalHadir + sakit + izin + alpa;
+  const ratePersen = totalHari > 0 ? Math.round((totalHadir / totalHari) * 100) : 100;
+
+  setText("boxTepat", tepat);
+  setText("boxTerlambat", terlambat);
+  setText("boxSangatTerlambat", sangatTerlambat);
+  setText("boxSangatTerlambatSekali", sangatTerlambatSekali);
+  setText("boxHtp", htp);
+  setText("boxPrakerin", prakerin);
+  setText("boxDaring", daring);
+  setText("boxDispensasi", dispensasi);
+  setText("boxTotalHadir", totalHadir);
+  setText("boxSakit", sakit);
+  setText("boxIzin", izin);
+  setText("boxAlpa", alpa);
+  setText("boxRatePersen", `${ratePersen}%`);
+}
+
+function updateHistoryWarningPill(rows) {
+  const pill = document.getElementById("histLateWarningPill");
+  if (!pill) return;
+
+  let lateCount = 0;
+  let alpaCount = 0;
+  rows.forEach(r => {
+    const st = (r.status || "").toLowerCase();
+    if (st.includes("terlambat")) lateCount++;
+    if (st.includes("alpa")) alpaCount++;
+  });
+
+  pill.classList.remove("is-good", "is-warning", "is-danger");
+
+  if (alpaCount >= 2 || lateCount >= 4) {
+    pill.classList.add("is-danger");
+    pill.textContent = `Perlu Perhatian (${lateCount} Terlambat, ${alpaCount} Alpa)`;
+  } else if (lateCount >= 1 || alpaCount === 1) {
+    pill.classList.add("is-warning");
+    pill.textContent = `${lateCount}x Terlambat • Tetap Jaga Disiplin`;
+  } else {
+    pill.classList.add("is-good");
+    pill.textContent = "Disiplin Sangat Baik";
+  }
+}
+
+/* ==========================================================================
+   SWITCH MODE KURVA VS LOG & TABEL RIWAYAT
+   ========================================================================== */
+function switchAnalyticsMode(mode) {
+  currentAnalyticsMode = mode;
+  document.querySelectorAll(".mode-switch-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.mode === mode);
+  });
+
+  const chartView = document.getElementById("analyticsChartView");
+  const logView = document.getElementById("analyticsLogView");
+
+  if (chartView) chartView.style.display = mode === "chart" ? "flex" : "none";
+  if (logView) logView.style.display = mode === "log" ? "flex" : "none";
+
+  if (mode === "chart" && cachedData) {
+    renderTrendChart(cachedData.riwayat || []);
+  }
+}
+
+function renderTabelPresensi(rows) {
+  const countText = `${rows.length} Hari`;
+  setText("jumlahRiwayatDesktop", countText);
+  setText("jumlahRiwayatMobile", countText);
+
+  const reversed = [...rows].reverse();
+  const htmlRows = reversed.length === 0
+    ? `<tr><td colspan="5" style="padding:20px; color:#64748b;">Belum ada catatan presensi pada periode ini.</td></tr>`
+    : reversed.map(r => `
+      <tr>
+        <td data-label="Tanggal"><strong>${r.tanggal || "-"}</strong></td>
+        <td data-label="Masuk">${r.jamMasuk || "-"}</td>
+        <td data-label="Status"><span class="status-text ${getStatusTextClass(r.status)}">${r.status || "-"}</span></td>
+        <td data-label="Pulang">${r.jamPulang || "-"}</td>
+        <td data-label="Keterangan">${r.keterangan || "-"}</td>
+      </tr>
+    `).join("");
+
+  const tbodyDesk = document.querySelector("#tabelPresensiDesktop tbody");
+  const tbodyMob = document.querySelector("#tabelPresensiMobile tbody");
+  if (tbodyDesk) tbodyDesk.innerHTML = htmlRows;
+  if (tbodyMob) tbodyMob.innerHTML = htmlRows;
+}
+
+/* ==========================================================================
+   KURVA TREN KEHADIRAN & DRAG-TO-SCROLL
+   ========================================================================== */
+function initChartDragScroll() {
+  const scroller = document.getElementById("chartScrollContainer");
+  if (!scroller) return;
+
+  let isDown = false;
+  let startX = 0;
+  let scrollLeftStart = 0;
+
+  scroller.addEventListener("mousedown", (e) => {
+    isDown = true;
+    isDraggingChart = false;
+    scroller.classList.add("is-dragging");
+    startX = e.pageX - scroller.offsetLeft;
+    scrollLeftStart = scroller.scrollLeft;
+  });
+
+  scroller.addEventListener("mouseleave", () => {
+    isDown = false;
+    scroller.classList.remove("is-dragging");
+  });
+
+  scroller.addEventListener("mouseup", () => {
+    isDown = false;
+    scroller.classList.remove("is-dragging");
+    setTimeout(() => { isDraggingChart = false; }, 60);
+  });
+
+  scroller.addEventListener("mousemove", (e) => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - scroller.offsetLeft;
+    const walk = (x - startX) * 1.4;
+    if (Math.abs(walk) > 4) isDraggingChart = true;
+    scroller.scrollLeft = scrollLeftStart - walk;
+  });
+}
+
+function getStatusPointConfig(status) {
+  const s = (status || "").toLowerCase();
+  // Urutan 8 Level Sumbu Y (0 = paling atas, 7 = paling bawah) persis seperti Portal Piket
+  if (s.includes("tepat") || s.includes("prakerin") || s.includes("dispensasi")) {
+    return { level: 0, color: "#15803d", shortLabel: status || "Tepat Waktu", showTime: true };
+  }
+  if (s.includes("sangat terlambat sekali")) {
+    return { level: 3, color: "#b91c1c", shortLabel: "Sangat Terlambat Sekali", showTime: true };
+  }
+  if (s.includes("sangat terlambat")) {
+    return { level: 2, color: "#c2410c", shortLabel: "Sangat Terlambat", showTime: true };
+  }
+  if (s.includes("terlambat")) {
+    return { level: 1, color: "#d97706", shortLabel: "Terlambat", showTime: true };
+  }
+  if (s.includes("tidak presensi") || s === "htp") {
+    return { level: 4, color: "#7c3aed", shortLabel: "Hadir Tidak Presensi", showTime: false };
+  }
+  if (s.includes("izin")) {
+    return { level: 5, color: "#0284c7", shortLabel: "Izin", showTime: false };
+  }
+  if (s.includes("sakit")) {
+    return { level: 6, color: "#0891b2", shortLabel: "Sakit", showTime: false };
+  }
+  return { level: 7, color: "#111827", shortLabel: "Alpa", showTime: false };
+}
+
+function formatShortSlashDate(row) {
+  if (row.isoDate && /^\d{4}-\d{2}-\d{2}/.test(row.isoDate)) {
+    const [yyyy, mm, dd] = row.isoDate.slice(0, 10).split("-");
+    return `${dd}/${mm}/${yyyy.slice(-2)}`;
+  }
+  return row.tanggal || "-";
+}
+
+function renderTrendChart(rows) {
+  const canvas = document.getElementById("trendChartCanvas");
+  const wrapper = document.getElementById("chartInnerWrapper");
+  const scroller = document.getElementById("chartScrollContainer");
+  if (!canvas || !wrapper || !scroller) return;
+
+  const palette = THEME_PALETTES[currentTheme] || THEME_PALETTES.burgundy;
+  const pointSpacing = 105; // Jarak antar titik lega agar label status & jam tidak bertumpuk
+  const minWidth = scroller.clientWidth || 680;
+  const calculatedWidth = Math.max(minWidth, rows.length * pointSpacing + 90);
+
+  wrapper.style.width = `${calculatedWidth}px`;
+  const height = 250;
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = calculatedWidth * dpr;
+  canvas.height = height * dpr;
+  canvas.style.width = `${calculatedWidth}px`;
+  canvas.style.height = `${height}px`;
+
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, calculatedWidth, height);
+
+  const padLeft = 34;
+  const padRight = 48;
+  const padTop = 22;
+  const padBottom = 46;
+  const plotW = calculatedWidth - padLeft - padRight;
+  const plotH = height - padTop - padBottom;
+
+  // 8 Tingkat Sumbu Y + Garis Putus-putus + Titik Warna Indikator di Kiri
+  const yLevelColors = [
+    "#15803d", // 0: Tepat Waktu
+    "#d97706", // 1: Terlambat
+    "#c2410c", // 2: Sangat Terlambat
+    "#b91c1c", // 3: Sangat Terlambat Sekali
+    "#7c3aed", // 4: Hadir Tidak Presensi
+    "#0284c7", // 5: Izin
+    "#0891b2", // 6: Sakit
+    "#111827"  // 7: Alpa
+  ];
+
+  // Garis Sumbu Y (kiri) & Sumbu X (bawah)
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padLeft, padTop - 6);
+  ctx.lineTo(padLeft, height - padBottom + 12);
+  ctx.lineTo(calculatedWidth - 16, height - padBottom + 12);
+  ctx.stroke();
+
+  for (let i = 0; i < 8; i++) {
+    const y = padTop + (plotH / 7) * i;
+
+    // Garis horizontal putus-putus
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padLeft + 6, y);
+    ctx.lineTo(calculatedWidth - 16, y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Titik indikator warna di garis sumbu kiri
+    ctx.beginPath();
+    ctx.arc(padLeft, y, 3.6, 0, Math.PI * 2);
+    ctx.fillStyle = yLevelColors[i];
+    ctx.fill();
+  }
+
+  if (!rows.length) return;
+
+  chartDotPoints = rows.map((r, idx) => {
+    const cfg = getStatusPointConfig(r.status);
+    const x = rows.length === 1
+      ? padLeft + plotW / 2
+      : padLeft + 52 + ((plotW - 52) / (rows.length - 1)) * idx;
+    const y = padTop + (cfg.level / 7) * plotH;
+    return {
+      x,
+      y,
+      color: cfg.color,
+      shortLabel: cfg.shortLabel,
+      showTime: cfg.showTime,
+      data: r,
+      index: idx
+    };
+  });
+
+  // Garis Kurva Halus (Smooth Cubic Bezier)
+  ctx.beginPath();
+  chartDotPoints.forEach((p, idx) => {
+    if (idx === 0) {
+      ctx.moveTo(p.x, p.y);
+    } else {
+      const prev = chartDotPoints[idx - 1];
+      const cpX = (prev.x + p.x) / 2;
+      ctx.bezierCurveTo(cpX, prev.y, cpX, p.y, p.x, p.y);
+    }
+  });
+  ctx.strokeStyle = palette.primary;
+  ctx.lineWidth = 2.6;
+  ctx.lineCap = "round";
+  ctx.stroke();
+
+  // Titik Data, Label Status + Jam Masuk di Bawah Titik, dan Tanggal Sumbu X
+  ctx.textAlign = "center";
+
+  chartDotPoints.forEach((p) => {
+    const isSelected = p.index === selectedDotIndex;
+
+    if (isSelected) {
       ctx.beginPath();
-      ctx.strokeStyle = "#cbd5e1";
-      ctx.lineWidth = 1;
-      ctx.moveTo(axisXPos, paddingTop);
-      ctx.lineTo(axisXPos, bottomAxisY);
-      ctx.lineTo(width - 20, bottomAxisY);
-      ctx.stroke();
+      ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(15, 23, 42, 0.12)";
+      ctx.fill();
+    }
 
-      for (let level = 1; level <= 8; level++) {
-        const yPos = paddingTop + graphHeight - ((level - 1) / 7) * graphHeight;
-        ctx.strokeStyle = "#e2e8f0";
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(axisXPos + 5, yPos);
-        ctx.lineTo(width - 20, yPos);
-        ctx.stroke();
+    // Lingkaran Titik Status
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, isSelected ? 6.2 : 5, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
 
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        ctx.arc(axisXPos, yPos, 2.8, 0, Math.PI * 2);
-        ctx.fillStyle = levelColors[level];
-        ctx.fill();
+    // Teks Status langsung di bawah titik
+    ctx.font = "700 10.5px Roboto, sans-serif";
+    ctx.fillStyle = p.color;
+    ctx.fillText(p.shortLabel, p.x, p.y + 16);
+
+    // Teks Jam Masuk langsung di bawah status (jika hadir/terlambat)
+    if (p.showTime && p.data.jamMasuk && p.data.jamMasuk !== "-") {
+      ctx.font = "700 10.5px Roboto, sans-serif";
+      ctx.fillStyle = "#475569";
+      ctx.fillText(p.data.jamMasuk, p.x, p.y + 28);
+    }
+
+    // Label Tanggal Sumbu X (format 14/10/26)
+    const dateLabel = formatShortSlashDate(p.data);
+    ctx.font = "700 11px Roboto, sans-serif";
+    ctx.fillStyle = isSelected ? palette.primary : "#64748b";
+    ctx.fillText(dateLabel, p.x, height - 12);
+  });
+
+  // Auto-scroll ke data terbaru
+  scroller.scrollLeft = scroller.scrollWidth;
+
+  canvas.onclick = (e) => {
+    if (isDraggingChart) return;
+    const rect = canvas.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    let nearest = null;
+    let minDist = 26;
+    chartDotPoints.forEach(p => {
+      const dist = Math.hypot(p.x - clickX, p.y - clickY);
+      if (dist <= minDist) {
+        minDist = dist;
+        nearest = p;
       }
+    });
 
-      // Garis Kurva Bezier
-      if (points.length > 1) {
-        ctx.beginPath();
-        ctx.strokeStyle = primaryColor;
-        ctx.lineWidth = 2.5;
-        for (let i = 0; i < points.length; i++) {
-          const { x, y } = points[i];
-          if (i === 0) ctx.moveTo(x, y);
-          else {
-            const prev = points[i - 1];
-            const cpX = prev.x + (x - prev.x) / 2;
-            ctx.bezierCurveTo(cpX, prev.y, cpX, y, x, y);
-          }
-        }
-        ctx.stroke();
-      }
-
-      // Crosshair jika dot diklik
-      if (this.store.selectedDotIndex !== null && points[this.store.selectedDotIndex]) {
-        const sel = points[this.store.selectedDotIndex];
-        ctx.strokeStyle = primaryColor;
-        ctx.lineWidth = 1.4;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(sel.x, paddingTop);
-        ctx.lineTo(sel.x, bottomAxisY);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-
-      // Titik & Label Status + Jam
-      points.forEach((item, idx) => {
-        const isSelected = this.store.selectedDotIndex === idx;
-        if (isSelected) {
-          ctx.beginPath();
-          ctx.arc(item.x, item.y, 10, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(130, 70, 83, 0.22)";
-          ctx.fill();
-        }
-
-        ctx.beginPath();
-        ctx.arc(item.x, item.y, isSelected ? 6.5 : 5, 0, Math.PI * 2);
-        ctx.fillStyle = item.color;
-        ctx.fill();
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        ctx.font = isSelected ? "700 9.5px Roboto" : "500 9px Roboto";
-        ctx.textAlign = "center";
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 3;
-        ctx.strokeText(item.fullName, item.x, item.y + 14);
-        ctx.fillStyle = item.color;
-        ctx.fillText(item.fullName, item.x, item.y + 14);
-
-        if (item.jamMasuk) {
-          ctx.font = "700 9px Roboto";
-          ctx.strokeStyle = "#ffffff";
-          ctx.lineWidth = 3;
-          ctx.strokeText(item.jamMasuk, item.x, item.y + 24);
-          ctx.fillStyle = "#334155";
-          ctx.fillText(item.jamMasuk, item.x, item.y + 24);
-        }
-
-        ctx.fillStyle = isSelected ? "#0f172a" : "#64748b";
-        ctx.font = isSelected ? "700 10.5px Roboto" : "500 10px Roboto";
-        ctx.fillText(item.label, item.x, height - 6);
-      });
-
-      // Drag-to-Scroll (Desktop) & Klik Titik
-      if (!scrollContainer.dataset.hasDragScroll) {
-        scrollContainer.dataset.hasDragScroll = "true";
-        canvas.ondragstart = () => false;
-
-        let isPointerDown = false;
-        let hasDragged = false;
-        let startClientX = 0;
-        let scrollLeftStart = 0;
-
-        scrollContainer.addEventListener("mousedown", (e) => {
-          if (e.button !== 0) return;
-          isPointerDown = true;
-          hasDragged = false;
-          startClientX = e.clientX;
-          scrollLeftStart = scrollContainer.scrollLeft;
-          scrollContainer.classList.add("is-dragging");
-        });
-
-        window.addEventListener("mousemove", (e) => {
-          if (!isPointerDown) return;
-          const dx = e.clientX - startClientX;
-          if (Math.abs(dx) > 4) hasDragged = true;
-          if (hasDragged) {
-            e.preventDefault();
-            scrollContainer.scrollLeft = scrollLeftStart - dx;
-          }
-        });
-
-        window.addEventListener("mouseup", (e) => {
-          if (!isPointerDown) return;
-          isPointerDown = false;
-          scrollContainer.classList.remove("is-dragging");
-
-          if (!hasDragged && e.target === canvas) {
-            const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            let nearest = null;
-            let minDist = Infinity;
-
-            (this.store.chartData || []).forEach((pt, idx) => {
-              const d = Math.abs(pt.x - clickX);
-              if (d < minDist && d <= 32) {
-                minDist = d;
-                nearest = idx;
-              }
-            });
-
-            const prevScroll = scrollContainer.scrollLeft;
-            this.store.selectedDotIndex = (this.store.selectedDotIndex === nearest) ? null : nearest;
-
-            const detailBar = this.q(".rw-chart-detail-bar");
-            if (detailBar) {
-              if (this.store.selectedDotIndex !== null && this.store.chartData[this.store.selectedDotIndex]) {
-                const pt = this.store.chartData[this.store.selectedDotIndex];
-                detailBar.textContent = `${pt.fullDate} • ${pt.fullName} • Masuk: ${pt.jamMasuk || "-"} • Pulang: ${pt.jamPulang}`;
-              } else {
-                detailBar.textContent = "Klik titik pada grafik untuk melihat detail jam masuk & pulang";
-              }
-            }
-
-            this.renderTrendChart(this.store.currentFiltered, this.store.activeRange);
-            scrollContainer.scrollLeft = prevScroll;
-          }
-        });
-      }
+    if (nearest) {
+      selectedDotIndex = nearest.index;
+      const d = nearest.data;
+      setText(
+        "selectedDotDetailBar",
+        `📅 ${d.tanggal} • Masuk: ${d.jamMasuk || "-"} • Pulang: ${d.jamPulang || "-"} (${d.status})`
+      );
+      renderTrendChart(rows);
     }
   };
+}   
 
-  global.RiwayatWidget = RiwayatWidget;
-})(window);
+/* ==========================================================================
+   KARTU QR PRESENSI MODAL
+   ========================================================================== */
+function openQrModal() {
+  const overlay = document.getElementById("qrModalOverlay");
+  if (!overlay) return;
+  overlay.classList.add("active");
+  generateAndCacheQRCard();
+}
+
+function closeQrModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  const overlay = document.getElementById("qrModalOverlay");
+  if (overlay) overlay.classList.remove("active");
+}
+
+function generateAndCacheQRCard() {
+  const imgEl = document.getElementById("qrPreviewModal");
+  const skelEl = document.getElementById("qrModalSkeleton");
+  if (!imgEl || !skelEl) return;
+
+  if (cachedQrDataUrl) {
+    imgEl.src = cachedQrDataUrl;
+    imgEl.style.display = "block";
+    skelEl.style.display = "none";
+    return;
+  }
+
+  imgEl.style.display = "none";
+  skelEl.style.display = "flex";
+
+  const tempDiv = document.createElement("div");
+  new QRCode(tempDiv, {
+    text: idSiswa,
+    width: 260,
+    height: 260,
+    colorDark: "#0f172a",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  setTimeout(() => {
+    const qrCanvas = tempDiv.querySelector("canvas");
+    if (!qrCanvas) return;
+
+    const palette = THEME_PALETTES[currentTheme] || THEME_PALETTES.burgundy;
+    const cardCanvas = document.createElement("canvas");
+    cardCanvas.width = 420;
+    cardCanvas.height = 630;
+    const ctx = cardCanvas.getContext("2d");
+
+    // Background putih kartu
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, 420, 630);
+
+    // Header warna tema
+    ctx.fillStyle = palette.primary;
+    ctx.fillRect(0, 0, 420, 130);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 22px Oswald, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("KARTU PRESENSI DIGITAL", 210, 56);
+
+    ctx.font = "400 14px Roboto, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,0.88)";
+    ctx.fillText("SMK MEDIKACOM BANDUNG", 210, 84);
+
+    // Frame QR
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(72, 165, 276, 276);
+    ctx.drawImage(qrCanvas, 80, 173, 260, 260);
+
+    // Identitas Siswa
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "700 21px Roboto, sans-serif";
+    ctx.fillText(namaSiswa.toUpperCase(), 210, 492);
+
+    ctx.fillStyle = palette.primary;
+    ctx.font = "700 15px Roboto, sans-serif";
+    ctx.fillText(`${kelasSiswa} • NIS: ${idSiswa}`, 210, 522);
+
+    ctx.fillStyle = "#64748b";
+    ctx.font = "400 12px Roboto, sans-serif";
+    ctx.fillText("Tunjukkan kartu ini pada mesin scanner sekolah", 210, 585);
+
+    cachedQrDataUrl = cardCanvas.toDataURL("image/png");
+    imgEl.src = cachedQrDataUrl;
+    imgEl.style.display = "block";
+    skelEl.style.display = "none";
+  }, 120);
+}
+
+function downloadQRCard() {
+  if (!cachedQrDataUrl) {
+    generateAndCacheQRCard();
+    return;
+  }
+  const link = document.createElement("a");
+  link.href = cachedQrDataUrl;
+  link.download = `Kartu_QR_${namaSiswa.replace(/\s+/g, "_")}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/* ==========================================================================
+   MODALS CEPAT (IZIN KELUAR, LOG IZIN, BIODATA, KLASEMEN)
+   ========================================================================== */
+function openModalQuick(modalId) {
+  const el = document.getElementById(modalId);
+  if (el) el.classList.add("active");
+}
+
+function closeModalQuick(e, modalId) {
+  if (e && e.target !== e.currentTarget) return;
+  const el = document.getElementById(modalId);
+  if (el) el.classList.remove("active");
+}
+
+function toggleJamKembaliField() {
+  const jenis = document.getElementById("inputJenisIzinKeluar")?.value || "";
+  const field = document.getElementById("fieldJamKembali");
+  if (field) {
+    field.style.display = jenis.includes("Pulang Awal") ? "none" : "block";
+  }
+}
+
+function submitDummyIzinKeluar() {
+  const jenis = document.getElementById("inputJenisIzinKeluar")?.value || "Izin Keluar Sementara";
+  const jamKeluar = document.getElementById("inputJamKeluar")?.value || "10:30";
+  const jamKembali = jenis.includes("Pulang Awal")
+    ? "-"
+    : (document.getElementById("inputJamKembali")?.value || "11:30");
+  const alasan = (document.getElementById("inputAlasanIzinKeluar")?.value || "").trim();
+
+  if (!alasan) {
+    alert("Mohon isi alasan atau keperluan izin terlebih dahulu.");
+    return;
+  }
+
+  const todayStr = new Date().toLocaleDateString("id-ID", {
+    day: "2-digit", month: "short", year: "numeric"
+  });
+
+  dummyIzinHistoryList.unshift({
+    id: `IZN-00${dummyIzinHistoryList.length + 1}`,
+    tanggal: todayStr,
+    jenis,
+    jamKeluar,
+    jamKembali,
+    alasan,
+    status: "Menunggu Persetujuan"
+  });
+
+  document.getElementById("inputAlasanIzinKeluar").value = "";
+  renderRiwayatIzinModal();
+  closeModalQuick(null, "modalIzin");
+  openModalQuick("modalLogIzin");
+}
+
+function renderRiwayatIzinModal() {
+  const container = document.getElementById("listRiwayatIzinContainer");
+  setText("badgeJumlahIzin", dummyIzinHistoryList.length);
+  if (!container) return;
+
+  container.innerHTML = dummyIzinHistoryList.map(item => {
+    const isApproved = item.status.toLowerCase().includes("disetujui");
+    const isRejected = item.status.toLowerCase().includes("ditolak");
+    const pillClass = isApproved ? "is-approved" : (isRejected ? "is-rejected" : "is-pending");
+
+    return `
+      <div class="izin-history-item">
+        <div class="izin-history-top">
+          <span class="izin-history-type">${item.jenis}</span>
+          <span class="izin-status-pill ${pillClass}">${item.status}</span>
+        </div>
+        <div class="izin-history-meta">
+          📅 ${item.tanggal} • Keluar: ${item.jamKeluar} ${item.jamKembali !== "-" ? `• Kembali: ${item.jamKembali}` : ""}
+        </div>
+        <div class="izin-history-reason">${item.alasan}</div>
+      </div>
+    `;
+  }).join("");
+}
+
+function openKlasemenModal() {
+  renderKlasemenModal();
+  openModalQuick("modalKlasemen");
+}
+
+function renderKlasemenModal() {
+  const container = document.getElementById("listKlasemenContainer");
+  if (!container) return;
+
+  const list = getKlasemenDataList();
+  container.innerHTML = list.map(item => {
+    const topClass = item.rank === 1 ? "top-1" : (item.rank === 2 ? "top-2" : (item.rank === 3 ? "top-3" : ""));
+    return `
+      <div class="klasemen-row ${item.isMe ? "is-me" : ""}">
+        <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+          <div class="klasemen-rank-badge ${topClass}">#${item.rank}</div>
+          <div style="min-width:0;">
+            <div style="font-size:13px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${item.nama} ${item.isMe ? "(Kamu)" : ""}
+            </div>
+            <div style="font-size:11px; color:#64748b;">${item.kelas} • Ketepatan Waktu ${item.tepatWaktu}</div>
+          </div>
+        </div>
+        <div style="font-size:12px; font-weight:800; color:var(--primary); flex-shrink:0;">
+          ${item.poin} pts
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+/* ==========================================================================
+   MOBILE BOTTOM NAVIGATION & UTILITIES
+   ========================================================================== */
+function switchMobileTab(e, tabId) {
+  document.querySelectorAll(".float-nav-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.tab === tabId);
+  });
+
+  // Penanda tab aktif untuk Beranda, Profil, Statistik, dan Rekap
+  ["hariIni", "profil", "statistik", "riwayat"].forEach(id => {
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement("span");
+      el.id = id;
+      el.style.display = "none";
+      document.body.appendChild(el);
+    }
+    el.classList.toggle("active", id === tabId);
+  });
+
+  if (tabId === "statistik" && window.RiwayatWidget?.store?.currentFiltered) {
+    setTimeout(() => {
+      RiwayatWidget.renderTrendChart(
+        RiwayatWidget.store.currentFiltered,
+        RiwayatWidget.store.activeRange
+      );
+    }, 60);
+  }
+}
+
+function showLoading(show, text = "Memproses...") {
+  const overlay = document.getElementById("loadingOverlay");
+  if (!overlay) return;
+  setText("loadingText", text);
+  overlay.style.display = show ? "flex" : "none";
+}
+
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function logout() {
+  localStorage.removeItem("idSiswa");
+  localStorage.removeItem("namaSiswa");
+  localStorage.removeItem("kelasSiswa");
+  window.location.replace("/");
+}
+
+/* Fallback data jika offline / pengujian lokal */
+function buildFallbackData() {
+  const sampleStatuses = [
+    { status: "Tepat Waktu", masuk: "06:42", pulang: "15:10", ket: "-" },
+    { status: "Tepat Waktu", masuk: "06:48", pulang: "15:05", ket: "-" },
+    { status: "Terlambat", masuk: "07:08", pulang: "15:12", ket: "Terlambat 8 menit" },
+    { status: "Tepat Waktu", masuk: "06:39", pulang: "15:03", ket: "-" },
+    { status: "Tepat Waktu", masuk: "06:45", pulang: "15:07", ket: "-" },
+    { status: "Izin", masuk: "-", pulang: "-", ket: "Izin kegiatan keluarga" },
+    { status: "Tepat Waktu", masuk: "06:41", pulang: "15:09", ket: "-" }
+  ];
+
+  const riwayat = [];
+  const baseDate = new Date();
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(baseDate);
+    d.setDate(baseDate.getDate() - i);
+    if (d.getDay() === 0 || d.getDay() === 6) continue;
+    const item = sampleStatuses[(13 - i) % sampleStatuses.length];
+    riwayat.push({
+      isoDate: d.toISOString().slice(0, 10),
+      tanggal: d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }),
+      jamMasuk: item.masuk,
+      jamPulang: item.pulang,
+      status: item.status,
+      keterangan: item.ket
+    });
+  }
+
+  return {
+    hariIni: {
+      tanggal: baseDate.toLocaleDateString("id-ID", {
+        weekday: "long", day: "numeric", month: "long", year: "numeric"
+      }),
+      jamMasuk: "06:44",
+      statusMasuk: "Tepat Waktu",
+      jamPulang: "-",
+      statusPulang: "Belum Presensi"
+    },
+    riwayat
+  };
+}

@@ -242,78 +242,85 @@
           <!-- DIVIDER VERTIKAL -->
           <div class="rw-vertical-divider" aria-hidden="true"></div>
 
-          <!-- KANAN (1/4): REKAP KEHADIRAN -->
+          <!-- KANAN (1/4): REKAP KEHADIRAN PER KELOMPOK CARD -->
           <div class="rw-pane-right">
             <div class="rw-pane-header">
               <span class="rw-pane-title">Rekap Kehadiran</span>
               <span class="rate-pill-badge rw-rate-pill">0%</span>
             </div>
 
-            <!-- Kelompok 1: Rincian Status Hadir -->
-            <div class="rw-hadir-section">
-              <div class="rekap-group-label">Rincian Status Hadir</div>
-              <div class="rekap-number-grid rw-grid-hadir-main">
-                <div class="num-box tone-total-hadir" data-stat="total_hadir" style="display:none;">
-                  <span class="num-box-lbl">Total Hadir</span>
-                  <span class="num-box-val">0</span>
+            <div class="rw-rekap-cards-stack">
+              <!-- Card 1: Kehadiran -->
+              <div class="rw-rekap-group-card rw-card-hadir" style="display:none;">
+                <div class="rw-group-card-header">
+                  <span class="rw-group-card-title">Kehadiran</span>
+                  <span class="rw-group-total-badge tone-badge-hadir rw-badge-total-hadir">0</span>
                 </div>
-                <div class="num-box tone-hadir" data-stat="tepat" style="display:none;">
-                  <span class="num-box-lbl">Tepat Waktu</span>
-                  <span class="num-box-val">0</span>
-                </div>
-                <div class="num-box tone-late" data-stat="terlambat" style="display:none;">
-                  <span class="num-box-lbl">Terlambat</span>
-                  <span class="num-box-val">0</span>
-                </div>
-                <div class="num-box tone-sangat-late" data-stat="sangat_terlambat" style="display:none;">
-                  <span class="num-box-lbl">Sangat Terlambat</span>
-                  <span class="num-box-val">0</span>
-                </div>
-                <div class="num-box tone-sangat-late-sekali" data-stat="sangat_terlambat_sekali" style="display:none;">
-                  <span class="num-box-lbl">Sangat Terlambat Sekali</span>
-                  <span class="num-box-val">0</span>
-                </div>
-                <div class="num-box tone-htp" data-stat="htp" style="display:none;">
-                  <span class="num-box-lbl">Hadir Tidak Presensi</span>
-                  <span class="num-box-val">0</span>
+                <div class="rw-group-items-flex">
+                  <div class="num-box tone-hadir" data-stat="tepat" style="display:none;">
+                    <span class="num-box-lbl">Tepat Waktu</span>
+                    <span class="num-box-val">0</span>
+                  </div>
+                  <div class="num-box tone-late" data-stat="terlambat" style="display:none;">
+                    <span class="num-box-lbl">Terlambat</span>
+                    <span class="num-box-val">0</span>
+                  </div>
+                  <div class="num-box tone-sangat-late" data-stat="sangat_terlambat" style="display:none;">
+                    <span class="num-box-lbl">Sangat Terlambat</span>
+                    <span class="num-box-val">0</span>
+                  </div>
+                  <div class="num-box tone-sangat-late-sekali" data-stat="sangat_terlambat_sekali" style="display:none;">
+                    <span class="num-box-lbl">Sangat Terlambat Sekali</span>
+                    <span class="num-box-val">0</span>
+                  </div>
+                  <div class="num-box tone-htp" data-stat="htp" style="display:none;">
+                    <span class="num-box-lbl">Hadir Tidak Presensi</span>
+                    <span class="num-box-val">0</span>
+                  </div>
                 </div>
               </div>
 
-              <div class="rekap-subgrid-3 rw-grid-hadir-khusus" style="margin-top: 7px;">
-                <div class="num-box tone-daring" data-stat="daring" style="display:none;">
-                  <span class="num-box-lbl">Daring</span>
-                  <span class="num-box-val">0</span>
+              <!-- Card 2: Lainnya / Aktivitas Khusus -->
+              <div class="rw-rekap-group-card rw-card-lainnya" style="display:none;">
+                <div class="rw-group-card-header">
+                  <span class="rw-group-card-title">Lainnya</span>
+                  <span class="rw-group-total-badge tone-badge-lainnya rw-badge-total-lainnya">0</span>
                 </div>
-                <div class="num-box tone-prakerin" data-stat="prakerin" style="display:none;">
-                  <span class="num-box-lbl">Prakerin</span>
-                  <span class="num-box-val">0</span>
-                </div>
-                <div class="num-box tone-dispensasi" data-stat="dispensasi" style="display:none;">
-                  <span class="num-box-lbl">Dispensasi</span>
-                  <span class="num-box-val">0</span>
+                <div class="rw-group-items-flex">
+                  <div class="num-box tone-daring" data-stat="daring" style="display:none;">
+                    <span class="num-box-lbl">Daring</span>
+                    <span class="num-box-val">0</span>
+                  </div>
+                  <div class="num-box tone-prakerin" data-stat="prakerin" style="display:none;">
+                    <span class="num-box-lbl">Prakerin</span>
+                    <span class="num-box-val">0</span>
+                  </div>
+                  <div class="num-box tone-dispensasi" data-stat="dispensasi" style="display:none;">
+                    <span class="num-box-lbl">Dispensasi</span>
+                    <span class="num-box-val">0</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Kelompok 2: Rincian Status Tidak Hadir -->
-            <div class="rw-absen-section" style="margin-top: 12px;">
-              <div class="rekap-group-label">Rincian Status Tidak Hadir</div>
-              <div class="rekap-number-grid rw-grid-absen">
-                <div class="num-box tone-total-absen" data-stat="total_tidak_hadir" style="display:none;">
-                  <span class="num-box-lbl">Total Tidak Hadir</span>
-                  <span class="num-box-val">0</span>
+              <!-- Card 3: Tidak Hadir -->
+              <div class="rw-rekap-group-card rw-card-absen" style="display:none;">
+                <div class="rw-group-card-header">
+                  <span class="rw-group-card-title">Tidak Hadir</span>
+                  <span class="rw-group-total-badge tone-badge-absen rw-badge-total-absen">0</span>
                 </div>
-                <div class="num-box tone-sakit" data-stat="sakit" style="display:none;">
-                  <span class="num-box-lbl">Sakit</span>
-                  <span class="num-box-val">0</span>
-                </div>
-                <div class="num-box tone-izin" data-stat="izin" style="display:none;">
-                  <span class="num-box-lbl">Izin</span>
-                  <span class="num-box-val">0</span>
-                </div>
-                <div class="num-box tone-alpa" data-stat="alpa" style="display:none;">
-                  <span class="num-box-lbl">Alpa</span>
-                  <span class="num-box-val">0</span>
+                <div class="rw-group-items-flex">
+                  <div class="num-box tone-sakit" data-stat="sakit" style="display:none;">
+                    <span class="num-box-lbl">Sakit</span>
+                    <span class="num-box-val">0</span>
+                  </div>
+                  <div class="num-box tone-izin" data-stat="izin" style="display:none;">
+                    <span class="num-box-lbl">Izin</span>
+                    <span class="num-box-val">0</span>
+                  </div>
+                  <div class="num-box tone-alpa" data-stat="alpa" style="display:none;">
+                    <span class="num-box-lbl">Alpa</span>
+                    <span class="num-box-val">0</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -870,11 +877,13 @@
           else if (st.includes("tepat") || st.includes("hadir")) counts.tepat++;
         });
 
-        const totalHadir = counts.tepat + counts.terlambat + counts.sangat_terlambat +
-          counts.sangat_terlambat_sekali + counts.htp + counts.daring + counts.prakerin + counts.dispensasi;
+        const totalKehadiran = counts.tepat + counts.terlambat + counts.sangat_terlambat +
+          counts.sangat_terlambat_sekali + counts.htp;
+        const totalLainnya = counts.daring + counts.prakerin + counts.dispensasi;
         const totalTidakHadir = counts.sakit + counts.izin + counts.alpa;
-        const totalAll = totalHadir + totalTidakHadir;
-        const rate = totalAll > 0 ? Math.round((totalHadir / totalAll) * 100) : 0;
+        const totalHadirAll = totalKehadiran + totalLainnya;
+        const totalAll = totalHadirAll + totalTidakHadir;
+        const rate = totalAll > 0 ? Math.round((totalHadirAll / totalAll) * 100) : 0;
 
         const ratePill = this.q(".rw-rate-pill");
         if (ratePill) ratePill.textContent = `${rate}%`;
@@ -901,23 +910,8 @@
           }
         }
 
-        const allStatValues = {
-          total_hadir: totalHadir,
-          tepat: counts.tepat,
-          terlambat: counts.terlambat,
-          sangat_terlambat: counts.sangat_terlambat,
-          sangat_terlambat_sekali: counts.sangat_terlambat_sekali,
-          htp: counts.htp,
-          daring: counts.daring,
-          prakerin: counts.prakerin,
-          dispensasi: counts.dispensasi,
-          total_tidak_hadir: totalTidakHadir,
-          sakit: counts.sakit,
-          izin: counts.izin,
-          alpa: counts.alpa
-        };
-
-        Object.entries(allStatValues).forEach(([key, val]) => {
+        // Update masing-masing kotak status (sembunyikan jika 0)
+        Object.entries(counts).forEach(([key, val]) => {
           const box = this.q(`.num-box[data-stat="${key}"]`);
           if (!box) return;
           const valEl = box.querySelector(".num-box-val");
@@ -925,20 +919,22 @@
           box.style.display = val > 0 ? "" : "none";
         });
 
-        // Sembunyikan wrapper grup jika semua kartu di dalamnya bernilai 0
-        const hadirMainCount = totalHadir + counts.tepat + counts.terlambat + counts.sangat_terlambat + counts.sangat_terlambat_sekali + counts.htp;
-        const hadirKhususCount = counts.daring + counts.prakerin + counts.dispensasi;
-
-        const gridHadirMain = this.q(".rw-grid-hadir-main");
-        const gridHadirKhusus = this.q(".rw-grid-hadir-khusus");
-        const hadirSection = this.q(".rw-hadir-section");
-        const absenSection = this.q(".rw-absen-section");
+        // Update total badge & visibilitas per card kelompok
+        const cardHadir = this.q(".rw-card-hadir");
+        const cardLainnya = this.q(".rw-card-lainnya");
+        const cardAbsen = this.q(".rw-card-absen");
+        const badgeHadir = this.q(".rw-badge-total-hadir");
+        const badgeLainnya = this.q(".rw-badge-total-lainnya");
+        const badgeAbsen = this.q(".rw-badge-total-absen");
         const emptyNote = this.q(".rw-empty-rekap-note");
 
-        if (gridHadirMain) gridHadirMain.style.display = hadirMainCount > 0 ? "" : "none";
-        if (gridHadirKhusus) gridHadirKhusus.style.display = hadirKhususCount > 0 ? "" : "none";
-        if (hadirSection) hadirSection.style.display = totalHadir > 0 ? "" : "none";
-        if (absenSection) absenSection.style.display = totalTidakHadir > 0 ? "" : "none";
+        if (badgeHadir) badgeHadir.textContent = `${totalKehadiran} Hari`;
+        if (badgeLainnya) badgeLainnya.textContent = `${totalLainnya} Hari`;
+        if (badgeAbsen) badgeAbsen.textContent = `${totalTidakHadir} Hari`;
+
+        if (cardHadir) cardHadir.style.display = totalKehadiran > 0 ? "block" : "none";
+        if (cardLainnya) cardLainnya.style.display = totalLainnya > 0 ? "block" : "none";
+        if (cardAbsen) cardAbsen.style.display = totalTidakHadir > 0 ? "block" : "none";
         if (emptyNote) emptyNote.style.display = totalAll === 0 ? "block" : "none";
         return;
       }
