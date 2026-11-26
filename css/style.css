@@ -3648,7 +3648,7 @@ body.student-portal-body .rw-log-table-wrap {
   border: 1px solid var(--border-light);
   border-radius: 12px;
   overflow-x: auto;
-  max-height: 315px;
+  max-height: none;
   overflow-y: auto;
   background: #ffffff;
   flex: 1;
@@ -4457,4 +4457,39 @@ body.student-portal-body .rw-group-items-flex {
 body.student-portal-body .rw-group-items-flex .num-box {
   flex: 1 1 calc(50% - 4px);
   min-width: 96px;
+}
+
+/* Auto-Fit Tinggi Tabel Log Sejajar Panel Kanan */
+body.student-portal-body .rw-pane-header-switch-only {
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+
+body.student-portal-body #siswaRiwayatWidgetContainer .rw-pane-left {
+  min-height: 0;
+}
+
+body.student-portal-body .rw-view-log {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 275px;
+}
+
+body.student-portal-body .rw-view-log > .rw-log-table-wrap {
+  position: absolute;
+  inset: 0;
+  max-height: none;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  body.student-portal-body .rw-view-log {
+    position: static;
+    min-height: 0;
+  }
+
+  body.student-portal-body .rw-view-log > .rw-log-table-wrap {
+    position: static;
+    max-height: none;
+  }
 }
