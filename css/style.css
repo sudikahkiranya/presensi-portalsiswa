@@ -50,13 +50,13 @@ body[data-theme="sage"] {
   --bg-page: #F1F5F3;
 }
 
-html[data-theme="plum"],
-body[data-theme="plum"] {
-  --theme-glow-rgb: 118, 75, 91;
-  --primary: #764B5B;
-  --primary-hover: #5B3845;
-  --primary-soft: #A17485;
-  --bg-page: #F7F1F3;
+html[data-theme="denim"],
+body[data-theme="denim"] {
+  --theme-glow-rgb: 59, 91, 115;
+  --primary: #3B5B73;
+  --primary-hover: #2C4558;
+  --primary-soft: #6A89A1;
+  --bg-page: #F1F5F8;
 }
 
 html[data-theme="espresso"],
@@ -656,45 +656,63 @@ body.student-portal-body .theme-popover-title {
   border-bottom: 1px solid #f1f5f9;
 }
 
+body.student-portal-body .theme-popover {
+  width: auto !important;
+  min-width: 212px;
+  padding: 14px 16px 16px !important;
+  border-radius: 20px !important;
+}
+
+body.student-portal-body .theme-popover-title {
+  text-align: center !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--text-dark) !important;
+  margin-bottom: 12px !important;
+  padding-bottom: 0 !important;
+  border-bottom: none !important;
+}
+
 body.student-portal-body .theme-swatches-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
+  display: grid !important;
+  grid-template-columns: repeat(4, 38px) !important;
+  gap: 10px !important;
+  justify-content: center !important;
 }
 
 body.student-portal-body .theme-swatch-btn {
-  background: #f8fafc !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 10px !important;
-  padding: 7px 9px !important;
-  height: auto !important;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-dark) !important;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  padding: 2px !important;
+  border-radius: 50% !important;
+  border: 2px solid transparent !important;
+  background: #ffffff !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.14) !important;
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease !important;
 }
 
 body.student-portal-body .theme-swatch-btn:hover {
-  background: #f1f5f9 !important;
+  background: #ffffff !important;
   border-color: var(--primary) !important;
-  transform: none !important;
+  transform: scale(1.06) !important;
 }
 
-body.student-portal-body .theme-swatch-btn.active {
-  background: var(--primary-soft-tint) !important;
+body.student-portal-body .theme-swatch-btn.active,
+body.student-portal-body .theme-swatch-btn.is-active {
+  background: #ffffff !important;
   border-color: var(--primary) !important;
-  color: var(--primary) !important;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--primary) !important;
 }
 
 body.student-portal-body .swatch-circle {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50% !important;
+  display: block !important;
   flex-shrink: 0;
 }
 

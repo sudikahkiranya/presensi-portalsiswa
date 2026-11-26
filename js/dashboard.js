@@ -18,7 +18,7 @@ const THEME_PALETTES = {
   umber:    { primary: "#6E4A36", soft: "#99715B", glowRgb: "110, 74, 54" },
   ochre:    { primary: "#B57C2B", soft: "#D4A359", glowRgb: "181, 124, 43" },
   sage:     { primary: "#4E6D63", soft: "#78968C", glowRgb: "78, 109, 99" },
-  plum:     { primary: "#764B5B", soft: "#A17485", glowRgb: "118, 75, 91" },
+  denim:    { primary: "#3B5B73", soft: "#6A89A1", glowRgb: "59, 91, 115" },
   espresso: { primary: "#3D3632", soft: "#6B615B", glowRgb: "61, 54, 50" },
   stone:    { primary: "#6B655E", soft: "#969088", glowRgb: "107, 101, 94" }
 };
