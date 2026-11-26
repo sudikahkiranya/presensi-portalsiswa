@@ -299,12 +299,19 @@ function initGreetingAndRank() {
 async function loadDashboardData() {
   showLoading(true, "Memuat data presensi...");
   try {
-    const res = await fetch(`${API_URL}?action=getDashboardSiswa&idSiswa=${encodeURIComponent(idSiswa)}`);
+    const res = await fetch(`${API_URL}?action=getPresensiHariIni&idSiswa=${encodeURIComponent(idSiswa)}`);
     const json = await res.json();
 
-    if (json && json.status === "success") {
+    if (json && (json.success === true || json.status === "success")) {
       cachedData = json;
-      renderTodaySection(json.hariIni || {});
+      const todayData = json.hariIni || {
+        tanggal: json.tanggalFormatted,
+        jamMasuk: json.jamMasuk,
+        statusMasuk: json.statusMasuk,
+        jamPulang: json.jamPulang,
+        statusPulang: json.statusPulang
+      };
+      renderTodaySection(todayData);
       if (json.biodata) updateBiodataFromApi(json.biodata);
     } else {
       throw new Error(json?.message || "Gagal memuat data");
