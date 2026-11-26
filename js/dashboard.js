@@ -13,14 +13,14 @@ if (!idSiswa) {
 }
 
 const THEME_PALETTES = {
-  burgundy: { primary: "#824653", soft: "#9b5c69", glow: "rgba(130, 70, 83, 0.25)", bg: "#fdf2f4" },
-  ocean:    { primary: "#2563eb", soft: "#60a5fa", glow: "rgba(37, 99, 235, 0.25)", bg: "#eff6ff" },
-  emerald:  { primary: "#059669", soft: "#34d399", glow: "rgba(5, 150, 105, 0.25)", bg: "#ecfdf5" },
-  royal:    { primary: "#7c3aed", soft: "#a78bfa", glow: "rgba(124, 58, 237, 0.25)", bg: "#f5f3ff" },
-  sunset:   { primary: "#ea580c", soft: "#fb923c", glow: "rgba(234, 88, 12, 0.25)", bg: "#fff7ed" },
-  teal:     { primary: "#0d9488", soft: "#2dd4bf", glow: "rgba(13, 148, 136, 0.25)", bg: "#f0fdfa" },
-  indigo:   { primary: "#4f46e5", soft: "#818cf8", glow: "rgba(79, 70, 229, 0.25)", bg: "#eef2ff" },
-  slate:    { primary: "#475569", soft: "#94a3b8", glow: "rgba(71, 85, 105, 0.25)", bg: "#f1f5f9" }
+  burgundy: { primary: "#824653", soft: "#A66F7A", glowRgb: "130, 70, 83" },
+  olive:    { primary: "#5B6E49", soft: "#859972", glowRgb: "91, 110, 73" },
+  umber:    { primary: "#6E4A36", soft: "#99715B", glowRgb: "110, 74, 54" },
+  ochre:    { primary: "#B57C2B", soft: "#D4A359", glowRgb: "181, 124, 43" },
+  sage:     { primary: "#4E6D63", soft: "#78968C", glowRgb: "78, 109, 99" },
+  plum:     { primary: "#764B5B", soft: "#A17485", glowRgb: "118, 75, 91" },
+  espresso: { primary: "#3D3632", soft: "#6B615B", glowRgb: "61, 54, 50" },
+  stone:    { primary: "#6B655E", soft: "#969088", glowRgb: "107, 101, 94" }
 };
 
 let currentTheme = localStorage.getItem("sisensi_active_theme") || "burgundy";
@@ -218,7 +218,9 @@ function setAppTheme(themeKey, regenerateQr = true) {
   document.body.setAttribute("data-theme", themeKey);
 
   document.querySelectorAll(".theme-swatch-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.themeVal === themeKey);
+    const isSelected = btn.dataset.themeVal === themeKey;
+    btn.classList.toggle("active", isSelected);
+    btn.classList.toggle("is-active", isSelected);
   });
 
   const themePop = document.getElementById("themePopover");
