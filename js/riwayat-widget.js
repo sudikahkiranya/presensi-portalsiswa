@@ -22,7 +22,8 @@
       chartData: [],
       selectedDotIndex: null,
       activeRange: "1w",
-      activeViewMode: "chart" // "chart" | "log"
+      activeViewMode: "chart", // "chart" | "log"
+      selectedStatuses: []
     },
 
     init(options = {}) {
@@ -101,7 +102,8 @@
         chartData: [],
         selectedDotIndex: null,
         activeRange: this.defaultRange,
-        activeViewMode: "chart"
+        activeViewMode: "chart",
+        selectedStatuses: []
       });
 
       if (!this.container) return;
@@ -200,6 +202,15 @@
                   </svg>
                   <span>Log</span>
                 </button>
+              </div>
+              <div class="rw-log-filter-bar" style="display:none;">
+                <button type="button" class="rw-filter-trigger-btn">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                  </svg>
+                  <span>Filter Status</span>
+                </button>
+                <div class="rw-active-chips"></div>
               </div>
             </div>
 
@@ -404,6 +415,11 @@
             this.switchViewMode(view);
           });
         });
+
+        // <-- TAMBAHKAN EVENT INI -->
+        this.q(".rw-filter-trigger-btn")?.addEventListener("click", () => {
+          this.openStatusFilterModal();
+        });
       }
 
       this.q(".rw-apply-sem")?.addEventListener("click", () => this.applySemesterFilter());
@@ -419,8 +435,11 @@
 
       const chartView = this.q(".rw-view-chart");
       const logView = this.q(".rw-view-log");
+      const filterBar = this.q(".rw-log-filter-bar"); // <-- TAMBAHKAN INI
+
       if (chartView) chartView.style.display = this.store.activeViewMode === "chart" ? "block" : "none";
       if (logView) logView.style.display = this.store.activeViewMode === "log" ? "flex" : "none";
+      if (filterBar) filterBar.style.display = this.store.activeViewMode === "log" ? "inline-flex" : "none"; // <-- TAMBAHKAN INI
 
       if (this.store.activeViewMode === "chart") {
         this.renderTrendChart(this.store.currentFiltered, this.store.activeRange);
@@ -914,12 +933,20 @@
       const tbody = this.q(".rw-log-tbody");
       if (!tbody) return;
 
-      if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="padding:24px; color:#64748b;">Belum ada data presensi pada periode ini.</td></tr>`;
+      const activeStatuses = this.store.selectedStatuses || [];
+      const rows = activeStatuses.length > 0
+        ? (data || []).filter(item => activeStatuses.includes(String(item.statusMasuk || "").trim()))
+        : (data || []);
+
+      if (rows.length === 0) {
+        const msg = activeStatuses.length > 0
+          ? `Tidak ada log presensi dengan status terpilih pada periode ini.`
+          : `Belum ada data presensi pada periode ini.`;
+        tbody.innerHTML = `<tr><td colspan="5" style="padding:24px; color:#64748b;">${msg}</td></tr>`;
         return;
       }
 
-      const sorted = [...data].reverse();
+      const sorted = [...rows].reverse();
       tbody.innerHTML = sorted.map(item => {
         const tgl = item.tanggal || item.isoDate || "-";
         const jamMasuk = item.jamMasuk || "-";
@@ -938,6 +965,112 @@
       }).join("");
     },
 
+    renderStatusChips() {
+      const chipsWrap = this.q(".rw-active-chips");
+      const triggerBtn = this.q(".rw-filter-trigger-btn");
+      if (!chipsWrap) return;
+
+      const selected = this.store.selectedStatuses || [];
+      if (triggerBtn) {
+        triggerBtn.classList.toggle("has-filter", selected.length > 0);
+      }
+
+      chipsWrap.innerHTML = selected.map(st => `
+        <span class="rw-filter-chip">
+          <span>${st}</span>
+          <button type="button" class="rw-chip-remove" data-remove-status="${st}" title="Hapus filter ${st}">✕</button>
+        </span>
+      `).join("");
+
+      chipsWrap.querySelectorAll("[data-remove-status]").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const target = btn.getAttribute("data-remove-status");
+          this.store.selectedStatuses = this.store.selectedStatuses.filter(s => s !== target);
+          this.renderStatusChips();
+          this.renderLogTable(this.store.currentFiltered);
+        });
+      });
+    },
+
+    openStatusFilterModal() {
+      const modalId = "rwStatusFilterModal";
+      let backdrop = document.getElementById(modalId);
+
+      const defaultStatuses = [
+        "Tepat Waktu", "Terlambat", "Sangat Terlambat", "Sangat Terlambat Sekali",
+        "Hadir Tidak Presensi", "Prakerin", "Daring", "Dispensasi",
+        "Sakit", "Izin", "Alpa"
+      ];
+      const dataStatuses = (this.store.currentFiltered || [])
+        .map(r => String(r.statusMasuk || "").trim())
+        .filter(s => s && s !== "-");
+      const allOptions = Array.from(new Set([...defaultStatuses, ...dataStatuses]));
+
+      if (!backdrop) {
+        backdrop = document.createElement("div");
+        backdrop.id = modalId;
+        backdrop.className = "rw-status-modal-backdrop";
+        document.body.appendChild(backdrop);
+
+        backdrop.addEventListener("click", (e) => {
+          if (e.target === backdrop) backdrop.classList.remove("is-open");
+        });
+      }
+
+      const tempSelected = new Set(this.store.selectedStatuses || []);
+
+      backdrop.innerHTML = `
+        <div class="rw-status-modal-card">
+          <div class="rw-status-modal-head">
+            <h4>Filter Status Kehadiran</h4>
+            <button type="button" class="modal-x-btn" id="${modalId}_close">✕</button>
+          </div>
+          <div class="rw-status-options-grid">
+            ${allOptions.map(st => {
+              const checked = tempSelected.has(st);
+              return `
+                <label class="rw-status-option-item ${checked ? "is-checked" : ""}">
+                  <input type="checkbox" value="${st}" ${checked ? "checked" : ""}>
+                  <span>${st}</span>
+                </label>
+              `;
+            }).join("")}
+          </div>
+          <div class="rw-status-modal-foot">
+            <button type="button" class="btn-secondary-modal" id="${modalId}_reset" style="height:34px; font-size:12px;">Reset</button>
+            <button type="button" class="btn-primary-modal" id="${modalId}_apply" style="height:34px; font-size:12px;">Terapkan</button>
+          </div>
+        </div>
+      `;
+
+      backdrop.querySelectorAll(".rw-status-option-item input").forEach(cb => {
+        cb.addEventListener("change", () => {
+          cb.closest(".rw-status-option-item").classList.toggle("is-checked", cb.checked);
+        });
+      });
+
+      document.getElementById(`${modalId}_close`).onclick = () => backdrop.classList.remove("is-open");
+
+      document.getElementById(`${modalId}_reset`).onclick = () => {
+        backdrop.querySelectorAll(".rw-status-option-item input").forEach(cb => {
+          cb.checked = false;
+          cb.closest(".rw-status-option-item").classList.remove("is-checked");
+        });
+      };
+
+      document.getElementById(`${modalId}_apply`).onclick = () => {
+        this.store.selectedStatuses = Array.from(
+          backdrop.querySelectorAll(".rw-status-option-item input:checked")
+        ).map(cb => cb.value);
+        backdrop.classList.remove("is-open");
+        this.renderStatusChips();
+        this.renderLogTable(this.store.currentFiltered);
+      };
+
+      backdrop.classList.add("is-open");
+    },
+    
     formatChartAxisDate(item) {
       const iso = String(item.isoDate || item.date || "").trim();
       const ymd = iso.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
