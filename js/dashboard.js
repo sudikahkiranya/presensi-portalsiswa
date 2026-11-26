@@ -224,13 +224,6 @@ function setAppTheme(themeKey, regenerateQr = true) {
   const themePop = document.getElementById("themePopover");
   if (themePop) themePop.classList.remove("open", "is-open");
 
-  if (regenerateQr) {
-    cachedQrDataUrl = "";
-    if (document.getElementById("qrModalOverlay")?.classList.contains("active")) {
-      generateAndCacheQRCard();
-    }
-  }
-
   if (window.RiwayatWidget?.store?.currentFiltered) {
     RiwayatWidget.renderTrendChart(
       RiwayatWidget.store.currentFiltered,
