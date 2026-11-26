@@ -1145,11 +1145,6 @@
         computedWidth = points.length * 82 + 24;
       }
 
-      wrapper.style.width = computedWidth + "px";
-      canvas.width = computedWidth * dpr;
-      canvas.height = wrapper.clientHeight * dpr;
-      ctx.scale(dpr, dpr);
-
       const width = computedWidth;
       const height = wrapper.clientHeight;
 
