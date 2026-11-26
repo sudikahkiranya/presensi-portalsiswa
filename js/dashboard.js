@@ -315,16 +315,6 @@ async function loadDashboardData() {
     renderTodaySection(cachedData.hariIni);
   } finally {
     showLoading(false);
-    if (idSiswa && typeof RiwayatWidget !== "undefined") {
-      RiwayatWidget.init({
-        containerId: "siswaRiwayatWidgetContainer",
-        apiUrl: API_URL,
-        mode: "siswa",
-        layoutVariant: "siswa-split",
-        defaultRange: "1m",
-        idSiswa: idSiswa
-      });
-    }
     setTimeout(() => generateAndCacheQRCard(true), 600);
   }
 }
