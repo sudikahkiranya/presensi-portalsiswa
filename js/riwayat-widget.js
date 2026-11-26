@@ -1070,7 +1070,7 @@
 
       backdrop.classList.add("is-open");
     },
-    
+
     formatChartAxisDate(item) {
       const iso = String(item.isoDate || item.date || "").trim();
       const ymd = iso.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
@@ -1099,7 +1099,7 @@
       if (!canvas || !wrapper || !scrollContainer) return;
 
       const ctx = canvas.getContext("2d");
-      const dpr = window.devicePixelRatio || 1;
+      const renderScale = Math.max(window.devicePixelRatio || 1, 2);
       const primaryColor = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() || "#824653";
 
       const levelColors = {
@@ -1152,6 +1152,14 @@
 
       const width = computedWidth;
       const height = wrapper.clientHeight;
+
+      wrapper.style.width = width + "px";
+      canvas.style.width = width + "px";
+      canvas.style.height = height + "px";
+      canvas.width = Math.round(width * renderScale);
+      canvas.height = Math.round(height * renderScale);
+      ctx.scale(renderScale, renderScale);
+
       ctx.clearRect(0, 0, width, height);
 
       if (points.length === 0) {
