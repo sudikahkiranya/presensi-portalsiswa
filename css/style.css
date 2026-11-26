@@ -4494,9 +4494,20 @@ body.student-portal-body .rw-view-log > .rw-log-table-wrap {
   }
 }
 
-/* Custom Scrollbar Rapi untuk Tabel Log (Mulai di Bawah Header) */
+/* Custom Scrollbar Tabel Log (Menyatu Mulus dengan Header) */
+body.student-portal-body .rw-log-table-wrap {
+  background: linear-gradient(
+    to bottom,
+    #f1f5f9 0px,
+    #f1f5f9 39px,
+    var(--border-light, #cbd5e1) 39px,
+    var(--border-light, #cbd5e1) 41px,
+    #ffffff 41px
+  );
+}
+
 body.student-portal-body .rw-log-table-wrap th:last-child {
-  border-top-right-radius: 11px;
+  border-top-right-radius: 0;
 }
 
 body.student-portal-body .rw-log-table-wrap::-webkit-scrollbar {
