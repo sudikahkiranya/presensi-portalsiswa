@@ -325,6 +325,7 @@ async function loadDashboardData() {
         idSiswa: idSiswa
       });
     }
+    setTimeout(() => generateAndCacheQRCard(true), 600);
   }
 }
 
@@ -913,37 +914,83 @@ function loadQrAssetImage(src) {
 }
 
 function generateQROffline(text) {
-  return new Promise((resolve, reject) => {
-    const qrContainer = document.createElement("div");
-    new QRCode(qrContainer, {
-      text: text,
-      width: 300,
-      height: 300,
-      correctLevel: QRCode.CorrectLevel.H
-    });
-
-    let attempts = 0;
-    const checkInterval = setInterval(() => {
-      const qrImg = qrContainer.querySelector("img");
-      const qrCanvas = qrContainer.querySelector("canvas");
-
-      if (qrImg && qrImg.src && qrImg.src.startsWith("data:image")) {
-        clearInterval(checkInterval);
-        resolve(qrImg);
-      } else if (qrCanvas) {
-        clearInterval(checkInterval);
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = qrCanvas.toDataURL("image/png");
-      }
-
-      if (attempts++ > 50) {
-        clearInterval(checkInterval);
-        reject(new Error("QR Generation Timeout"));
-      }
-    }, 100);
+  const qrContainer = document.createElement("div");
+  new QRCode(qrContainer, {
+    text: text,
+    width: 300,
+    height: 300,
+    correctLevel: QRCode.CorrectLevel.H
   });
+
+  // Langsung ambil canvas tanpa nunggu polling setInterval 100ms
+  const qrCanvas = qrContainer.querySelector("canvas");
+  if (qrCanvas) return Promise.resolve(qrCanvas);
+
+  return Promise.reject(new Error("Gagal membuat canvas QR"));
+}
+
+async function generateAndCacheQRCard(silent = false) {
+  const imgEl = document.getElementById("qrPreviewModal");
+  const skelEl = document.getElementById("qrModalSkeleton");
+
+  if (cachedQrDataUrl) {
+    if (!silent && imgEl && skelEl) {
+      imgEl.src = cachedQrDataUrl;
+      imgEl.style.display = "block";
+      skelEl.style.display = "none";
+    }
+    return;
+  }
+
+  if (!silent && imgEl && skelEl) {
+    imgEl.style.display = "none";
+    skelEl.style.display = "flex";
+  }
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = 800;
+  canvas.height = 1200;
+
+  const jurusan = getJurusanQr(kelasSiswa);
+
+  try {
+    const [bg, qrFinal] = await Promise.all([
+      loadQrAssetImage(QR_TEMPLATE_PATH),
+      generateQROffline(idSiswa),
+      document.fonts?.load("700 64px Oswald").catch(() => {}),
+      document.fonts?.load("400 48px Oswald").catch(() => {})
+    ]);
+
+    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+
+    const qrSize = 480 * 0.9;
+    const x = (canvas.width - qrSize) / 2;
+    ctx.drawImage(qrFinal, x, 585, qrSize, qrSize);
+
+    drawNamaKelasCenter(
+      ctx,
+      namaSiswa.toUpperCase(),
+      jurusan.toUpperCase(),
+      canvas.width / 2,
+      300,
+      600
+    );
+
+    cachedQrDataUrl = canvas.toDataURL("image/png");
+
+    if (!silent && imgEl && skelEl) {
+      imgEl.src = cachedQrDataUrl;
+      imgEl.style.display = "block";
+      skelEl.style.display = "none";
+    }
+  } catch (err) {
+    console.error("❌ ERROR GENERATE QR:", err);
+    if (!silent && skelEl) {
+      skelEl.style.display = "none";
+      alert("Gagal membuat Kartu QR. Pastikan file assets/template_qr.png tersedia.");
+    }
+  }
 }
 
 function getJurusanQr(kelas) {
@@ -1030,67 +1077,6 @@ function drawNamaKelasCenter(ctx, nama, jurusan, x, centerY, maxWidth) {
 
   ctx.font = `400 ${kelasFontSize}px Oswald, sans-serif`;
   ctx.fillText(jurusan, x, startY + (lines.length * namaLineHeight) + gap);
-}
-
-async function generateAndCacheQRCard() {
-  const imgEl = document.getElementById("qrPreviewModal");
-  const skelEl = document.getElementById("qrModalSkeleton");
-  if (!imgEl || !skelEl) return;
-
-  if (cachedQrDataUrl) {
-    imgEl.src = cachedQrDataUrl;
-    imgEl.style.display = "block";
-    skelEl.style.display = "none";
-    return;
-  }
-
-  imgEl.style.display = "none";
-  skelEl.style.display = "flex";
-
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  canvas.width = 800;
-  canvas.height = 1200;
-
-  const jurusan = getJurusanQr(kelasSiswa);
-
-  try {
-    const [bg, qrFinal] = await Promise.all([
-      loadQrAssetImage(QR_TEMPLATE_PATH),
-      generateQROffline(idSiswa)
-    ]);
-
-    if (document.fonts && document.fonts.load) {
-      await Promise.all([
-        document.fonts.load("700 64px Oswald"),
-        document.fonts.load("400 48px Oswald")
-      ]).catch(() => {});
-    }
-
-    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-
-    const qrSize = 480 * 0.9;
-    const x = (canvas.width - qrSize) / 2;
-    ctx.drawImage(qrFinal, x, 585, qrSize, qrSize);
-
-    drawNamaKelasCenter(
-      ctx,
-      namaSiswa.toUpperCase(),
-      jurusan.toUpperCase(),
-      canvas.width / 2,
-      300,
-      600
-    );
-
-    cachedQrDataUrl = canvas.toDataURL("image/png");
-    imgEl.src = cachedQrDataUrl;
-    imgEl.style.display = "block";
-    skelEl.style.display = "none";
-  } catch (err) {
-    console.error("❌ ERROR GENERATE QR:", err);
-    skelEl.style.display = "none";
-    alert("Gagal membuat Kartu QR. Pastikan file assets/template_qr.png tersedia.");
-  }
 }
 
 function downloadQRCard() {
