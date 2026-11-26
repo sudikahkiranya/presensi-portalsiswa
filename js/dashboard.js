@@ -1020,7 +1020,7 @@ function drawNamaKelasCenter(ctx, nama, jurusan, x, centerY, maxWidth) {
   const totalHeight = (lines.length * namaLineHeight) + gap + (kelasFontSize * 1.2);
   const startY = centerY - (totalHeight / 2) + namaLineHeight;
 
-  ctx.fillStyle = "#824653";
+  ctx.fillStyle = "#017873"; // Warna teal senada dengan desain kartu QR
   ctx.textAlign = "center";
   ctx.font = `700 ${fontSize}px Oswald, sans-serif`;
 
