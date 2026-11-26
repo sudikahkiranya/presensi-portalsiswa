@@ -892,8 +892,10 @@ function renderTrendChart(rows) {
 }   
 
 /* ==========================================================================
-   KARTU QR PRESENSI MODAL
+   KARTU QR PRESENSI MODAL (TEMPLATE RESMI)
    ========================================================================== */
+const QR_TEMPLATE_PATH = "assets/template_qr.png";
+
 function openQrModal() {
   const overlay = document.getElementById("qrModalOverlay");
   if (!overlay) return;
@@ -907,7 +909,137 @@ function closeQrModal(e) {
   if (overlay) overlay.classList.remove("active");
 }
 
-function generateAndCacheQRCard() {
+function loadQrAssetImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = (err) => reject(err);
+    img.src = src;
+  });
+}
+
+function generateQROffline(text) {
+  return new Promise((resolve, reject) => {
+    const qrContainer = document.createElement("div");
+    new QRCode(qrContainer, {
+      text: text,
+      width: 300,
+      height: 300,
+      correctLevel: QRCode.CorrectLevel.H
+    });
+
+    let attempts = 0;
+    const checkInterval = setInterval(() => {
+      const qrImg = qrContainer.querySelector("img");
+      const qrCanvas = qrContainer.querySelector("canvas");
+
+      if (qrImg && qrImg.src && qrImg.src.startsWith("data:image")) {
+        clearInterval(checkInterval);
+        resolve(qrImg);
+      } else if (qrCanvas) {
+        clearInterval(checkInterval);
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = qrCanvas.toDataURL("image/png");
+      }
+
+      if (attempts++ > 50) {
+        clearInterval(checkInterval);
+        reject(new Error("QR Generation Timeout"));
+      }
+    }, 100);
+  });
+}
+
+function getJurusanQr(kelas) {
+  if (!kelas || kelas === "-") return "-";
+  const upper = kelas.toUpperCase().trim();
+  const kode = upper.split(" ")[0];
+
+  const map = {
+    "AKN": "AKUNTANSI",
+    "DKV": "DESAIN KOMUNIKASI VISUAL",
+    "FAR": "FARMASI",
+    "KLR": "KULINER",
+    "RPL": "REKAYASA PERANGKAT LUNAK",
+    "TKJ": "TEKNIK KOMPUTER DAN JARINGAN",
+    "TKR": "TEKNIK KENDARAAN RINGAN",
+    "TPM": "TEKNIK PEMESINAN",
+    "TSM": "TEKNIK SEPEDA MOTOR"
+  };
+
+  if (map[kode]) return map[kode];
+  if (upper.includes("FARMASI")) return "FARMASI";
+  if (upper.includes("PERAWAT") || upper.includes("KEPERAWATAN")) return "ASISTEN KEPERAWATAN";
+  if (upper.includes("TLM") || upper.includes("ANALIS")) return "TEKNOLOGI LABORATORIUM MEDIK";
+  if (upper.includes("RPL")) return "REKAYASA PERANGKAT LUNAK";
+  if (upper.includes("TKJ")) return "TEKNIK KOMPUTER DAN JARINGAN";
+  if (upper.includes("DKV")) return "DESAIN KOMUNIKASI VISUAL";
+  if (upper.includes("AKN") || upper.includes("AKUNTANSI")) return "AKUNTANSI";
+  if (upper.includes("KLR") || upper.includes("KULINER")) return "KULINER";
+  if (upper.includes("TKR")) return "TEKNIK KENDARAAN RINGAN";
+  if (upper.includes("TPM")) return "TEKNIK PEMESINAN";
+  if (upper.includes("TSM")) return "TEKNIK SEPEDA MOTOR";
+
+  return upper;
+}
+
+function fitNamaText(ctx, nama, maxWidth) {
+  let fontSize = 52;
+  while (fontSize > 40) {
+    ctx.font = `700 ${fontSize}px Oswald, sans-serif`;
+    const words = nama.split(" ");
+    let line = "";
+    const lines = [];
+
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + " ";
+      const width = ctx.measureText(testLine).width;
+      if (width > maxWidth && n > 0) {
+        lines.push(line.trim());
+        line = words[n] + " ";
+      } else {
+        line = testLine;
+      }
+    }
+    lines.push(line.trim());
+
+    if (lines.length <= 3) return { fontSize, lines };
+    fontSize -= 2;
+  }
+  return { fontSize: 40, lines: [nama] };
+}
+
+function drawNamaKelasCenter(ctx, nama, jurusan, x, centerY, maxWidth) {
+  const result = fitNamaText(ctx, nama, maxWidth);
+  let fontSize = result.fontSize;
+  const lines = result.lines;
+
+  if (lines.length === 1) fontSize += 14;
+  else if (lines.length === 2) fontSize += 6;
+  fontSize = Math.min(fontSize, 72);
+
+  const namaLineHeight = fontSize * 1.2;
+  const kelasFontSize = Math.round(fontSize * 0.8);
+  const gap = 10;
+  const totalHeight = (lines.length * namaLineHeight) + gap + (kelasFontSize * 1.2);
+  const startY = centerY - (totalHeight / 2) + namaLineHeight;
+
+  ctx.fillStyle = "#824653";
+  ctx.textAlign = "center";
+  ctx.font = `700 ${fontSize}px Oswald, sans-serif`;
+
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], x, startY + (i * namaLineHeight));
+  }
+
+  ctx.font = `400 ${kelasFontSize}px Oswald, sans-serif`;
+  ctx.fillText(jurusan, x, startY + (lines.length * namaLineHeight) + gap);
+}
+
+async function generateAndCacheQRCard() {
   const imgEl = document.getElementById("qrPreviewModal");
   const skelEl = document.getElementById("qrModalSkeleton");
   if (!imgEl || !skelEl) return;
@@ -922,67 +1054,50 @@ function generateAndCacheQRCard() {
   imgEl.style.display = "none";
   skelEl.style.display = "flex";
 
-  const tempDiv = document.createElement("div");
-  new QRCode(tempDiv, {
-    text: idSiswa,
-    width: 260,
-    height: 260,
-    colorDark: "#0f172a",
-    colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.H
-  });
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = 800;
+  canvas.height = 1200;
 
-  setTimeout(() => {
-    const qrCanvas = tempDiv.querySelector("canvas");
-    if (!qrCanvas) return;
+  const jurusan = getJurusanQr(kelasSiswa);
 
-    const palette = THEME_PALETTES[currentTheme] || THEME_PALETTES.burgundy;
-    const cardCanvas = document.createElement("canvas");
-    cardCanvas.width = 420;
-    cardCanvas.height = 630;
-    const ctx = cardCanvas.getContext("2d");
+  try {
+    const [bg, qrFinal] = await Promise.all([
+      loadQrAssetImage(QR_TEMPLATE_PATH),
+      generateQROffline(idSiswa)
+    ]);
 
-    // Background putih kartu
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, 420, 630);
+    if (document.fonts && document.fonts.load) {
+      await Promise.all([
+        document.fonts.load("700 64px Oswald"),
+        document.fonts.load("400 48px Oswald")
+      ]).catch(() => {});
+    }
 
-    // Header warna tema
-    ctx.fillStyle = palette.primary;
-    ctx.fillRect(0, 0, 420, 130);
+    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "700 22px Oswald, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("KARTU PRESENSI DIGITAL", 210, 56);
+    const qrSize = 480 * 0.9;
+    const x = (canvas.width - qrSize) / 2;
+    ctx.drawImage(qrFinal, x, 585, qrSize, qrSize);
 
-    ctx.font = "400 14px Roboto, sans-serif";
-    ctx.fillStyle = "rgba(255,255,255,0.88)";
-    ctx.fillText("SMK MEDIKACOM BANDUNG", 210, 84);
+    drawNamaKelasCenter(
+      ctx,
+      namaSiswa.toUpperCase(),
+      jurusan.toUpperCase(),
+      canvas.width / 2,
+      300,
+      600
+    );
 
-    // Frame QR
-    ctx.strokeStyle = "#e2e8f0";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(72, 165, 276, 276);
-    ctx.drawImage(qrCanvas, 80, 173, 260, 260);
-
-    // Identitas Siswa
-    ctx.fillStyle = "#0f172a";
-    ctx.font = "700 21px Roboto, sans-serif";
-    ctx.fillText(namaSiswa.toUpperCase(), 210, 492);
-
-    ctx.fillStyle = palette.primary;
-    ctx.font = "700 15px Roboto, sans-serif";
-    ctx.fillText(`${kelasSiswa} • NIS: ${idSiswa}`, 210, 522);
-
-    ctx.fillStyle = "#64748b";
-    ctx.font = "400 12px Roboto, sans-serif";
-    ctx.fillText("Tunjukkan kartu ini pada mesin scanner sekolah", 210, 585);
-
-    cachedQrDataUrl = cardCanvas.toDataURL("image/png");
+    cachedQrDataUrl = canvas.toDataURL("image/png");
     imgEl.src = cachedQrDataUrl;
     imgEl.style.display = "block";
     skelEl.style.display = "none";
-  }, 120);
+  } catch (err) {
+    console.error("❌ ERROR GENERATE QR:", err);
+    skelEl.style.display = "none";
+    alert("Gagal membuat Kartu QR. Pastikan file assets/template_qr.png tersedia.");
+  }
 }
 
 function downloadQRCard() {
@@ -992,7 +1107,7 @@ function downloadQRCard() {
   }
   const link = document.createElement("a");
   link.href = cachedQrDataUrl;
-  link.download = `Kartu_QR_${namaSiswa.replace(/\s+/g, "_")}.png`;
+  link.download = `QR_${namaSiswa.replace(/\s+/g, "_")}.png`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
