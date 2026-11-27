@@ -2751,9 +2751,25 @@ body.student-portal-body .floating-bottom-bar {
   }
 }
 
-.izin-empty-state {
-  padding: 24px 16px;
-  text-align: center;
-  color: #64748b;
+.izin-total-counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary, #824653) 10%, #f1f5f9);
+  color: var(--primary, #824653);
+  border: 1px solid color-mix(in srgb, var(--primary, #824653) 25%, #cbd5e1);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.izin-empty-row {
+  padding: 22px 14px !important;
+  text-align: center !important;
+  color: #64748b !important;
   font-size: 12.5px;
+  font-style: normal;
 }

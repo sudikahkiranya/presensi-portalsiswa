@@ -502,9 +502,16 @@
       <div class="modal-card-top">
         <div>
           <h4>Riwayat Izin Meninggalkan Sekolah</h4>
-          <p class="modal-sub">Status persetujuan dari Petugas Piket</p>
+          <p class="modal-sub">Status persetujuan &amp; catatan dari Petugas Piket</p>
         </div>
-        <button type="button" class="modal-x-btn" onclick="closeModalQuick(null, 'modalLogIzin')">✕</button>
+        <span class="izin-total-counter" id="badgeJumlahIzin">0 Izin</span>
+      </div>
+
+      <div class="izin-filter-strip" id="filterRiwayatIzinStrip">
+        <button type="button" class="izin-filter-chip is-active" data-filter="all" onclick="setFilterRiwayatIzin('all')">Semua</button>
+        <button type="button" class="izin-filter-chip" data-filter="active" onclick="setFilterRiwayatIzin('active')">Aktif / Proses</button>
+        <button type="button" class="izin-filter-chip" data-filter="done" onclick="setFilterRiwayatIzin('done')">Selesai / Disetujui</button>
+        <button type="button" class="izin-filter-chip" data-filter="rejected" onclick="setFilterRiwayatIzin('rejected')">Ditolak</button>
       </div>
 
       <div id="listRiwayatIzinContainer" class="modal-list-scroll"></div>
