@@ -421,24 +421,77 @@
       </div>
 
       <div class="form-group-modal">
-        <label for="inputModeIzinKeluar">Mode Izin</label>
-        <select id="inputModeIzinKeluar" onchange="updateModeIzinHint()">
-          <option value="keluar_kembali">Keluar Sementara &amp; Kembali ke Sekolah</option>
-          <option value="langsung_pulang">Langsung Pulang (Pulang Awal)</option>
-        </select>
-        <small id="modeIzinHintText" style="display:block; margin-top:6px; color:#64748b; font-size:12px; line-height:1.4;">
+        <label>Pilih Jenis / Mode Izin</label>
+        <div class="izin-mode-cards" role="radiogroup" aria-label="Mode Izin">
+          <label class="izin-mode-card is-selected" data-mode="keluar_kembali">
+            <input type="radio" name="radioModeIzinKeluar" value="keluar_kembali" checked onchange="onModeIzinRadioChange(this.value)">
+            <div class="izin-mode-card-body">
+              <div class="izin-mode-title">Keluar Sementara &amp; Kembali</div>
+              <div class="izin-mode-desc">Scan QR di pos saat keluar dan saat masuk kembali ke sekolah.</div>
+            </div>
+          </label>
+
+          <label class="izin-mode-card" data-mode="langsung_pulang">
+            <input type="radio" name="radioModeIzinKeluar" value="langsung_pulang" onchange="onModeIzinRadioChange(this.value)">
+            <div class="izin-mode-card-body">
+              <div class="izin-mode-title">Langsung Pulang (Pulang Awal)</div>
+              <div class="izin-mode-desc">Jam pulang dicatat resmi saat petugas piket menyetujui izin.</div>
+            </div>
+          </label>
+        </div>
+        <!-- Hidden/sync value agar kompatibel jika ada kode lama yang baca #inputModeIzinKeluar -->
+        <input type="hidden" id="inputModeIzinKeluar" value="keluar_kembali">
+        <small id="modeIzinHintText" class="izin-mode-hint">
           Setelah disetujui piket, scan QR di pos security saat keluar dan saat masuk kembali.
         </small>
       </div>
 
       <div class="form-group-modal">
         <label for="inputAlasanIzinKeluar">Alasan / Keperluan Izin</label>
-        <textarea id="inputAlasanIzinKeluar" rows="3" placeholder="Contoh: Kontrol ke dokter gigi / mengurus berkas di kelurahan / keperluan keluarga mendesak..."></textarea>
+        <textarea
+          id="inputAlasanIzinKeluar"
+          class="izin-textarea-fixed"
+          rows="3"
+          maxlength="250"
+          placeholder="Contoh: Kontrol ke dokter gigi / mengurus berkas di kelurahan / keperluan keluarga mendesak..."
+          oninput="updateAlasanCounter()"
+        ></textarea>
+        <div class="izin-textarea-meta">
+          <span id="modeIzinStatusGuard" class="izin-guard-note"></span>
+          <span id="alasanCharCounter" class="izin-char-counter">0 / 250</span>
+        </div>
       </div>
 
       <div class="modal-actions-end">
         <button type="button" class="btn-secondary-modal" onclick="closeModalQuick(null, 'modalIzin')">Batal</button>
         <button type="button" class="btn-primary-modal" id="btnSubmitIzinSiswa" onclick="submitIzinKeluarSiswa()">Kirim ke Piket</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Daftar / Riwayat Izin Meninggalkan Sekolah -->
+  <div class="qr-modal-overlay" id="modalLogIzin" onclick="closeModalQuick(event, 'modalLogIzin')">
+    <div class="qr-modal-card modal-wide-md" onclick="event.stopPropagation()">
+      <div class="modal-card-top">
+        <div>
+          <h4>Riwayat Izin Meninggalkan Sekolah</h4>
+          <p class="modal-sub">Status persetujuan &amp; catatan dari Petugas Piket</p>
+        </div>
+        <button type="button" class="modal-x-btn" onclick="closeModalQuick(null, 'modalLogIzin')">✕</button>
+      </div>
+
+      <div class="izin-filter-strip" id="filterRiwayatIzinStrip">
+        <button type="button" class="izin-filter-chip is-active" data-filter="all" onclick="setFilterRiwayatIzin('all')">Semua</button>
+        <button type="button" class="izin-filter-chip" data-filter="active" onclick="setFilterRiwayatIzin('active')">Aktif / Proses</button>
+        <button type="button" class="izin-filter-chip" data-filter="done" onclick="setFilterRiwayatIzin('done')">Selesai / Disetujui</button>
+        <button type="button" class="izin-filter-chip" data-filter="rejected" onclick="setFilterRiwayatIzin('rejected')">Ditolak</button>
+      </div>
+
+      <div id="listRiwayatIzinContainer" class="modal-list-scroll"></div>
+
+      <div class="modal-actions-end">
+        <button type="button" class="btn-primary-modal" onclick="closeModalQuick(null, 'modalLogIzin'); openModalQuick('modalIzin');">+ Ajukan Izin Baru</button>
+        <button type="button" class="btn-secondary-modal" onclick="closeModalQuick(null, 'modalLogIzin')">Tutup</button>
       </div>
     </div>
   </div>

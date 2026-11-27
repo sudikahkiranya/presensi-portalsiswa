@@ -1056,9 +1056,14 @@ function downloadQRCard() {
 /* ==========================================================================
    MODALS CEPAT (IZIN KELUAR, LOG IZIN, BIODATA, KLASEMEN)
    ========================================================================== */
+let activeRiwayatIzinFilter = "all";
+
 function openModalQuick(modalId) {
   const el = document.getElementById(modalId);
   if (el) el.classList.add("active");
+  if (modalId === "modalIzin") {
+    syncModalIzinState();
+  }
   if (modalId === "modalLogIzin") {
     loadRiwayatIzinSiswa();
   }
@@ -1082,6 +1087,90 @@ function updateModeIzinHint() {
   }
 }
 
+function onModeIzinRadioChange(mode) {
+  const normalized = mode === "langsung_pulang" ? "langsung_pulang" : "keluar_kembali";
+  const hiddenInput = document.getElementById("inputModeIzinKeluar");
+  if (hiddenInput) hiddenInput.value = normalized;
+
+  document.querySelectorAll(".izin-mode-card").forEach(card => {
+    card.classList.toggle("is-selected", card.dataset.mode === normalized);
+  });
+
+  updateModeIzinHint();
+}
+
+function resetFormIzinSiswa() {
+  onModeIzinRadioChange("keluar_kembali");
+  const rKeluar = document.querySelector('input[name="radioModeIzinKeluar"][value="keluar_kembali"]');
+  if (rKeluar) rKeluar.checked = true;
+
+  const textarea = document.getElementById("inputAlasanIzinKeluar");
+  if (textarea) textarea.value = "";
+  updateAlasanCounter();
+}
+
+function updateAlasanCounter() {
+  const textarea = document.getElementById("inputAlasanIzinKeluar");
+  const counter = document.getElementById("alasanCharCounter");
+  if (!textarea || !counter) return;
+  const max = Number(textarea.getAttribute("maxlength")) || 250;
+  counter.textContent = `${textarea.value.length} / ${max}`;
+}
+
+function getActiveIzinToday() {
+  const todayIso = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+  return riwayatIzinList.find(item => {
+    const isToday = String(item.tanggal_izin || "").slice(0, 10) === todayIso;
+    const st = String(item.status_izin || "").toLowerCase();
+    return isToday && (st === "menunggu_persetujuan" || st === "disetujui" || st === "sedang_keluar");
+  }) || null;
+}
+
+function syncModalIzinState() {
+  const activeItem = getActiveIzinToday();
+  const guardEl = document.getElementById("modeIzinStatusGuard");
+  const btnSubmit = document.getElementById("btnSubmitIzinSiswa");
+
+  if (guardEl) {
+    if (activeItem) {
+      const badge = formatStatusIzinBadge(activeItem.status_izin);
+      guardEl.textContent = `Izin aktif hari ini: ${badge.label}`;
+    } else {
+      guardEl.textContent = "";
+    }
+  }
+
+  if (btnSubmit) {
+    btnSubmit.disabled = Boolean(activeItem);
+  }
+
+  updateAlasanCounter();
+}
+
+function setFilterRiwayatIzin(filterKey) {
+  activeRiwayatIzinFilter = filterKey || "all";
+  document.querySelectorAll("#filterRiwayatIzinStrip .izin-filter-chip").forEach(btn => {
+    btn.classList.toggle("is-active", btn.dataset.filter === activeRiwayatIzinFilter);
+  });
+  renderRiwayatIzinModal();
+}
+
+function getFilteredRiwayatIzinList() {
+  return riwayatIzinList.filter(item => {
+    const st = String(item.status_izin || "").toLowerCase();
+    if (activeRiwayatIzinFilter === "active") {
+      return st === "menunggu_persetujuan" || st === "disetujui" || st === "sedang_keluar";
+    }
+    if (activeRiwayatIzinFilter === "done") {
+      return st === "selesai" || st === "disetujui";
+    }
+    if (activeRiwayatIzinFilter === "rejected") {
+      return st === "ditolak";
+    }
+    return true;
+  });
+}
+
 async function loadRiwayatIzinSiswa() {
   try {
     const res = await fetch(`${API_URL}?action=getRiwayatIzinSiswa&id_siswa=${encodeURIComponent(idSiswa)}`);
@@ -1090,10 +1179,12 @@ async function loadRiwayatIzinSiswa() {
     if (json && (json.success === true || json.status === "success")) {
       riwayatIzinList = Array.isArray(json.data) ? json.data : [];
       renderRiwayatIzinModal();
+      syncModalIzinState();
     }
   } catch (err) {
     console.warn("Gagal memuat riwayat izin siswa:", err);
     renderRiwayatIzinModal();
+    syncModalIzinState();
   }
 }
 
@@ -1107,15 +1198,9 @@ async function submitIzinKeluarSiswa() {
     return;
   }
 
-  const todayIso = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
-  const hasActiveToday = riwayatIzinList.some(item => {
-    const isToday = String(item.tanggal_izin || "").slice(0, 10) === todayIso;
-    const st = String(item.status_izin || "").toLowerCase();
-    return isToday && (st === "menunggu_persetujuan" || st === "disetujui" || st === "sedang_keluar");
-  });
-
-  if (hasActiveToday) {
+  if (getActiveIzinToday()) {
     showToast("Kamu masih memiliki pengajuan izin aktif hari ini yang belum selesai.", "info");
+    syncModalIzinState();
     return;
   }
 
@@ -1143,9 +1228,7 @@ async function submitIzinKeluarSiswa() {
     const json = await res.json();
 
     if (json && (json.success === true || json.status === "success")) {
-      document.getElementById("inputAlasanIzinKeluar").value = "";
-      document.getElementById("inputModeIzinKeluar").value = "keluar_kembali";
-      updateModeIzinHint();
+      resetFormIzinSiswa();
 
       await loadRiwayatIzinSiswa();
       closeModalQuick(null, "modalIzin");
@@ -1160,7 +1243,7 @@ async function submitIzinKeluarSiswa() {
   } finally {
     showLoading(false);
     if (btnSubmit) {
-      btnSubmit.disabled = false;
+      btnSubmit.disabled = Boolean(getActiveIzinToday());
       btnSubmit.textContent = "Kirim ke Piket";
     }
   }
@@ -1197,16 +1280,21 @@ function renderRiwayatIzinModal() {
   setText("badgeJumlahIzin", riwayatIzinList.length);
   if (!container) return;
 
-  if (!riwayatIzinList.length) {
+  const listToRender = getFilteredRiwayatIzinList();
+
+  if (!listToRender.length) {
+    const emptyMsg = riwayatIzinList.length
+      ? "Tidak ada riwayat izin yang sesuai dengan filter ini."
+      : "Belum ada riwayat pengajuan izin meninggalkan sekolah.";
     container.innerHTML = `
       <div style="padding:24px 16px; text-align:center; color:#64748b; font-size:13px;">
-        Belum ada riwayat pengajuan izin meninggalkan sekolah.
+        ${emptyMsg}
       </div>
     `;
     return;
   }
 
-  container.innerHTML = riwayatIzinList.map(item => {
+  container.innerHTML = listToRender.map(item => {
     const modeLabel = formatModeIzinLabel(item.mode_izin);
     const badge = formatStatusIzinBadge(item.status_izin);
     const tgl = item.tanggal_izin || "-";
