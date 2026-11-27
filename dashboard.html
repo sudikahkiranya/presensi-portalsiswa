@@ -475,33 +475,6 @@
       <div class="modal-card-top">
         <div>
           <h4>Riwayat Izin Meninggalkan Sekolah</h4>
-          <p class="modal-sub">Status persetujuan &amp; catatan dari Petugas Piket</p>
-        </div>
-        <button type="button" class="modal-x-btn" onclick="closeModalQuick(null, 'modalLogIzin')">✕</button>
-      </div>
-
-      <div class="izin-filter-strip" id="filterRiwayatIzinStrip">
-        <button type="button" class="izin-filter-chip is-active" data-filter="all" onclick="setFilterRiwayatIzin('all')">Semua</button>
-        <button type="button" class="izin-filter-chip" data-filter="active" onclick="setFilterRiwayatIzin('active')">Aktif / Proses</button>
-        <button type="button" class="izin-filter-chip" data-filter="done" onclick="setFilterRiwayatIzin('done')">Selesai / Disetujui</button>
-        <button type="button" class="izin-filter-chip" data-filter="rejected" onclick="setFilterRiwayatIzin('rejected')">Ditolak</button>
-      </div>
-
-      <div id="listRiwayatIzinContainer" class="modal-list-scroll"></div>
-
-      <div class="modal-actions-end">
-        <button type="button" class="btn-primary-modal" onclick="closeModalQuick(null, 'modalLogIzin'); openModalQuick('modalIzin');">+ Ajukan Izin Baru</button>
-        <button type="button" class="btn-secondary-modal" onclick="closeModalQuick(null, 'modalLogIzin')">Tutup</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal 3: Daftar / Riwayat Izin Meninggalkan Sekolah -->
-  <div class="qr-modal-overlay" id="modalLogIzin" onclick="closeModalQuick(event, 'modalLogIzin')">
-    <div class="qr-modal-card modal-wide-md" onclick="event.stopPropagation()">
-      <div class="modal-card-top">
-        <div>
-          <h4>Riwayat Izin Meninggalkan Sekolah</h4>
           <p class="modal-sub" id="subtitleRiwayatIzin">Jumlah Izin Keluar: 0</p>
         </div>
         <button type="button" class="modal-x-btn" onclick="closeModalQuick(null, 'modalLogIzin')">✕</button>
