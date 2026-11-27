@@ -31,27 +31,8 @@ let chartDotPoints = [];
 let selectedDotIndex = -1;
 let isDraggingChart = false;
 
-/* Dummy Riwayat Izin Meninggalkan Sekolah */
-let dummyIzinHistoryList = [
-  {
-    id: "IZN-001",
-    tanggal: "18 Nov 2026",
-    jenis: "Izin Keluar Sementara",
-    jamKeluar: "10:15",
-    jamKembali: "11:20",
-    alasan: "Mengurus administrasi KTP / Kartu Pelajar di kelurahan.",
-    status: "Disetujui Piket"
-  },
-  {
-    id: "IZN-002",
-    tanggal: "04 Nov 2026",
-    jenis: "Izin Pulang Awal",
-    jamKeluar: "12:30",
-    jamKembali: "-",
-    alasan: "Kontrol rutin dokter gigi (surat rujukan terlampir).",
-    status: "Disetujui Piket"
-  }
-];
+/* State Riwayat Izin Meninggalkan Sekolah (Sinkron dengan Sheet log_izin_keluar) */
+let riwayatIzinList = [];
 
 /* Data Klasemen Kedisiplinan */
 function getKlasemenDataList() {
@@ -159,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setAppTheme(currentTheme, false);
   populateIdentityUI();
   initGreetingAndRank();
-  renderRiwayatIzinModal();
+  loadRiwayatIzinSiswa();
   loadDashboardData();
 
   const idSiswa = localStorage.getItem("idSiswa");
@@ -1090,6 +1071,9 @@ function downloadQRCard() {
 function openModalQuick(modalId) {
   const el = document.getElementById(modalId);
   if (el) el.classList.add("active");
+  if (modalId === "modalLogIzin") {
+    loadRiwayatIzinSiswa();
+  }
 }
 
 function closeModalQuick(e, modalId) {
@@ -1098,67 +1082,181 @@ function closeModalQuick(e, modalId) {
   if (el) el.classList.remove("active");
 }
 
-function toggleJamKembaliField() {
-  const jenis = document.getElementById("inputJenisIzinKeluar")?.value || "";
-  const field = document.getElementById("fieldJamKembali");
-  if (field) {
-    field.style.display = jenis.includes("Pulang Awal") ? "none" : "block";
+function updateModeIzinHint() {
+  const mode = document.getElementById("inputModeIzinKeluar")?.value || "keluar_kembali";
+  const hintEl = document.getElementById("modeIzinHintText");
+  if (!hintEl) return;
+
+  if (mode === "langsung_pulang") {
+    hintEl.textContent = "Waktu pulang resmi dicatat otomatis saat petugas piket menyetujui pengajuan ini.";
+  } else {
+    hintEl.textContent = "Setelah disetujui piket, scan QR di pos security saat keluar dan saat masuk kembali.";
   }
 }
 
-function submitDummyIzinKeluar() {
-  const jenis = document.getElementById("inputJenisIzinKeluar")?.value || "Izin Keluar Sementara";
-  const jamKeluar = document.getElementById("inputJamKeluar")?.value || "10:30";
-  const jamKembali = jenis.includes("Pulang Awal")
-    ? "-"
-    : (document.getElementById("inputJamKembali")?.value || "11:30");
-  const alasan = (document.getElementById("inputAlasanIzinKeluar")?.value || "").trim();
+async function loadRiwayatIzinSiswa() {
+  try {
+    const res = await fetch(`${API_URL}?action=getRiwayatIzinSiswa&id_siswa=${encodeURIComponent(idSiswa)}`);
+    const json = await res.json();
 
-  if (!alasan) {
+    if (json && (json.success === true || json.status === "success")) {
+      riwayatIzinList = Array.isArray(json.data) ? json.data : [];
+      renderRiwayatIzinModal();
+    }
+  } catch (err) {
+    console.warn("Gagal memuat riwayat izin siswa:", err);
+    renderRiwayatIzinModal();
+  }
+}
+
+async function submitIzinKeluarSiswa() {
+  const modeIzin = document.getElementById("inputModeIzinKeluar")?.value || "keluar_kembali";
+  const alasanIzin = (document.getElementById("inputAlasanIzinKeluar")?.value || "").trim();
+  const btnSubmit = document.getElementById("btnSubmitIzinSiswa");
+
+  if (!alasanIzin) {
     alert("Mohon isi alasan atau keperluan izin terlebih dahulu.");
     return;
   }
 
-  const todayStr = new Date().toLocaleDateString("id-ID", {
-    day: "2-digit", month: "short", year: "numeric"
+  // Cegah pengajuan ganda jika masih ada izin aktif hari ini yang belum tuntas
+  const todayIso = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+  const hasActiveToday = riwayatIzinList.some(item => {
+    const isToday = String(item.tanggal_izin || "").slice(0, 10) === todayIso;
+    const st = String(item.status_izin || "").toLowerCase();
+    return isToday && (st === "menunggu_persetujuan" || st === "disetujui" || st === "sedang_keluar");
   });
 
-  dummyIzinHistoryList.unshift({
-    id: `IZN-00${dummyIzinHistoryList.length + 1}`,
-    tanggal: todayStr,
-    jenis,
-    jamKeluar,
-    jamKembali,
-    alasan,
-    status: "Menunggu Persetujuan"
-  });
+  if (hasActiveToday) {
+    alert("Kamu masih memiliki pengajuan izin aktif hari ini yang belum selesai.");
+    return;
+  }
 
-  document.getElementById("inputAlasanIzinKeluar").value = "";
-  renderRiwayatIzinModal();
-  closeModalQuick(null, "modalIzin");
-  openModalQuick("modalLogIzin");
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = "Mengirim...";
+  }
+  showLoading(true, "Mengirim pengajuan izin ke piket...");
+
+  try {
+    const payload = {
+      action: "ajukanIzinSiswa",
+      id_siswa: idSiswa,
+      nama_siswa: namaSiswa,
+      kelas_siswa: kelasSiswa,
+      mode_izin: modeIzin,
+      alasan_izin: alasanIzin
+    };
+
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+
+    if (json && (json.success === true || json.status === "success")) {
+      document.getElementById("inputAlasanIzinKeluar").value = "";
+      document.getElementById("inputModeIzinKeluar").value = "keluar_kembali";
+      updateModeIzinHint();
+
+      await loadRiwayatIzinSiswa();
+      closeModalQuick(null, "modalIzin");
+      openModalQuick("modalLogIzin");
+    } else {
+      alert(json?.message || "Gagal mengirim pengajuan izin. Silakan coba lagi.");
+    }
+  } catch (err) {
+    console.error("Error submitIzinKeluarSiswa:", err);
+    alert("Terjadi gangguan koneksi saat mengirim pengajuan izin.");
+  } finally {
+    showLoading(false);
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = "Kirim ke Piket";
+    }
+  }
+}
+
+function formatModeIzinLabel(mode) {
+  return mode === "langsung_pulang"
+    ? "Langsung Pulang (Pulang Awal)"
+    : "Keluar Sementara & Kembali";
+}
+
+function formatStatusIzinBadge(status) {
+  const s = String(status || "").toLowerCase();
+  if (s === "menunggu_persetujuan") {
+    return { label: "Menunggu Persetujuan", cls: "is-pending" };
+  }
+  if (s === "disetujui") {
+    return { label: "Disetujui Piket", cls: "is-approved" };
+  }
+  if (s === "sedang_keluar") {
+    return { label: "Sedang di Luar Sekolah", cls: "is-pending" };
+  }
+  if (s === "selesai") {
+    return { label: "Selesai", cls: "is-approved" };
+  }
+  if (s === "ditolak") {
+    return { label: "Ditolak Piket", cls: "is-rejected" };
+  }
+  return { label: status || "-", cls: "is-pending" };
 }
 
 function renderRiwayatIzinModal() {
   const container = document.getElementById("listRiwayatIzinContainer");
-  setText("badgeJumlahIzin", dummyIzinHistoryList.length);
+  setText("badgeJumlahIzin", riwayatIzinList.length);
   if (!container) return;
 
-  container.innerHTML = dummyIzinHistoryList.map(item => {
-    const isApproved = item.status.toLowerCase().includes("disetujui");
-    const isRejected = item.status.toLowerCase().includes("ditolak");
-    const pillClass = isApproved ? "is-approved" : (isRejected ? "is-rejected" : "is-pending");
+  if (!riwayatIzinList.length) {
+    container.innerHTML = `
+      <div style="padding:24px 16px; text-align:center; color:#64748b; font-size:13px;">
+        Belum ada riwayat pengajuan izin meninggalkan sekolah.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = riwayatIzinList.map(item => {
+    const modeLabel = formatModeIzinLabel(item.mode_izin);
+    const badge = formatStatusIzinBadge(item.status_izin);
+    const tgl = item.tanggal_izin || "-";
+    const jamAjuan = item.waktu_pengajuan || "-";
+
+    let detailWaktuHtml = `<span>Ajuan: <strong>${jamAjuan}</strong></span>`;
+    if (item.mode_izin === "langsung_pulang") {
+      if (item.waktu_keputusan && (item.status_izin === "disetujui" || item.status_izin === "selesai")) {
+        detailWaktuHtml += ` • <span>Jam Pulang: <strong>${item.waktu_keputusan}</strong></span>`;
+      }
+    } else {
+      if (item.waktu_keluar) {
+        detailWaktuHtml += ` • <span>Keluar: <strong>${item.waktu_keluar}</strong></span>`;
+      }
+      if (item.waktu_kembali) {
+        detailWaktuHtml += ` • <span>Kembali: <strong>${item.waktu_kembali}</strong></span>`;
+      }
+    }
+
+    const catatanHtml = item.catatan_piket
+      ? `<div style="margin-top:6px; padding:6px 8px; border-radius:6px; background:#f8fafc; border-left:3px solid var(--primary); font-size:12px; color:#334155;">
+           <strong>Catatan Piket${item.diproses_oleh ? ` (${item.diproses_oleh})` : ""}:</strong> ${item.catatan_piket}
+         </div>`
+      : (item.diproses_oleh
+          ? `<div style="margin-top:4px; font-size:11.5px; color:#64748b;">Diproses oleh: <strong>${item.diproses_oleh}</strong></div>`
+          : "");
 
     return `
       <div class="izin-history-item">
         <div class="izin-history-top">
-          <span class="izin-history-type">${item.jenis}</span>
-          <span class="izin-status-pill ${pillClass}">${item.status}</span>
+          <span class="izin-history-type">${modeLabel}</span>
+          <span class="izin-status-pill ${badge.cls}">${badge.label}</span>
         </div>
         <div class="izin-history-meta">
-          📅 ${item.tanggal} • Keluar: ${item.jamKeluar} ${item.jamKembali !== "-" ? `• Kembali: ${item.jamKembali}` : ""}
+          📅 ${tgl} • ${detailWaktuHtml}
         </div>
-        <div class="izin-history-reason">${item.alasan}</div>
+        <div class="izin-history-reason">${item.alasan_izin || "-"}</div>
+        ${catatanHtml}
       </div>
     `;
   }).join("");

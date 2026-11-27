@@ -414,38 +414,30 @@
       <div class="modal-card-top">
         <div>
           <h4>Ajukan Izin Meninggalkan Sekolah</h4>
-          <p class="modal-sub">Pengajuan akan diteruskan ke Portal Piket untuk persetujuan</p>
+          <p class="modal-sub">Waktu pengajuan tercatat otomatis &amp; diteruskan ke Portal Piket</p>
         </div>
         <button type="button" class="modal-x-btn" onclick="closeModalQuick(null, 'modalIzin')">✕</button>
       </div>
 
       <div class="form-group-modal">
-        <label for="inputJenisIzinKeluar">Kategori Izin</label>
-        <select id="inputJenisIzinKeluar" onchange="toggleJamKembaliField()">
-          <option value="Izin Keluar Sementara">Izin Keluar Sementara (Kembali ke Sekolah)</option>
-          <option value="Izin Pulang Awal">Izin Pulang Awal (Tidak Kembali)</option>
+        <label for="inputModeIzinKeluar">Mode Izin</label>
+        <select id="inputModeIzinKeluar" onchange="updateModeIzinHint()">
+          <option value="keluar_kembali">Keluar Sementara &amp; Kembali ke Sekolah</option>
+          <option value="langsung_pulang">Langsung Pulang (Pulang Awal)</option>
         </select>
-      </div>
-
-      <div class="form-row-2col">
-        <div class="form-group-modal">
-          <label for="inputJamKeluar">Rencana Jam Keluar</label>
-          <input type="time" id="inputJamKeluar" value="10:30">
-        </div>
-        <div class="form-group-modal" id="fieldJamKembali">
-          <label for="inputJamKembali">Estimasi Jam Kembali</label>
-          <input type="time" id="inputJamKembali" value="11:30">
-        </div>
+        <small id="modeIzinHintText" style="display:block; margin-top:6px; color:#64748b; font-size:12px; line-height:1.4;">
+          Setelah disetujui piket, scan QR di pos security saat keluar dan saat masuk kembali.
+        </small>
       </div>
 
       <div class="form-group-modal">
-        <label for="inputAlasanIzinKeluar">Alasan / Keperluan</label>
-        <textarea id="inputAlasanIzinKeluar" rows="3" placeholder="Contoh: Kontrol ke dokter gigi / keperluan keluarga mendesak..."></textarea>
+        <label for="inputAlasanIzinKeluar">Alasan / Keperluan Izin</label>
+        <textarea id="inputAlasanIzinKeluar" rows="3" placeholder="Contoh: Kontrol ke dokter gigi / mengurus berkas di kelurahan / keperluan keluarga mendesak..."></textarea>
       </div>
 
       <div class="modal-actions-end">
         <button type="button" class="btn-secondary-modal" onclick="closeModalQuick(null, 'modalIzin')">Batal</button>
-        <button type="button" class="btn-primary-modal" onclick="submitDummyIzinKeluar()">Kirim ke Piket</button>
+        <button type="button" class="btn-primary-modal" id="btnSubmitIzinSiswa" onclick="submitIzinKeluarSiswa()">Kirim ke Piket</button>
       </div>
     </div>
   </div>
