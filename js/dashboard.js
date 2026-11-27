@@ -1287,55 +1287,74 @@ function renderRiwayatIzinModal() {
       ? "Tidak ada riwayat izin yang sesuai dengan filter ini."
       : "Belum ada riwayat pengajuan izin meninggalkan sekolah.";
     container.innerHTML = `
-      <div style="padding:24px 16px; text-align:center; color:#64748b; font-size:13px;">
+      <div class="izin-empty-state">
         ${emptyMsg}
       </div>
     `;
     return;
   }
 
-  container.innerHTML = listToRender.map(item => {
-    const modeLabel = formatModeIzinLabel(item.mode_izin);
+  const rowsHtml = listToRender.map(item => {
+    const modeShort = item.mode_izin === "langsung_pulang"
+      ? "Langsung Pulang"
+      : "Keluar & Kembali";
     const badge = formatStatusIzinBadge(item.status_izin);
     const tgl = item.tanggal_izin || "-";
     const jamAjuan = item.waktu_pengajuan || "-";
 
-    let detailWaktuHtml = `<span>Ajuan: <strong>${jamAjuan}</strong></span>`;
+    const jamParts = [`Ajuan ${jamAjuan}`];
     if (item.mode_izin === "langsung_pulang") {
       if (item.waktu_keputusan && (item.status_izin === "disetujui" || item.status_izin === "selesai")) {
-        detailWaktuHtml += ` • <span>Jam Pulang: <strong>${item.waktu_keputusan}</strong></span>`;
+        jamParts.push(`Pulang ${item.waktu_keputusan}`);
       }
     } else {
-      if (item.waktu_keluar) {
-        detailWaktuHtml += ` • <span>Keluar: <strong>${item.waktu_keluar}</strong></span>`;
-      }
-      if (item.waktu_kembali) {
-        detailWaktuHtml += ` • <span>Kembali: <strong>${item.waktu_kembali}</strong></span>`;
-      }
+      if (item.waktu_keluar) jamParts.push(`Keluar ${item.waktu_keluar}`);
+      if (item.waktu_kembali) jamParts.push(`Kembali ${item.waktu_kembali}`);
     }
 
-    const catatanHtml = item.catatan_piket
-      ? `<div style="margin-top:6px; padding:6px 8px; border-radius:6px; background:#f8fafc; border-left:3px solid var(--primary); font-size:12px; color:#334155;">
-           <strong>Catatan Piket${item.diproses_oleh ? ` (${item.diproses_oleh})` : ""}:</strong> ${item.catatan_piket}
-         </div>`
+    const catatanLine = item.catatan_piket
+      ? `<div class="izin-tbl-note"><strong>Catatan${item.diproses_oleh ? ` (${item.diproses_oleh})` : ""}:</strong> ${item.catatan_piket}</div>`
       : (item.diproses_oleh
-          ? `<div style="margin-top:4px; font-size:11.5px; color:#64748b;">Diproses oleh: <strong>${item.diproses_oleh}</strong></div>`
+          ? `<div class="izin-tbl-note">Diproses oleh <strong>${item.diproses_oleh}</strong></div>`
           : "");
 
     return `
-      <div class="izin-history-item">
-        <div class="izin-history-top">
-          <span class="izin-history-type">${modeLabel}</span>
+      <tr>
+        <td class="izin-col-time">
+          <div class="izin-tbl-date">${tgl}</div>
+          <div class="izin-tbl-times">${jamParts.join(" • ")}</div>
+        </td>
+        <td class="izin-col-mode">
+          <span class="izin-tbl-mode">${modeShort}</span>
+        </td>
+        <td class="izin-col-reason">
+          <div class="izin-tbl-reason">${item.alasan_izin || "-"}</div>
+          ${catatanLine}
+        </td>
+        <td class="izin-col-status">
           <span class="izin-status-pill ${badge.cls}">${badge.label}</span>
-        </div>
-        <div class="izin-history-meta">
-          📅 ${tgl} • ${detailWaktuHtml}
-        </div>
-        <div class="izin-history-reason">${item.alasan_izin || "-"}</div>
-        ${catatanHtml}
-      </div>
+        </td>
+      </tr>
     `;
   }).join("");
+
+  container.innerHTML = `
+    <div class="izin-compact-table-wrap">
+      <table class="izin-compact-table">
+        <thead>
+          <tr>
+            <th>Tanggal &amp; Jam</th>
+            <th>Jenis</th>
+            <th>Alasan &amp; Catatan</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 function openKlasemenModal() {
