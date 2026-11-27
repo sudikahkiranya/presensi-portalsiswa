@@ -1324,63 +1324,70 @@ function formatTanggalDanJam(rawDate, rawTime) {
 
 function renderRiwayatIzinModal() {
   const container = document.getElementById("listRiwayatIzinContainer");
-  setText("badgeJumlahIzin", riwayatIzinList.length);
+  const totalCount = Array.isArray(riwayatIzinList) ? riwayatIzinList.length : 0;
+  setText("badgeJumlahIzin", `${totalCount} Izin`);
   if (!container) return;
 
   const listToRender = getFilteredRiwayatIzinList();
 
+  let tbodyHtml = "";
   if (!listToRender.length) {
-    const emptyMsg = riwayatIzinList.length
+    const emptyMsg = totalCount
       ? "Tidak ada riwayat izin yang sesuai dengan filter ini."
       : "Belum ada riwayat pengajuan izin meninggalkan sekolah.";
-    container.innerHTML = `<div class="izin-empty-state">${emptyMsg}</div>`;
-    return;
-  }
-
-  const rowsHtml = listToRender.map(item => {
-    const isPulang = item.mode_izin === "langsung_pulang";
-    const jenisLabel = isPulang ? "Langsung Pulang" : "Keluar & Kembali";
-    const badge = formatStatusIzinBadge(item.status_izin);
-
-    const diajukanText = formatTanggalDanJam(item.tanggal_izin, item.waktu_pengajuan);
-
-    const jamDetailList = [];
-    if (isPulang) {
-      if (item.waktu_keputusan && (item.status_izin === "disetujui" || item.status_izin === "selesai")) {
-        const jamPulang = formatJamSingkat(item.waktu_keputusan);
-        if (jamPulang) jamDetailList.push(`Pulang: <strong>${jamPulang}</strong>`);
-      }
-    } else {
-      const jamKeluar = formatJamSingkat(item.waktu_keluar) || "-";
-      const jamKembali = formatJamSingkat(item.waktu_kembali) || "-";
-      jamDetailList.push(`Keluar: <strong>${jamKeluar}</strong> • Kembali: <strong>${jamKembali}</strong>`);
-    }
-
-    const catatanHtml = item.catatan_piket
-      ? `<div class="izin-tbl-note"><strong>Catatan${item.diproses_oleh ? ` (${item.diproses_oleh})` : ""}:</strong> ${item.catatan_piket}</div>`
-      : (item.diproses_oleh
-          ? `<div class="izin-tbl-note">Diproses oleh <strong>${item.diproses_oleh}</strong></div>`
-          : "");
-
-    return `
+    tbodyHtml = `
       <tr>
-        <td class="izin-col-time">
-          <div class="izin-tbl-datetime">${diajukanText}</div>
-        </td>
-        <td class="izin-col-mode">
-          <span class="izin-tbl-mode">${jenisLabel}</span>
-          ${jamDetailList.length ? `<div class="izin-tbl-sub">${jamDetailList.join(" • ")}</div>` : ""}
-        </td>
-        <td class="izin-col-reason">
-          <div class="izin-tbl-reason">${item.alasan_izin || "-"}</div>
-          ${catatanHtml}
-        </td>
-        <td class="izin-col-status">
-          <span class="izin-status-pill ${badge.cls}">${badge.label}</span>
-        </td>
+        <td colspan="4" class="izin-empty-row">${emptyMsg}</td>
       </tr>
     `;
-  }).join("");
+  } else {
+    tbodyHtml = listToRender.map(item => {
+      const isPulang = item.mode_izin === "langsung_pulang";
+      const jenisLabel = isPulang ? "Langsung Pulang" : "Keluar & Kembali";
+      const badge = formatStatusIzinBadge(item.status_izin);
+
+      const diajukanText = formatTanggalDanJam(item.tanggal_izin, item.waktu_pengajuan);
+
+      const jamDetailList = [];
+      if (isPulang) {
+        const jamPulang = formatJamSingkat(item.waktu_keputusan || item.jam_pulang);
+        if (jamPulang && (item.status_izin === "disetujui" || item.status_izin === "selesai")) {
+          jamDetailList.push(`Pulang: <strong>${jamPulang}</strong>`);
+        } else {
+          jamDetailList.push(`Pulang: <strong>-</strong>`);
+        }
+      } else {
+        const jamKeluar = formatJamSingkat(item.waktu_keluar) || "-";
+        const jamKembali = formatJamSingkat(item.waktu_kembali) || "-";
+        jamDetailList.push(`Keluar: <strong>${jamKeluar}</strong> • Kembali: <strong>${jamKembali}</strong>`);
+      }
+
+      const catatanHtml = item.catatan_piket
+        ? `<div class="izin-tbl-note"><strong>Catatan${item.diproses_oleh ? ` (${item.diproses_oleh})` : ""}:</strong> ${item.catatan_piket}</div>`
+        : (item.diproses_oleh
+            ? `<div class="izin-tbl-note">Diproses oleh <strong>${item.diproses_oleh}</strong></div>`
+            : "");
+
+      return `
+        <tr>
+          <td class="izin-col-time">
+            <div class="izin-tbl-datetime">${diajukanText}</div>
+          </td>
+          <td class="izin-col-mode">
+            <span class="izin-tbl-mode">${jenisLabel}</span>
+            <div class="izin-tbl-sub">${jamDetailList.join(" • ")}</div>
+          </td>
+          <td class="izin-col-reason">
+            <div class="izin-tbl-reason">${item.alasan_izin || "-"}</div>
+            ${catatanHtml}
+          </td>
+          <td class="izin-col-status">
+            <span class="izin-status-pill ${badge.cls}">${badge.label}</span>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
 
   container.innerHTML = `
     <div class="izin-compact-table-wrap">
@@ -1393,7 +1400,7 @@ function renderRiwayatIzinModal() {
             <th>Status</th>
           </tr>
         </thead>
-        <tbody>${rowsHtml}</tbody>
+        <tbody>${tbodyHtml}</tbody>
       </table>
     </div>
   `;
