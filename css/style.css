@@ -2580,13 +2580,15 @@ body.student-portal-body .floating-bottom-bar {
 }
 
 /* --- Riwayat Izin: Modal, Header, Filter Chip & Compact Table --- */
+/* Sembunyikan tombol X khusus di modal riwayat izin */
 #modalLogIzin .modal-x-btn {
   display: none !important;
 }
 
+/* Modal riwayat cukup lebar di desktop agar fit 5 kolom tanpa scrollbar samping */
 #modalLogIzin .qr-modal-card.modal-wide-md {
-  width: min(880px, 94vw);
-  max-width: 880px;
+  width: min(900px, 94vw);
+  max-width: 900px;
 }
 
 .izin-total-counter {
@@ -2652,6 +2654,42 @@ body.student-portal-body .floating-bottom-bar {
   text-align: center;
 }
 
+/* Header tetap di atas, scroll vertikal dimulai tepat di bawah header */
+.izin-compact-table thead,
+.izin-compact-table tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.izin-compact-table tbody {
+  display: block;
+  max-height: 340px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.izin-compact-table tbody::-webkit-scrollbar {
+  width: 6px;
+}
+
+.izin-compact-table tbody::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.izin-compact-table tbody::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.izin-compact-table tbody::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 .izin-compact-table thead th {
   background: #f8fafc;
   color: #475569;
@@ -2673,15 +2711,12 @@ body.student-portal-body .floating-bottom-bar {
   color: #1e293b;
 }
 
-.izin-compact-table tbody tr:last-child td {
-  border-bottom: none;
+.izin-compact-table tbody tr:nth-child(even) td {
+  background: #f8fafc;
 }
 
-.izin-col-time,
-.izin-col-mode,
-.izin-col-status,
-.izin-col-jam {
-  white-space: nowrap;
+.izin-compact-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .izin-tbl-datetime {
@@ -2698,6 +2733,7 @@ body.student-portal-body .floating-bottom-bar {
   background: #f1f5f9;
   padding: 2px 8px;
   border-radius: 6px;
+  white-space: nowrap;
 }
 
 .izin-jam-line {
@@ -2738,6 +2774,7 @@ body.student-portal-body .floating-bottom-bar {
   font-weight: 700;
   padding: 3px 9px;
   border-radius: 999px;
+  white-space: nowrap;
 }
 
 .izin-empty-row {
