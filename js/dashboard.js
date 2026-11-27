@@ -1355,14 +1355,14 @@ function renderRiwayatIzinModal() {
       if (isPulang) {
         const jamPulang = formatJamSingkat(item.waktu_keputusan || item.jam_pulang);
         if (jamPulang && st === "disetujui") {
-          jamKeluarKembaliHtml = `<div>Pulang: <strong>${jamPulang}</strong></div>`;
+          jamKeluarKembaliHtml = `<div class="izin-jam-line">Pulang: <strong>${jamPulang}</strong></div>`;
         }
       } else {
         const jamKeluar = formatJamSingkat(item.waktu_keluar) || "-";
         const jamKembali = formatJamSingkat(item.waktu_kembali) || "-";
         jamKeluarKembaliHtml = `
-          <div>Keluar: <strong>${jamKeluar}</strong></div>
-          <div class="izin-tbl-sub">Kembali: <strong>${jamKembali}</strong></div>
+          <div class="izin-jam-line">Keluar: <strong>${jamKeluar}</strong></div>
+          <div class="izin-jam-line">Kembali: <strong>${jamKembali}</strong></div>
         `;
       }
 
@@ -1402,7 +1402,7 @@ function renderRiwayatIzinModal() {
           <tr>
             <th>Tanggal &amp; Jam</th>
             <th>Jenis</th>
-            <th>Keluar &amp; Kembali</th>
+            <th>Jam Keluar / Kembali</th>
             <th>Alasan &amp; Catatan</th>
             <th>Status</th>
           </tr>

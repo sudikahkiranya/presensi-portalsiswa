@@ -2773,3 +2773,18 @@ body.student-portal-body .floating-bottom-bar {
   font-size: 12.5px;
   font-style: normal;
 }
+
+.izin-jam-line {
+  font-size: 12px;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.izin-jam-line + .izin-jam-line {
+  margin-top: 2px;
+}
+
+.izin-jam-line strong {
+  color: #0f172a;
+  font-weight: 700;
+}
