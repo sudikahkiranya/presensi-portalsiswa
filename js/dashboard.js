@@ -1058,6 +1058,15 @@ function downloadQRCard() {
    ========================================================================== */
 let activeRiwayatIzinFilter = "all";
 
+function normalizeStatusIzin(rawStatus) {
+  const s = String(rawStatus || "").trim().toLowerCase();
+  if (s === "ditolak" || s === "rejected") return "ditolak";
+  if (s === "disetujui" || s === "approved" || s === "selesai" || s === "sedang_keluar") {
+    return "disetujui";
+  }
+  return "menunggu_persetujuan";
+}
+
 function openModalQuick(modalId) {
   const el = document.getElementById(modalId);
   if (el) el.classList.add("active");
@@ -1121,8 +1130,8 @@ function getActiveIzinToday() {
   const todayIso = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
   return riwayatIzinList.find(item => {
     const isToday = String(item.tanggal_izin || "").slice(0, 10) === todayIso;
-    const st = String(item.status_izin || "").toLowerCase();
-    return isToday && (st === "menunggu_persetujuan" || st === "disetujui" || st === "sedang_keluar");
+    const st = normalizeStatusIzin(item.status_izin);
+    return isToday && (st === "menunggu_persetujuan" || st === "disetujui");
   }) || null;
 }
 
@@ -1157,16 +1166,9 @@ function setFilterRiwayatIzin(filterKey) {
 
 function getFilteredRiwayatIzinList() {
   return riwayatIzinList.filter(item => {
-    const st = String(item.status_izin || "").toLowerCase();
-    if (activeRiwayatIzinFilter === "active") {
-      return st === "menunggu_persetujuan" || st === "disetujui" || st === "sedang_keluar";
-    }
-    if (activeRiwayatIzinFilter === "done") {
-      return st === "selesai" || st === "disetujui";
-    }
-    if (activeRiwayatIzinFilter === "rejected") {
-      return st === "ditolak";
-    }
+    const st = normalizeStatusIzin(item.status_izin);
+    if (activeRiwayatIzinFilter === "disetujui") return st === "disetujui";
+    if (activeRiwayatIzinFilter === "ditolak") return st === "ditolak";
     return true;
   });
 }
@@ -1256,23 +1258,14 @@ function formatModeIzinLabel(mode) {
 }
 
 function formatStatusIzinBadge(status) {
-  const s = String(status || "").toLowerCase();
-  if (s === "menunggu_persetujuan") {
-    return { label: "Menunggu Persetujuan", cls: "is-pending" };
+  const st = normalizeStatusIzin(status);
+  if (st === "disetujui") {
+    return { label: "Disetujui", cls: "is-approved" };
   }
-  if (s === "disetujui") {
-    return { label: "Disetujui Piket", cls: "is-approved" };
+  if (st === "ditolak") {
+    return { label: "Ditolak", cls: "is-rejected" };
   }
-  if (s === "sedang_keluar") {
-    return { label: "Sedang di Luar Sekolah", cls: "is-pending" };
-  }
-  if (s === "selesai") {
-    return { label: "Selesai", cls: "is-approved" };
-  }
-  if (s === "ditolak") {
-    return { label: "Ditolak Piket", cls: "is-rejected" };
-  }
-  return { label: status || "-", cls: "is-pending" };
+  return { label: "Menunggu Persetujuan", cls: "is-pending" };
 }
 
 function formatTanggalId(rawDate) {
@@ -1325,7 +1318,16 @@ function formatTanggalDanJam(rawDate, rawTime) {
 function renderRiwayatIzinModal() {
   const container = document.getElementById("listRiwayatIzinContainer");
   const totalCount = Array.isArray(riwayatIzinList) ? riwayatIzinList.length : 0;
-  setText("badgeJumlahIzin", `${totalCount} Izin`);
+
+  // Badge ikon cukup angka saja
+  setText("badgeJumlahIzin", String(totalCount));
+
+  // Info jumlah izin keluar di bawah judul modal
+  const subEl = document.getElementById("subtitleRiwayatIzin");
+  if (subEl) {
+    subEl.textContent = `Total izin keluar: ${totalCount} • Status persetujuan & catatan dari Petugas Piket`;
+  }
+
   if (!container) return;
 
   const listToRender = getFilteredRiwayatIzinList();
@@ -1337,7 +1339,7 @@ function renderRiwayatIzinModal() {
       : "Belum ada riwayat pengajuan izin meninggalkan sekolah.";
     tbodyHtml = `
       <tr>
-        <td colspan="4" class="izin-empty-row">${emptyMsg}</td>
+        <td colspan="5" class="izin-empty-row">${emptyMsg}</td>
       </tr>
     `;
   } else {
@@ -1345,21 +1347,23 @@ function renderRiwayatIzinModal() {
       const isPulang = item.mode_izin === "langsung_pulang";
       const jenisLabel = isPulang ? "Langsung Pulang" : "Keluar & Kembali";
       const badge = formatStatusIzinBadge(item.status_izin);
+      const st = normalizeStatusIzin(item.status_izin);
 
       const diajukanText = formatTanggalDanJam(item.tanggal_izin, item.waktu_pengajuan);
 
-      const jamDetailList = [];
+      let jamKeluarKembaliHtml = `<span class="izin-muted-dash">-</span>`;
       if (isPulang) {
         const jamPulang = formatJamSingkat(item.waktu_keputusan || item.jam_pulang);
-        if (jamPulang && (item.status_izin === "disetujui" || item.status_izin === "selesai")) {
-          jamDetailList.push(`Pulang: <strong>${jamPulang}</strong>`);
-        } else {
-          jamDetailList.push(`Pulang: <strong>-</strong>`);
+        if (jamPulang && st === "disetujui") {
+          jamKeluarKembaliHtml = `<div>Pulang: <strong>${jamPulang}</strong></div>`;
         }
       } else {
         const jamKeluar = formatJamSingkat(item.waktu_keluar) || "-";
         const jamKembali = formatJamSingkat(item.waktu_kembali) || "-";
-        jamDetailList.push(`Keluar: <strong>${jamKeluar}</strong> • Kembali: <strong>${jamKembali}</strong>`);
+        jamKeluarKembaliHtml = `
+          <div>Keluar: <strong>${jamKeluar}</strong></div>
+          <div class="izin-tbl-sub">Kembali: <strong>${jamKembali}</strong></div>
+        `;
       }
 
       const catatanHtml = item.catatan_piket
@@ -1375,7 +1379,9 @@ function renderRiwayatIzinModal() {
           </td>
           <td class="izin-col-mode">
             <span class="izin-tbl-mode">${jenisLabel}</span>
-            <div class="izin-tbl-sub">${jamDetailList.join(" • ")}</div>
+          </td>
+          <td class="izin-col-jam">
+            ${jamKeluarKembaliHtml}
           </td>
           <td class="izin-col-reason">
             <div class="izin-tbl-reason">${item.alasan_izin || "-"}</div>
@@ -1396,6 +1402,7 @@ function renderRiwayatIzinModal() {
           <tr>
             <th>Tanggal &amp; Jam</th>
             <th>Jenis</th>
+            <th>Keluar &amp; Kembali</th>
             <th>Alasan &amp; Catatan</th>
             <th>Status</th>
           </tr>
