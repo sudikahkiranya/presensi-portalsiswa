@@ -1396,8 +1396,8 @@ function renderRiwayatIzinModal() {
   }
 
   container.innerHTML = `
-    <div class="izin-compact-table-wrap">
-      <table class="izin-compact-table">
+    <div class="izin-log-table-wrap">
+      <table class="izin-log-table">
         <thead>
           <tr>
             <th>Tanggal &amp; Jam</th>
