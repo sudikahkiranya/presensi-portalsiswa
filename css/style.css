@@ -2579,7 +2579,31 @@ body.student-portal-body .floating-bottom-bar {
   flex-shrink: 0;
 }
 
-/* --- Riwayat Izin: Filter Chip & Compact Table --- */
+/* --- Riwayat Izin: Modal, Header, Filter Chip & Compact Table --- */
+#modalLogIzin .modal-x-btn {
+  display: none !important;
+}
+
+#modalLogIzin .qr-modal-card.modal-wide-md {
+  width: min(880px, 94vw);
+  max-width: 880px;
+}
+
+.izin-total-counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary, #824653) 10%, #f1f5f9);
+  color: var(--primary, #824653);
+  border: 1px solid color-mix(in srgb, var(--primary, #824653) 25%, #cbd5e1);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .izin-filter-strip {
   display: flex;
   flex-wrap: wrap;
@@ -2587,37 +2611,6 @@ body.student-portal-body .floating-bottom-bar {
   margin-bottom: 10px;
 }
 
-.izin-filter-chip {
-  border: 1px solid #cbd5e1;
-  background: #f1f5f9;
-  color: #334155;
-  border-radius: 999px;
-  padding: 5px 12px;
-  font-size: 11.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.16s ease;
-}
-
-.izin-filter-chip:hover {
-  border-color: #94a3b8;
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.izin-filter-chip.is-active {
-  background: var(--primary, #824653);
-  border-color: var(--primary, #824653);
-  color: #ffffff;
-}
-
-/* Perlebar khusus modal riwayat izin di desktop */
-#modalLogIzin .qr-modal-card.modal-wide-md {
-  width: min(740px, 94vw);
-  max-width: 740px;
-}
-
-/* Chip filter riwayat: pastikan kontras idle jelas dan tidak ketimpa style global */
 #filterRiwayatIzinStrip .izin-filter-chip {
   border: 1px solid #cbd5e1 !important;
   background: #f1f5f9 !important;
@@ -2643,14 +2636,9 @@ body.student-portal-body .floating-bottom-bar {
   color: #ffffff !important;
 }
 
-/* Modal riwayat lega di desktop */
-#modalLogIzin .qr-modal-card.modal-wide-md {
-  width: min(760px, 94vw);
-  max-width: 760px;
-}
-
 .izin-compact-table-wrap {
   width: 100%;
+  box-sizing: border-box;
   overflow-x: hidden;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
@@ -2689,7 +2677,10 @@ body.student-portal-body .floating-bottom-bar {
   border-bottom: none;
 }
 
-.izin-col-time {
+.izin-col-time,
+.izin-col-mode,
+.izin-col-status,
+.izin-col-jam {
   white-space: nowrap;
 }
 
@@ -2697,13 +2688,6 @@ body.student-portal-body .floating-bottom-bar {
   font-weight: 700;
   color: #0f172a;
   font-size: 12px;
-}
-
-.izin-tbl-sub {
-  font-size: 11px;
-  color: #64748b;
-  margin-top: 3px;
-  line-height: 1.35;
 }
 
 .izin-tbl-mode {
@@ -2714,7 +2698,25 @@ body.student-portal-body .floating-bottom-bar {
   background: #f1f5f9;
   padding: 2px 8px;
   border-radius: 6px;
-  white-space: nowrap;
+}
+
+.izin-jam-line {
+  font-size: 12px;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.izin-jam-line + .izin-jam-line {
+  margin-top: 2px;
+}
+
+.izin-jam-line strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.izin-muted-dash {
+  color: #94a3b8;
 }
 
 .izin-tbl-reason {
@@ -2736,34 +2738,6 @@ body.student-portal-body .floating-bottom-bar {
   font-weight: 700;
   padding: 3px 9px;
   border-radius: 999px;
-  white-space: nowrap;
-}
-
-/* Scroll horizontal khusus tabel saat di layar mobile */
-@media (max-width: 640px) {
-  .izin-compact-table-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .izin-compact-table {
-    min-width: 580px;
-  }
-}
-
-.izin-total-counter {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 5px 11px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--primary, #824653) 10%, #f1f5f9);
-  color: var(--primary, #824653);
-  border: 1px solid color-mix(in srgb, var(--primary, #824653) 25%, #cbd5e1);
-  font-size: 11.5px;
-  font-weight: 700;
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .izin-empty-row {
@@ -2771,20 +2745,15 @@ body.student-portal-body .floating-bottom-bar {
   text-align: center !important;
   color: #64748b !important;
   font-size: 12.5px;
-  font-style: normal;
 }
 
-.izin-jam-line {
-  font-size: 12px;
-  color: #1e293b;
-  line-height: 1.4;
-}
+@media (max-width: 680px) {
+  .izin-compact-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 
-.izin-jam-line + .izin-jam-line {
-  margin-top: 2px;
-}
-
-.izin-jam-line strong {
-  color: #0f172a;
-  font-weight: 700;
+  .izin-compact-table {
+    min-width: 660px;
+  }
 }

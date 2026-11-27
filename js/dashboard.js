@@ -1322,10 +1322,10 @@ function renderRiwayatIzinModal() {
   // Badge ikon cukup angka saja
   setText("badgeJumlahIzin", String(totalCount));
 
-  // Info jumlah izin keluar di bawah judul modal
+  // Subjudul di bawah judul modal
   const subEl = document.getElementById("subtitleRiwayatIzin");
   if (subEl) {
-    subEl.textContent = `Total izin keluar: ${totalCount} • Status persetujuan & catatan dari Petugas Piket`;
+    subEl.textContent = `Jumlah Izin Keluar: ${totalCount}`;
   }
 
   if (!container) return;
@@ -1380,15 +1380,15 @@ function renderRiwayatIzinModal() {
           <td class="izin-col-mode">
             <span class="izin-tbl-mode">${jenisLabel}</span>
           </td>
-          <td class="izin-col-jam">
-            ${jamKeluarKembaliHtml}
-          </td>
           <td class="izin-col-reason">
             <div class="izin-tbl-reason">${item.alasan_izin || "-"}</div>
             ${catatanHtml}
           </td>
           <td class="izin-col-status">
             <span class="izin-status-pill ${badge.cls}">${badge.label}</span>
+          </td>
+          <td class="izin-col-jam">
+            ${jamKeluarKembaliHtml}
           </td>
         </tr>
       `;
@@ -1402,9 +1402,9 @@ function renderRiwayatIzinModal() {
           <tr>
             <th>Tanggal &amp; Jam</th>
             <th>Jenis</th>
-            <th>Jam Keluar / Kembali</th>
             <th>Alasan &amp; Catatan</th>
             <th>Status</th>
+            <th>Jam Keluar / Kembali</th>
           </tr>
         </thead>
         <tbody>${tbodyHtml}</tbody>
