@@ -137,21 +137,22 @@ function initCustomSelect(containerId, options, defaultValue, onChangeCallback) 
    INITIALIZATION & THEME SYNC
    ========================================================================== */
 document.addEventListener("DOMContentLoaded", () => {
+  window.SharedUI?.ensureMounted?.();
   setAppTheme(currentTheme, false);
   populateIdentityUI();
   initGreetingAndRank();
   loadRiwayatIzinSiswa();
   loadDashboardData();
 
-  const idSiswa = localStorage.getItem("idSiswa");
-  if (idSiswa && typeof RiwayatWidget !== "undefined") {
+  const currentIdSiswa = localStorage.getItem("idSiswa");
+  if (currentIdSiswa && typeof RiwayatWidget !== "undefined") {
     RiwayatWidget.init({
       containerId: "siswaRiwayatWidgetContainer",
       apiUrl: API_URL,
       mode: "siswa",
       layoutVariant: "siswa-split",
       defaultRange: "1m",
-      idSiswa: idSiswa
+      idSiswa: currentIdSiswa
     });
   }
 });
@@ -446,7 +447,7 @@ function applyCustomDateRange() {
   const start = document.getElementById("inputDateStart")?.value;
   const end = document.getElementById("inputDateEnd")?.value;
   if (!start || !end) {
-    alert("Pilih tanggal mulai dan tanggal akhir terlebih dahulu.");
+    showToast("Pilih tanggal mulai dan tanggal akhir terlebih dahulu.", "info");
     return;
   }
   setText("leftPaneTitle", `Riwayat Presensi (${start} s/d ${end})`);
@@ -645,7 +646,6 @@ function initChartDragScroll() {
 
 function getStatusPointConfig(status) {
   const s = (status || "").toLowerCase();
-  // Urutan 8 Level Sumbu Y (0 = paling atas, 7 = paling bawah) persis seperti Portal Piket
   if (s.includes("tepat") || s.includes("prakerin") || s.includes("dispensasi")) {
     return { level: 0, color: "#15803d", shortLabel: status || "Tepat Waktu", showTime: true };
   }
@@ -685,7 +685,7 @@ function renderTrendChart(rows) {
   if (!canvas || !wrapper || !scroller) return;
 
   const palette = THEME_PALETTES[currentTheme] || THEME_PALETTES.burgundy;
-  const pointSpacing = 105; // Jarak antar titik lega agar label status & jam tidak bertumpuk
+  const pointSpacing = 105;
   const minWidth = scroller.clientWidth || 680;
   const calculatedWidth = Math.max(minWidth, rows.length * pointSpacing + 90);
 
@@ -709,19 +709,17 @@ function renderTrendChart(rows) {
   const plotW = calculatedWidth - padLeft - padRight;
   const plotH = height - padTop - padBottom;
 
-  // 8 Tingkat Sumbu Y + Garis Putus-putus + Titik Warna Indikator di Kiri
   const yLevelColors = [
-    "#15803d", // 0: Tepat Waktu
-    "#d97706", // 1: Terlambat
-    "#c2410c", // 2: Sangat Terlambat
-    "#b91c1c", // 3: Sangat Terlambat Sekali
-    "#7c3aed", // 4: Hadir Tidak Presensi
-    "#0284c7", // 5: Izin
-    "#0891b2", // 6: Sakit
-    "#111827"  // 7: Alpa
+    "#15803d",
+    "#d97706",
+    "#c2410c",
+    "#b91c1c",
+    "#7c3aed",
+    "#0284c7",
+    "#0891b2",
+    "#111827"
   ];
 
-  // Garis Sumbu Y (kiri) & Sumbu X (bawah)
   ctx.strokeStyle = "#cbd5e1";
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -733,7 +731,6 @@ function renderTrendChart(rows) {
   for (let i = 0; i < 8; i++) {
     const y = padTop + (plotH / 7) * i;
 
-    // Garis horizontal putus-putus
     ctx.save();
     ctx.setLineDash([4, 4]);
     ctx.strokeStyle = "#e2e8f0";
@@ -744,7 +741,6 @@ function renderTrendChart(rows) {
     ctx.stroke();
     ctx.restore();
 
-    // Titik indikator warna di garis sumbu kiri
     ctx.beginPath();
     ctx.arc(padLeft, y, 3.6, 0, Math.PI * 2);
     ctx.fillStyle = yLevelColors[i];
@@ -770,7 +766,6 @@ function renderTrendChart(rows) {
     };
   });
 
-  // Garis Kurva Halus (Smooth Cubic Bezier)
   ctx.beginPath();
   chartDotPoints.forEach((p, idx) => {
     if (idx === 0) {
@@ -786,7 +781,6 @@ function renderTrendChart(rows) {
   ctx.lineCap = "round";
   ctx.stroke();
 
-  // Titik Data, Label Status + Jam Masuk di Bawah Titik, dan Tanggal Sumbu X
   ctx.textAlign = "center";
 
   chartDotPoints.forEach((p) => {
@@ -799,7 +793,6 @@ function renderTrendChart(rows) {
       ctx.fill();
     }
 
-    // Lingkaran Titik Status
     ctx.beginPath();
     ctx.arc(p.x, p.y, isSelected ? 6.2 : 5, 0, Math.PI * 2);
     ctx.fillStyle = p.color;
@@ -808,26 +801,22 @@ function renderTrendChart(rows) {
     ctx.strokeStyle = "#ffffff";
     ctx.stroke();
 
-    // Teks Status langsung di bawah titik
     ctx.font = "700 10.5px Roboto, sans-serif";
     ctx.fillStyle = p.color;
     ctx.fillText(p.shortLabel, p.x, p.y + 16);
 
-    // Teks Jam Masuk langsung di bawah status (jika hadir/terlambat)
     if (p.showTime && p.data.jamMasuk && p.data.jamMasuk !== "-") {
       ctx.font = "700 10.5px Roboto, sans-serif";
       ctx.fillStyle = "#475569";
       ctx.fillText(p.data.jamMasuk, p.x, p.y + 28);
     }
 
-    // Label Tanggal Sumbu X (format 14/10/26)
     const dateLabel = formatShortSlashDate(p.data);
     ctx.font = "700 11px Roboto, sans-serif";
     ctx.fillStyle = isSelected ? palette.primary : "#64748b";
     ctx.fillText(dateLabel, p.x, height - 12);
   });
 
-  // Auto-scroll ke data terbaru
   scroller.scrollLeft = scroller.scrollWidth;
 
   canvas.onclick = (e) => {
@@ -856,7 +845,7 @@ function renderTrendChart(rows) {
       renderTrendChart(rows);
     }
   };
-}   
+}
 
 /* ==========================================================================
    KARTU QR PRESENSI MODAL (TEMPLATE RESMI)
@@ -895,7 +884,6 @@ function generateQROffline(text) {
     correctLevel: QRCode.CorrectLevel.H
   });
 
-  // Langsung ambil canvas tanpa nunggu polling setInterval 100ms
   const qrCanvas = qrContainer.querySelector("canvas");
   if (qrCanvas) return Promise.resolve(qrCanvas);
 
@@ -961,7 +949,7 @@ async function generateAndCacheQRCard(silent = false) {
     console.error("❌ ERROR GENERATE QR:", err);
     if (!silent && skelEl) {
       skelEl.style.display = "none";
-      alert("Gagal membuat Kartu QR. Pastikan file assets/template_qr.png tersedia.");
+      showToast("Gagal membuat Kartu QR. Pastikan file assets/template_qr.png tersedia.", "error");
     }
   }
 }
@@ -1040,7 +1028,7 @@ function drawNamaKelasCenter(ctx, nama, jurusan, x, centerY, maxWidth) {
   const totalHeight = (lines.length * namaLineHeight) + gap + (kelasFontSize * 1.2);
   const startY = centerY - (totalHeight / 2) + namaLineHeight;
 
-  ctx.fillStyle = "#017873"; // Warna teal senada dengan desain kartu QR
+  ctx.fillStyle = "#017873";
   ctx.textAlign = "center";
   ctx.font = `700 ${fontSize}px Oswald, sans-serif`;
 
@@ -1115,11 +1103,10 @@ async function submitIzinKeluarSiswa() {
   const btnSubmit = document.getElementById("btnSubmitIzinSiswa");
 
   if (!alasanIzin) {
-    alert("Mohon isi alasan atau keperluan izin terlebih dahulu.");
+    showToast("Mohon isi alasan atau keperluan izin terlebih dahulu.", "error");
     return;
   }
 
-  // Cegah pengajuan ganda jika masih ada izin aktif hari ini yang belum tuntas
   const todayIso = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
   const hasActiveToday = riwayatIzinList.some(item => {
     const isToday = String(item.tanggal_izin || "").slice(0, 10) === todayIso;
@@ -1128,7 +1115,7 @@ async function submitIzinKeluarSiswa() {
   });
 
   if (hasActiveToday) {
-    alert("Kamu masih memiliki pengajuan izin aktif hari ini yang belum selesai.");
+    showToast("Kamu masih memiliki pengajuan izin aktif hari ini yang belum selesai.", "info");
     return;
   }
 
@@ -1163,12 +1150,13 @@ async function submitIzinKeluarSiswa() {
       await loadRiwayatIzinSiswa();
       closeModalQuick(null, "modalIzin");
       openModalQuick("modalLogIzin");
+      showToast("Pengajuan izin berhasil dikirim ke petugas piket.", "success");
     } else {
-      alert(json?.message || "Gagal mengirim pengajuan izin. Silakan coba lagi.");
+      showToast(json?.message || "Gagal mengirim pengajuan izin. Silakan coba lagi.", "error");
     }
   } catch (err) {
     console.error("Error submitIzinKeluarSiswa:", err);
-    alert("Terjadi gangguan koneksi saat mengirim pengajuan izin.");
+    showToast("Terjadi gangguan koneksi saat mengirim pengajuan izin.", "error");
   } finally {
     showLoading(false);
     if (btnSubmit) {
@@ -1301,7 +1289,6 @@ function switchMobileTab(e, tabId) {
     btn.classList.toggle("active", btn.dataset.tab === tabId);
   });
 
-  // Penanda tab aktif untuk Beranda, Profil, Statistik, dan Rekap
   ["hariIni", "profil", "statistik", "riwayat"].forEach(id => {
     let el = document.getElementById(id);
     if (!el) {
@@ -1321,13 +1308,6 @@ function switchMobileTab(e, tabId) {
       );
     }, 60);
   }
-}
-
-function showLoading(show, text = "Memproses...") {
-  const overlay = document.getElementById("loadingOverlay");
-  if (!overlay) return;
-  setText("loadingText", text);
-  overlay.style.display = show ? "flex" : "none";
 }
 
 function setText(id, val) {
