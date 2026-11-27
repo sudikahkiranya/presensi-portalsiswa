@@ -1275,6 +1275,53 @@ function formatStatusIzinBadge(status) {
   return { label: status || "-", cls: "is-pending" };
 }
 
+function formatTanggalId(rawDate) {
+  if (!rawDate) return "-";
+  const str = String(rawDate).trim();
+
+  // Jika sudah dd/mm/yyyy
+  const dmyMatch = str.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (dmyMatch) {
+    return `${dmyMatch[1]}/${dmyMatch[2]}/${dmyMatch[3]}`;
+  }
+
+  // Jika yyyy-mm-dd atau ISO string
+  const ymdMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (ymdMatch) {
+    return `${ymdMatch[3]}/${ymdMatch[2]}/${ymdMatch[1]}`;
+  }
+
+  const parsed = new Date(str);
+  if (!Number.isNaN(parsed.getTime())) {
+    const dd = String(parsed.getDate()).padStart(2, "0");
+    const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+    const yyyy = parsed.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  }
+
+  return str;
+}
+
+function formatJamSingkat(rawTime) {
+  if (!rawTime) return "";
+  const str = String(rawTime).trim();
+  const hmMatch = str.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+  if (hmMatch) {
+    const hh = String(hmMatch[1]).padStart(2, "0");
+    const mm = String(hmMatch[2]).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }
+  return str;
+}
+
+function formatTanggalDanJam(rawDate, rawTime) {
+  const tgl = formatTanggalId(rawDate);
+  const jam = formatJamSingkat(rawTime);
+  if (tgl === "-" && !jam) return "-";
+  if (!jam) return tgl;
+  return `${tgl} ${jam}`;
+}
+
 function renderRiwayatIzinModal() {
   const container = document.getElementById("listRiwayatIzinContainer");
   setText("badgeJumlahIzin", riwayatIzinList.length);
@@ -1295,17 +1342,18 @@ function renderRiwayatIzinModal() {
     const jenisLabel = isPulang ? "Langsung Pulang" : "Keluar & Kembali";
     const badge = formatStatusIzinBadge(item.status_izin);
 
-    const tgl = item.tanggal_izin || "-";
-    const jamAjuan = item.waktu_pengajuan || "-";
+    const diajukanText = formatTanggalDanJam(item.tanggal_izin, item.waktu_pengajuan);
 
-    const jamParts = [];
+    const jamDetailList = [];
     if (isPulang) {
       if (item.waktu_keputusan && (item.status_izin === "disetujui" || item.status_izin === "selesai")) {
-        jamParts.push(`Pulang: <strong>${item.waktu_keputusan}</strong>`);
+        const jamPulang = formatJamSingkat(item.waktu_keputusan);
+        if (jamPulang) jamDetailList.push(`Pulang: <strong>${jamPulang}</strong>`);
       }
     } else {
-      jamParts.push(`Keluar: <strong>${item.waktu_keluar || "-"}</strong>`);
-      jamParts.push(`Kembali: <strong>${item.waktu_kembali || "-"}</strong>`);
+      const jamKeluar = formatJamSingkat(item.waktu_keluar) || "-";
+      const jamKembali = formatJamSingkat(item.waktu_kembali) || "-";
+      jamDetailList.push(`Keluar: <strong>${jamKeluar}</strong> • Kembali: <strong>${jamKembali}</strong>`);
     }
 
     const catatanHtml = item.catatan_piket
@@ -1317,12 +1365,11 @@ function renderRiwayatIzinModal() {
     return `
       <tr>
         <td class="izin-col-time">
-          <div class="izin-tbl-date">${tgl}</div>
-          <div class="izin-tbl-sub">Ajuan: <strong>${jamAjuan}</strong></div>
+          <div class="izin-tbl-datetime">${diajukanText}</div>
         </td>
         <td class="izin-col-mode">
           <span class="izin-tbl-mode">${jenisLabel}</span>
-          ${jamParts.length ? `<div class="izin-tbl-sub">${jamParts.join(" • ")}</div>` : ""}
+          ${jamDetailList.length ? `<div class="izin-tbl-sub">${jamDetailList.join(" • ")}</div>` : ""}
         </td>
         <td class="izin-col-reason">
           <div class="izin-tbl-reason">${item.alasan_izin || "-"}</div>
