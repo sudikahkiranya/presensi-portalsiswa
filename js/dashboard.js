@@ -1286,33 +1286,29 @@ function renderRiwayatIzinModal() {
     const emptyMsg = riwayatIzinList.length
       ? "Tidak ada riwayat izin yang sesuai dengan filter ini."
       : "Belum ada riwayat pengajuan izin meninggalkan sekolah.";
-    container.innerHTML = `
-      <div class="izin-empty-state">
-        ${emptyMsg}
-      </div>
-    `;
+    container.innerHTML = `<div class="izin-empty-state">${emptyMsg}</div>`;
     return;
   }
 
   const rowsHtml = listToRender.map(item => {
-    const modeShort = item.mode_izin === "langsung_pulang"
-      ? "Langsung Pulang"
-      : "Keluar & Kembali";
+    const isPulang = item.mode_izin === "langsung_pulang";
+    const jenisLabel = isPulang ? "Langsung Pulang" : "Keluar & Kembali";
     const badge = formatStatusIzinBadge(item.status_izin);
+
     const tgl = item.tanggal_izin || "-";
     const jamAjuan = item.waktu_pengajuan || "-";
 
-    const jamParts = [`Ajuan ${jamAjuan}`];
-    if (item.mode_izin === "langsung_pulang") {
+    const jamParts = [];
+    if (isPulang) {
       if (item.waktu_keputusan && (item.status_izin === "disetujui" || item.status_izin === "selesai")) {
-        jamParts.push(`Pulang ${item.waktu_keputusan}`);
+        jamParts.push(`Pulang: <strong>${item.waktu_keputusan}</strong>`);
       }
     } else {
-      if (item.waktu_keluar) jamParts.push(`Keluar ${item.waktu_keluar}`);
-      if (item.waktu_kembali) jamParts.push(`Kembali ${item.waktu_kembali}`);
+      jamParts.push(`Keluar: <strong>${item.waktu_keluar || "-"}</strong>`);
+      jamParts.push(`Kembali: <strong>${item.waktu_kembali || "-"}</strong>`);
     }
 
-    const catatanLine = item.catatan_piket
+    const catatanHtml = item.catatan_piket
       ? `<div class="izin-tbl-note"><strong>Catatan${item.diproses_oleh ? ` (${item.diproses_oleh})` : ""}:</strong> ${item.catatan_piket}</div>`
       : (item.diproses_oleh
           ? `<div class="izin-tbl-note">Diproses oleh <strong>${item.diproses_oleh}</strong></div>`
@@ -1322,14 +1318,15 @@ function renderRiwayatIzinModal() {
       <tr>
         <td class="izin-col-time">
           <div class="izin-tbl-date">${tgl}</div>
-          <div class="izin-tbl-times">${jamParts.join(" • ")}</div>
+          <div class="izin-tbl-sub">Ajuan: <strong>${jamAjuan}</strong></div>
         </td>
         <td class="izin-col-mode">
-          <span class="izin-tbl-mode">${modeShort}</span>
+          <span class="izin-tbl-mode">${jenisLabel}</span>
+          ${jamParts.length ? `<div class="izin-tbl-sub">${jamParts.join(" • ")}</div>` : ""}
         </td>
         <td class="izin-col-reason">
           <div class="izin-tbl-reason">${item.alasan_izin || "-"}</div>
-          ${catatanLine}
+          ${catatanHtml}
         </td>
         <td class="izin-col-status">
           <span class="izin-status-pill ${badge.cls}">${badge.label}</span>
@@ -1349,9 +1346,7 @@ function renderRiwayatIzinModal() {
             <th>Status</th>
           </tr>
         </thead>
-        <tbody>
-          ${rowsHtml}
-        </tbody>
+        <tbody>${rowsHtml}</tbody>
       </table>
     </div>
   `;
